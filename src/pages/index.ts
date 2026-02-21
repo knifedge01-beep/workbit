@@ -10,5 +10,6 @@ export {
   TeamIssuesScreenWrapper,
   TeamProjectsScreenWrapper,
   TeamViewsScreenWrapper,
+  TeamLogsScreenWrapper,
 } from './TeamRouteWrappers'
 export { ShowcaseComponents } from './ShowcaseComponents'

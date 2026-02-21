@@ -31,8 +31,10 @@ export function MainLayout() {
             <SidebarNav selectedTeam={selectedTeam} collapsed={sidebarCollapsed} />
           </Sidebar>
 
-          <main style={{ flex: 1, overflow: 'auto', padding: 24 }}>
-            <Outlet />
+          <main style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+            <div style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: 24 }}>
+              <Outlet />
+            </div>
           </main>
         </div>
       </div>

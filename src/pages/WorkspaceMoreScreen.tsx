@@ -1,10 +1,9 @@
-import { Heading, Stack, Text } from '@design-system'
+import { PageHeader, Stack } from '@design-system'
 
 export function WorkspaceMoreScreen() {
   return (
     <Stack gap={4}>
-      <Heading level={2}>More</Heading>
-      <Text muted>Additional workspace options.</Text>
+      <PageHeader title="More" summary="Additional workspace options." />
     </Stack>
   )
 }

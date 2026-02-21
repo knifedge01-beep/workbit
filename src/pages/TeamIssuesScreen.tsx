@@ -1,8 +1,8 @@
 import { useState } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
 import {
-  Heading,
+  PageHeader,
   Text,
-  Button,
   IconButton,
   Avatar,
   Card,
@@ -10,15 +10,25 @@ import {
   Stack,
   Tabs,
 } from '@design-system'
-import { Circle, Filter, LayoutGrid, MoreHorizontal, Plus } from 'lucide-react'
+import { Circle, MoreHorizontal } from 'lucide-react'
 import { StatusSelector } from '../components'
 import { DEMO_ISSUES } from '../constants'
 import type { Issue } from '../constants'
+
+const ISSUE_TAB_IDS = ['all', 'active', 'backlog'] as const
+type IssueTabId = (typeof ISSUE_TAB_IDS)[number]
+
+function isValidTab(tab: string | undefined): tab is IssueTabId {
+  return tab != null && ISSUE_TAB_IDS.includes(tab as IssueTabId)
+}
 
 type Props = { teamName: string }
 
 export function TeamIssuesScreen({ teamName }: Props) {
   const [issues, setIssues] = useState<Issue[]>(DEMO_ISSUES)
+  const { teamId, tab: tabParam } = useParams<{ teamId: string; tab: string }>()
+  const navigate = useNavigate()
+  const activeTab = isValidTab(tabParam) ? tabParam : 'active'
 
   const updateIssueStatus = (issueId: string, status: string) => {
     setIssues((prev) =>
@@ -26,9 +36,15 @@ export function TeamIssuesScreen({ teamName }: Props) {
     )
   }
 
+  const handleTabChange = (id: string) => {
+    if (teamId && isValidTab(id)) {
+      navigate(`/team/${teamId}/issues/${id}`)
+    }
+  }
+
   return (
     <Stack gap={4}>
-      <Heading level={2}>{teamName}</Heading>
+      <PageHeader title={teamName} />
       <Flex align="center" gap={2}>
         <Tabs
           tabs={[
@@ -36,25 +52,9 @@ export function TeamIssuesScreen({ teamName }: Props) {
             { id: 'active', label: 'Active' },
             { id: 'backlog', label: 'Backlog' },
           ]}
-          activeId="active"
-          onChange={() => {}}
+          activeId={activeTab}
+          onChange={handleTabChange}
         />
-        <IconButton aria-label="Add view">
-          <Plus size={16} />
-        </IconButton>
-      </Flex>
-      <Flex justify="space-between" align="center">
-        <div />
-        <Flex gap={2}>
-          <Button variant="ghost" size="sm">
-            <Filter size={16} />
-            Filter
-          </Button>
-          <Button variant="ghost" size="sm">
-            <LayoutGrid size={16} />
-            Display
-          </Button>
-        </Flex>
       </Flex>
 
       <Flex align="center" gap={2}>

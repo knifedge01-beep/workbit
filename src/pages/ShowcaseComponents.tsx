@@ -557,6 +557,12 @@ export function ShowcaseComponents() {
                 <Stack gap={2}>
                   <Heading level={3}>DatePicker</Heading>
                   <DatePicker value={date} onChange={setDate} />
+                  <Text size="sm" muted>With custom placeholder (e.g. target date):</Text>
+                  <DatePicker
+                    value={date}
+                    onChange={setDate}
+                    placeholder="Select target date"
+                  />
                 </Stack>
               </Card>
               <Card>

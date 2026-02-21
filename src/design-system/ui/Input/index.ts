@@ -1,1 +1,1 @@
-export { Input } from './Input'
+export { Input, type InputVariant } from './Input'

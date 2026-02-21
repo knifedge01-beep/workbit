@@ -1,17 +1,21 @@
 import styled from 'styled-components'
 
-const StyledInput = styled.input`
+export type InputVariant = 'default' | 'ghost'
+
+const StyledInput = styled.input<{ $variant: InputVariant }>`
   width: 100%;
   font-size: 0.875rem;
-  padding: ${(p) => p.theme.spacing[2]}px ${(p) => p.theme.spacing[2]}px;
-  border: 1px solid ${(p) => p.theme.colors.border};
+  min-width: 0;
+  padding: ${(p) => (p.$variant === 'ghost' ? 0 : `${p.theme.spacing[2]}px ${p.theme.spacing[2]}px`)};
+  border: ${(p) => (p.$variant === 'ghost' ? 'none' : `1px solid ${p.theme.colors.border}`)};
   border-radius: 4px;
-  background: ${(p) => p.theme.colors.surface};
+  background: ${(p) => (p.$variant === 'ghost' ? 'transparent' : p.theme.colors.surface)};
   color: ${(p) => p.theme.colors.text};
+  font-weight: ${(p) => (p.$variant === 'ghost' ? 500 : 400)};
   outline: none;
   transition: border-color 0.15s ease;
   &:focus {
-    border-color: ${(p) => p.theme.colors.borderFocus};
+    border-color: ${(p) => (p.$variant === 'ghost' ? 'transparent' : p.theme.colors.borderFocus)};
   }
   &::placeholder {
     color: ${(p) => p.theme.colors.textMuted};
@@ -22,9 +26,10 @@ type Props = Omit<
   React.InputHTMLAttributes<HTMLInputElement>,
   'size'
 > & {
+  variant?: InputVariant
   className?: string
 }
 
-export function Input(props: Props) {
-  return <StyledInput {...props} />
+export function Input({ variant = 'default', ...props }: Props) {
+  return <StyledInput $variant={variant} {...props} />
 }

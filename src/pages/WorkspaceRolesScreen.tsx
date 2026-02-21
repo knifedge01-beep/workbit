@@ -1,10 +1,9 @@
-import { Heading, Stack, Text } from '@design-system'
+import { PageHeader, Stack } from '@design-system'
 
 export function WorkspaceRolesScreen() {
   return (
     <Stack gap={4}>
-      <Heading level={2}>Roles</Heading>
-      <Text muted>Workspace roles and permissions.</Text>
+      <PageHeader title="Roles" summary="Workspace roles and permissions." />
     </Stack>
   )
 }

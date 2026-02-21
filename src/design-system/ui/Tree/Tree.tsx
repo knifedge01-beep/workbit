@@ -5,6 +5,8 @@ export type TreeNode = {
   id: string
   label: string
   children?: TreeNode[]
+  /** When set, node is expandable and this content is shown when expanded. */
+  content?: React.ReactNode
 }
 
 const List = styled.ul`
@@ -72,6 +74,12 @@ const Label = styled.span`
   white-space: nowrap;
 `
 
+const ContentWrap = styled.div<{ $depth: number }>`
+  padding-left: ${(p) => p.theme.spacing[2] + p.$depth * 16 + 16}px;
+  padding-right: ${(p) => p.theme.spacing[2]}px;
+  padding-bottom: ${(p) => p.theme.spacing[2]}px;
+`
+
 type Props = {
   nodes: TreeNode[]
   selectedId?: string
@@ -96,6 +104,8 @@ function TreeRow({
   onToggle: (id: string) => void
 }) {
   const hasChildren = node.children != null && node.children.length > 0
+  const hasContent = node.content != null
+  const isExpandable = hasChildren || hasContent
   const isExpanded = expandedIds.has(node.id)
   const isSelected = selectedId === node.id
 
@@ -107,7 +117,7 @@ function TreeRow({
         onClick={() => onSelect?.(node)}
         type="button"
       >
-        {hasChildren ? (
+        {isExpandable ? (
           <Chevron
             type="button"
             $open={isExpanded}
@@ -122,6 +132,9 @@ function TreeRow({
         )}
         <Label>{node.label}</Label>
       </Row>
+      {hasContent && isExpanded && (
+        <ContentWrap $depth={depth}>{node.content}</ContentWrap>
+      )}
       {hasChildren && isExpanded && (
         <List>
           {node.children!.map((child) => (

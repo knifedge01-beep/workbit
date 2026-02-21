@@ -8,10 +8,9 @@ import {
   SidebarCollapsibleSection,
   SidebarNavItem,
   Avatar,
-  Card,
   Flex,
-  Heading,
-  Text,
+  Popup,
+  IconButton,
 } from '@design-system'
 import {
   Mail,
@@ -23,7 +22,10 @@ import {
   ChevronDown,
   Users,
   Shield,
+  ScrollText,
+  Sparkles,
 } from 'lucide-react'
+import { WhatsNewCard } from './WhatsNewCard'
 import type { Team } from '../constants'
 
 const TeamRowButton = styled.button<{ $active?: boolean }>`
@@ -90,9 +92,12 @@ export function SidebarNav({ selectedTeam, collapsed = false }: Props) {
   const [teamExpanded, setTeamExpanded] = useState(true)
 
   const isTeamIssues = (path: string) =>
-    path === `/team/${teamId}` || path === `/team/${teamId}/`
+    path === `/team/${teamId}` ||
+    path === `/team/${teamId}/` ||
+    (teamId != null && path.startsWith(`/team/${teamId}/issues`))
   const isTeamProjects = (path: string) => path === `/team/${teamId}/projects`
   const isTeamViews = (path: string) => path === `/team/${teamId}/views`
+  const isTeamLogs = (path: string) => path === `/team/${teamId}/logs`
   const isOnTeam = location.pathname.startsWith(`/team/${selectedTeam.id}`)
 
   return (
@@ -125,8 +130,7 @@ export function SidebarNav({ selectedTeam, collapsed = false }: Props) {
           <Eye size={18} />
           <span data-sidebar-label>Views</span>
         </SidebarNavItem>
-        <SidebarCollapsibleSection title={<span data-sidebar-heading>More</span>} defaultOpen={false}>
-          <SidebarNavItem
+        <SidebarNavItem
             as={Link}
             to="/workspace/member"
             $active={location.pathname === '/workspace/member'}
@@ -142,7 +146,6 @@ export function SidebarNav({ selectedTeam, collapsed = false }: Props) {
             <Shield size={18} />
             <span data-sidebar-label>Roles</span>
           </SidebarNavItem>
-        </SidebarCollapsibleSection>
       </SidebarCollapsibleSection>
 
       <SidebarSection>
@@ -168,7 +171,7 @@ export function SidebarNav({ selectedTeam, collapsed = false }: Props) {
           <div style={{ paddingLeft: collapsed ? 0 : 8 }}>
             <SidebarNavItem
               as={Link}
-              to={`/team/${selectedTeam.id}`}
+              to={`/team/${selectedTeam.id}/issues/active`}
               $active={isTeamIssues(location.pathname)}
             >
               <FileText size={18} />
@@ -189,6 +192,14 @@ export function SidebarNav({ selectedTeam, collapsed = false }: Props) {
             >
               <Eye size={18} />
               <span data-sidebar-label>Views</span>
+            </SidebarNavItem>
+            <SidebarNavItem
+              as={Link}
+              to={`/team/${selectedTeam.id}/logs`}
+              $active={isTeamLogs(location.pathname)}
+            >
+              <ScrollText size={18} />
+              <span data-sidebar-label>Logs</span>
             </SidebarNavItem>
           </div>
         </CollapsibleContent>
@@ -213,6 +224,9 @@ const FooterWrap = styled.div<{ $collapsed: boolean }>`
   [data-sidebar-footer-card] {
     display: ${(p) => (p.$collapsed ? 'none' : 'block')};
   }
+  [data-sidebar-whats-new-popup] {
+    display: ${(p) => (p.$collapsed ? 'inline-flex' : 'none')};
+  }
 `
 
 export function SidebarFooter({ collapsed = false }: { collapsed?: boolean }) {
@@ -224,10 +238,24 @@ export function SidebarFooter({ collapsed = false }: { collapsed?: boolean }) {
           <span data-sidebar-label>Try</span>
           <ArrowRight size={14} style={{ marginLeft: 'auto' }} data-sidebar-chevron />
         </SidebarNavItem>
-        <Card data-sidebar-footer-card>
-          <Heading level={5}>What&apos;s new</Heading>
-          <Text size="xs" muted>Advanced filters and share issues in private teams</Text>
-        </Card>
+        <div data-sidebar-footer-card>
+          <WhatsNewCard />
+        </div>
+        <div data-sidebar-whats-new-popup>
+          <Popup
+            placement="right"
+            align="start"
+            openOnHover
+            openOnClick
+            trigger={
+              <IconButton aria-label="What's new">
+                <Sparkles size={18} />
+              </IconButton>
+            }
+          >
+            <WhatsNewCard inline />
+          </Popup>
+        </div>
       </Flex>
     </FooterWrap>
   )

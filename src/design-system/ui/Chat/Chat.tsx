@@ -3,7 +3,6 @@ import styled from 'styled-components'
 import { ArrowUp } from 'lucide-react'
 import { Avatar } from '../Avatar'
 import { Input } from '../Input'
-import { ResourceSelector } from '../../../components/ResourceSelector'
 
 export type ChatMessage = {
   id: string
@@ -99,16 +98,9 @@ const InputRow = styled.div`
   flex-shrink: 0;
 `
 
-const ResourceSelectorWrap = styled.div`
+const AttachSlotWrap = styled.div`
   flex-shrink: 0;
   display: inline-flex;
-  & > div {
-    display: inline-flex;
-    align-items: center;
-  }
-  & > div > span:first-of-type {
-    display: none;
-  }
 `
 
 const InputWrap = styled.div`
@@ -148,9 +140,8 @@ type Props = {
   currentUser?: ChatUser
   placeholder?: string
   onSend?: (text: string) => void
-  onChooseFile?: () => void
-  onCreateDocument?: () => void
-  onAddLink?: () => void
+  /** Optional slot for attach/embed controls (e.g. file/link selector). Rendered in the input row. */
+  attachSlot?: React.ReactNode
   className?: string
 }
 
@@ -159,9 +150,7 @@ export function Chat({
   currentUser,
   placeholder = 'Leave a reply...',
   onSend,
-  onChooseFile,
-  onCreateDocument,
-  onAddLink,
+  attachSlot,
   className,
 }: Props) {
   const [draft, setDraft] = useState('')
@@ -222,17 +211,7 @@ export function Chat({
               aria-label="Reply"
             />
           </InputWrap>
-          {(onChooseFile || onCreateDocument || onAddLink) && (
-            <ResourceSelectorWrap>
-              <ResourceSelector
-                label=""
-                triggerLabel=""
-                onChooseFile={onChooseFile}
-                onCreateDocument={onCreateDocument}
-                onAddLink={onAddLink}
-              />
-            </ResourceSelectorWrap>
-          )}
+          {attachSlot && <AttachSlotWrap>{attachSlot}</AttachSlotWrap>}
           <SendButton
             type="submit"
             disabled={!draft.trim()}

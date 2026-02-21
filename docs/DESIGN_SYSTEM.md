@@ -234,6 +234,10 @@ import { Menu, type MenuItem, type MenuDivider, type MenuEntry } from '@/design-
 
 - **Path:** `ui/TableHeader`. Table header row.
 
+### Table
+
+- **Path:** `ui/Table`. Headless data table built with TanStack Table. Accepts `columns: ColumnDef<T>[]`, `data: T[]`, optional `enableSorting`, `initialState?.sorting`. Use `meta: { flex?: number }` on column defs for relative column width. Renders themed header and body rows (borders, spacing, sort indicators).
+
 ### Divider
 
 - **Path:** `ui/Divider`. Horizontal/vertical divider.

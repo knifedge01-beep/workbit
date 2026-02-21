@@ -1,19 +1,11 @@
 import { useRef, useState } from 'react'
 import styled from 'styled-components'
-import { Activity, AlertTriangle, TrendingDown, Paperclip } from 'lucide-react'
+import { Paperclip } from 'lucide-react'
 import { Button, Menu, type MenuEntry, IconButton, EmojiSelector } from '@design-system'
 import { ResourceSelector } from './ResourceSelector'
+import { STATUS_CONFIG, type ProjectStatus } from '../constants/projectStatus'
 
-export type ProjectStatus = 'on-track' | 'at-risk' | 'off-track'
-
-const STATUS_CONFIG: Record<
-  ProjectStatus,
-  { label: string; color: string; Icon: typeof Activity }
-> = {
-  'on-track': { label: 'On track', color: 'success', Icon: Activity },
-  'at-risk': { label: 'At risk', color: 'warning', Icon: AlertTriangle },
-  'off-track': { label: 'Off track', color: 'error', Icon: TrendingDown },
-}
+export type { ProjectStatus } from '../constants/projectStatus'
 
 const Container = styled.div`
   --status-on-track: ${(p) => p.theme.colors.success};

@@ -34,6 +34,7 @@ export {
   SidebarNavItem,
 } from './Sidebar'
 export { TableHeader } from './TableHeader'
+export { Table, type ColumnDef, type SortingState, type TanStackTableType } from './Table'
 export { StarRating } from './StarRating'
 export { Tags } from './Tags'
 export { Notification } from './Notification'

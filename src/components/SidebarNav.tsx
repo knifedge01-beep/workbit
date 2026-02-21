@@ -21,6 +21,7 @@ import {
   ArrowRight,
   ChevronDown,
   Users,
+  UsersRound,
   Shield,
   ScrollText,
   Sparkles,
@@ -40,14 +41,20 @@ const TeamRowButton = styled.button<{ $active?: boolean }>`
   border-radius: 0 ${(p) => p.theme.radii?.md ?? 6}px ${(p) => p.theme.radii?.md ?? 6}px 0;
   border: none;
   cursor: pointer;
-  margin-bottom: ${(p) => p.theme.spacing[1]}px;
+  margin-bottom: ${(p) => p.theme.spacing[2]}px;
   transition: background 0.15s, color 0.15s;
   text-align: left;
   &:hover {
     background: ${(p) => (p.$active ? p.theme.colors.primaryHover : p.theme.colors.surfaceHover)};
   }
-  svg {
+  > svg:first-of-type,
+  [data-sidebar-avatar] {
     flex-shrink: 0;
+    width: 20px;
+    min-width: 20px;
+    height: 20px;
+  }
+  svg {
     color: ${(p) => (p.$active ? '#FFFFFF' : p.theme.colors.textMuted)};
   }
 `
@@ -57,6 +64,11 @@ const CollapsibleContent = styled.div<{ $open: boolean }>`
   max-height: ${(p) => (p.$open ? '2000px' : '0')};
   opacity: ${(p) => (p.$open ? 1 : 0)};
   transition: max-height 0.25s ease, opacity 0.2s ease;
+`
+
+const TeamChildrenWrap = styled.div<{ $collapsed: boolean }>`
+  padding-left: ${(p) => (p.$collapsed ? 0 : p.theme.spacing[6])}px;
+  padding-top: ${(p) => p.theme.spacing[1]}px;
 `
 
 const NavWrap = styled.div<{ $collapsed: boolean }>`
@@ -131,21 +143,29 @@ export function SidebarNav({ selectedTeam, collapsed = false }: Props) {
           <span data-sidebar-label>Views</span>
         </SidebarNavItem>
         <SidebarNavItem
-            as={Link}
-            to="/workspace/member"
-            $active={location.pathname === '/workspace/member'}
-          >
-            <Users size={18} />
-            <span data-sidebar-label>Member</span>
-          </SidebarNavItem>
-          <SidebarNavItem
-            as={Link}
-            to="/workspace/roles"
-            $active={location.pathname === '/workspace/roles'}
-          >
-            <Shield size={18} />
-            <span data-sidebar-label>Roles</span>
-          </SidebarNavItem>
+          as={Link}
+          to="/workspace/member"
+          $active={location.pathname === '/workspace/member'}
+        >
+          <Users size={18} />
+          <span data-sidebar-label>Member</span>
+        </SidebarNavItem>
+        <SidebarNavItem
+          as={Link}
+          to="/workspace/teams"
+          $active={location.pathname === '/workspace/teams'}
+        >
+          <UsersRound size={18} />
+          <span data-sidebar-label>Teams</span>
+        </SidebarNavItem>
+        <SidebarNavItem
+          as={Link}
+          to="/workspace/roles"
+          $active={location.pathname === '/workspace/roles'}
+        >
+          <Shield size={18} />
+          <span data-sidebar-label>Roles</span>
+        </SidebarNavItem>
       </SidebarCollapsibleSection>
 
       <SidebarSection>
@@ -156,7 +176,9 @@ export function SidebarNav({ selectedTeam, collapsed = false }: Props) {
           onClick={() => setTeamExpanded((e) => !e)}
           aria-expanded={teamExpanded}
         >
-          <Avatar name={selectedTeam.id.slice(0, 2).toUpperCase()} size={20} />
+          <span data-sidebar-avatar aria-hidden>
+            <Avatar name={selectedTeam.id.slice(0, 2).toUpperCase()} size={20} />
+          </span>
           <span data-sidebar-label>{selectedTeam.name}</span>
           <motion.span
             data-sidebar-chevron
@@ -168,7 +190,7 @@ export function SidebarNav({ selectedTeam, collapsed = false }: Props) {
           </motion.span>
         </TeamRowButton>
         <CollapsibleContent $open={teamExpanded}>
-          <div style={{ paddingLeft: collapsed ? 0 : 8 }}>
+          <TeamChildrenWrap $collapsed={collapsed}>
             <SidebarNavItem
               as={Link}
               to={`/team/${selectedTeam.id}/issues/active`}
@@ -201,7 +223,7 @@ export function SidebarNav({ selectedTeam, collapsed = false }: Props) {
               <ScrollText size={18} />
               <span data-sidebar-label>Logs</span>
             </SidebarNavItem>
-          </div>
+          </TeamChildrenWrap>
         </CollapsibleContent>
       </SidebarSection>
     </NavWrap>

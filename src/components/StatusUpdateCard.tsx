@@ -1,18 +1,11 @@
 import { useState } from 'react'
 import styled from 'styled-components'
-import { Activity, AlertTriangle, TrendingDown, MessageCircle, MoreHorizontal, SquarePen } from 'lucide-react'
+import { MessageCircle, MoreHorizontal, SquarePen } from 'lucide-react'
 import { Avatar, Button, Menu, IconButton, EmojiSelector, Chat } from '@design-system'
 import type { ChatMessage, ChatUser } from '@design-system'
-import type { ProjectStatus } from './StatusUpdateComposer'
-
-const STATUS_CONFIG: Record<
-  ProjectStatus,
-  { label: string; color: string; Icon: typeof Activity }
-> = {
-  'on-track': { label: 'On track', color: 'success', Icon: Activity },
-  'at-risk': { label: 'At risk', color: 'warning', Icon: AlertTriangle },
-  'off-track': { label: 'Off track', color: 'error', Icon: TrendingDown },
-}
+import { STATUS_CONFIG } from '../constants/projectStatus'
+import { ResourceSelector } from './ResourceSelector'
+import type { ProjectStatus } from '../constants/projectStatus'
 
 const Card = styled.article`
   display: flex;
@@ -164,14 +157,12 @@ export function StatusUpdateCard({
   const showCommentsWhenExpanded =
     comments.length > 0 || onSendComment != null
 
-  const moreItems = [
-    ...(onMore
-      ? [
-          { id: 'edit', label: 'Edit', onClick: () => onMore('edit') },
-          { id: 'delete', label: 'Delete', onClick: () => onMore('delete') },
-        ]
-      : []),
-  ].filter(Boolean)
+  const moreItems = onMore
+    ? [
+        { id: 'edit', label: 'Edit', onClick: () => onMore('edit') },
+        { id: 'delete', label: 'Delete', onClick: () => onMore('delete') },
+      ]
+    : []
 
   return (
     <Card className={className}>
@@ -221,9 +212,17 @@ export function StatusUpdateCard({
               currentUser={currentUser}
               placeholder="Add a comment..."
               onSend={onSendComment}
-              onChooseFile={onChooseFile}
-              onCreateDocument={onCreateDocument}
-              onAddLink={onAddLink}
+              attachSlot={
+                (onChooseFile || onCreateDocument || onAddLink) ? (
+                  <ResourceSelector
+                    label=""
+                    triggerLabel=""
+                    onChooseFile={onChooseFile}
+                    onCreateDocument={onCreateDocument}
+                    onAddLink={onAddLink}
+                  />
+                ) : undefined
+              }
             />
           </ChatWrap>
         </CommentsSection>

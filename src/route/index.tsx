@@ -7,6 +7,7 @@ import {
   WorkspaceViewsScreen,
   WorkspaceMoreScreen,
   WorkspaceMemberScreen,
+  WorkspaceTeamsScreen,
   WorkspaceRolesScreen,
   TeamIssuesScreenWrapper,
   TeamProjectsScreenWrapper,
@@ -32,6 +33,7 @@ export function AppRoutes() {
         <Route path="workspace/views" element={<WorkspaceViewsScreen />} />
         <Route path="workspace/more" element={<WorkspaceMoreScreen />} />
         <Route path="workspace/member" element={<WorkspaceMemberScreen />} />
+        <Route path="workspace/teams" element={<WorkspaceTeamsScreen />} />
         <Route path="workspace/roles" element={<WorkspaceRolesScreen />} />
         <Route path="team/:teamId" element={<RedirectToTeamIssues />} />
         <Route path="team/:teamId/issues/:tab" element={<TeamIssuesScreenWrapper />} />

@@ -9,6 +9,7 @@ import {
   StatusUpdateComposer,
 } from '../components'
 import type { StatusUpdateCardData, ProjectStatus } from '../components'
+import { noop } from '../utils/noop'
 
 type Props = { teamName: string }
 
@@ -104,15 +105,15 @@ export function TeamProjectsScreen({ teamName }: Props) {
                 comments={commentsByUpdateId[latestUpdate.id]}
                 currentUser={DEFAULT_CURRENT_USER}
                 onSendComment={handleSendComment(latestUpdate.id)}
-                onMore={() => {}}
+                onMore={noop}
               />
             )}
             <StatusUpdateComposer
               placeholder="Write a project update..."
               onPost={handlePostUpdate}
-              onChooseFile={() => {}}
-              onCreateDocument={() => {}}
-              onAddLink={() => {}}
+              onChooseFile={noop}
+              onCreateDocument={noop}
+              onAddLink={noop}
             />
           </Stack>
 

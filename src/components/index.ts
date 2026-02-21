@@ -12,3 +12,8 @@ export { StatusUpdateComposer, type ProjectStatus } from './StatusUpdateComposer
 export { StatusUpdateCard, type StatusUpdateCardData } from './StatusUpdateCard'
 export { NavbarLeft, NavbarRight } from './NavbarLeft'
 export { TeamDropdown } from './TeamDropdown'
+export { MembersTable, type MemberRow } from './MembersTable'
+export { TeamsTable, type TeamTableRow } from './TeamsTable'
+export { ProjectsTable, type ProjectTableRow } from './ProjectsTable'
+export { ViewsTable, type ViewTableRow } from './ViewsTable'
+export { RolesTable, type RoleTableRow } from './RolesTable'

@@ -21,6 +21,7 @@ import {
 } from 'lucide-react'
 import { StatusSelector, type StatusOption } from './StatusSelector'
 import { PrioritySelector } from './PrioritySelector'
+import { SectionHeader, CollapsibleContent } from './CollapsibleSection'
 
 const projectStatusOptions: StatusOption[] = [
   { id: 'planned', label: 'Planned', icon: <Circle size={16} /> },
@@ -28,25 +29,6 @@ const projectStatusOptions: StatusOption[] = [
   { id: 'completed', label: 'Completed', icon: <CheckCircle2 size={16} style={{ color: 'var(--status-done, #8B5CF6)' }} /> },
   { id: 'on_hold', label: 'On hold', icon: <PauseCircle size={16} style={{ color: 'var(--text-muted, #64748b)' }} /> },
 ]
-
-const SectionHeader = styled.button`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  padding: ${(p) => p.theme.spacing[2]}px 0;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: ${(p) => p.theme.colors.text};
-  background: none;
-  border: none;
-  cursor: pointer;
-  text-align: left;
-  svg {
-    flex-shrink: 0;
-    color: ${(p) => p.theme.colors.textMuted};
-  }
-`
 
 const Row = styled.div<{ $alignTop?: boolean }>`
   display: flex;
@@ -77,13 +59,6 @@ const Row = styled.div<{ $alignTop?: boolean }>`
   }
 `
 
-const CollapsibleContent = styled.div<{ $open: boolean }>`
-  overflow: hidden;
-  max-height: ${(p) => (p.$open ? '800px' : '0')};
-  opacity: ${(p) => (p.$open ? 1 : 0)};
-  transition: max-height 0.2s ease, opacity 0.2s ease;
-`
-
 type Props = {
   defaultOpen?: boolean
   /** When true, render only the content (no header). Use when embedding in Tree. */
@@ -99,68 +74,68 @@ export function PropertiesSection({ defaultOpen = true, contentOnly = false }: P
 
   const content = (
     <>
-        <Row>
-          <span className="row-label">Status</span>
-          <span className="row-value">
-            <StatusSelector
-              value={status}
-              onChange={setStatus}
-              placeholder="Status"
-              options={projectStatusOptions}
-            />
-          </span>
-        </Row>
-        <Row>
-          <span className="row-label">Priority</span>
-          <span className="row-value">
-            <PrioritySelector
-              value={priority}
-              onChange={setPriority}
-              placeholder="Priority"
-            />
-          </span>
-        </Row>
-        <Row>
-          <span className="row-label">Lead</span>
-          <span className="row-value">
-            <UserPlus size={14} className="row-icon" />
-            <Text size="sm" muted>Add lead</Text>
-          </span>
-        </Row>
-        <Row>
-          <span className="row-label">Members</span>
-          <span className="row-value">
-            <Users size={14} className="row-icon" />
-            <Text size="sm" muted>Add members</Text>
-          </span>
-        </Row>
-        <Row $alignTop>
-          <span className="row-label">Dates</span>
-          <span className="row-value row-value-date-range">
-            <DateRange
-              startDate={startDate}
-              endDate={endDate}
-              onStartChange={setStartDate}
-              onEndChange={setEndDate}
-              startPlaceholder="Start"
-              endPlaceholder="Target"
-            />
-          </span>
-        </Row>
-        <Row>
-          <span className="row-label">Teams</span>
-          <span className="row-value">
-            <Building2 size={14} className="row-icon" />
-            <span>Test94</span>
-          </span>
-        </Row>
-        <Row>
-          <span className="row-label">Labels</span>
-          <span className="row-value">
-            <Tag size={14} className="row-icon" />
-            <Text size="sm" muted>Add label</Text>
-          </span>
-        </Row>
+      <Row>
+        <span className="row-label">Status</span>
+        <span className="row-value">
+          <StatusSelector
+            value={status}
+            onChange={setStatus}
+            placeholder="Status"
+            options={projectStatusOptions}
+          />
+        </span>
+      </Row>
+      <Row>
+        <span className="row-label">Priority</span>
+        <span className="row-value">
+          <PrioritySelector
+            value={priority}
+            onChange={setPriority}
+            placeholder="Priority"
+          />
+        </span>
+      </Row>
+      <Row>
+        <span className="row-label">Lead</span>
+        <span className="row-value">
+          <UserPlus size={14} className="row-icon" />
+          <Text size="sm" muted>Add lead</Text>
+        </span>
+      </Row>
+      <Row>
+        <span className="row-label">Members</span>
+        <span className="row-value">
+          <Users size={14} className="row-icon" />
+          <Text size="sm" muted>Add members</Text>
+        </span>
+      </Row>
+      <Row $alignTop>
+        <span className="row-label">Dates</span>
+        <span className="row-value row-value-date-range">
+          <DateRange
+            startDate={startDate}
+            endDate={endDate}
+            onStartChange={setStartDate}
+            onEndChange={setEndDate}
+            startPlaceholder="Start"
+            endPlaceholder="Target"
+          />
+        </span>
+      </Row>
+      <Row>
+        <span className="row-label">Teams</span>
+        <span className="row-value">
+          <Building2 size={14} className="row-icon" />
+          <Text size="sm" muted>Add team</Text>
+        </span>
+      </Row>
+      <Row>
+        <span className="row-label">Labels</span>
+        <span className="row-value">
+          <Tag size={14} className="row-icon" />
+          <Text size="sm" muted>Add label</Text>
+        </span>
+      </Row>
     </>
   )
 

@@ -2,25 +2,7 @@ import { useState } from 'react'
 import styled from 'styled-components'
 import { Text, Stack, Flex } from '@design-system'
 import { ChevronDown, Diamond, Box } from 'lucide-react'
-
-const SectionHeader = styled.button`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  padding: ${(p) => p.theme.spacing[2]}px 0;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: ${(p) => p.theme.colors.text};
-  background: none;
-  border: none;
-  cursor: pointer;
-  text-align: left;
-  svg {
-    flex-shrink: 0;
-    color: ${(p) => p.theme.colors.textMuted};
-  }
-`
+import { SectionHeader, CollapsibleContent } from './CollapsibleSection'
 
 const SeeAllLink = styled.button`
   font-size: 0.8125rem;
@@ -45,13 +27,6 @@ const ActivityRow = styled.div`
     color: ${(p) => p.theme.colors.textMuted};
     margin-top: 2px;
   }
-`
-
-const CollapsibleContent = styled.div<{ $open: boolean }>`
-  overflow: hidden;
-  max-height: ${(p) => (p.$open ? '800px' : '0')};
-  opacity: ${(p) => (p.$open ? 1 : 0)};
-  transition: max-height 0.2s ease, opacity 0.2s ease;
 `
 
 export type ActivityItem = {

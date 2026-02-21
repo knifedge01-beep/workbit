@@ -1,49 +1,9 @@
 import { useState } from 'react'
 import styled from 'styled-components'
 import { Text, IconButton, Stack, Flex, Menu } from '@design-system'
-import type { MenuEntry } from '@design-system'
-import {
-  ChevronDown,
-  Plus,
-  Diamond,
-  MoreHorizontal,
-  Pencil,
-  Copy,
-  History,
-  Box,
-  Trash2,
-  ChevronRight,
-} from 'lucide-react'
-
-const MILESTONE_MENU_ITEMS: MenuEntry[] = [
-  { id: 'edit', label: 'Edit...', icon: <Pencil size={16} />, onClick: () => {} },
-  { id: 'copy', label: 'Copy', icon: <Copy size={16} />, right: <ChevronRight size={14} />, onClick: () => {} },
-  { id: 'history', label: 'Show version history', icon: <History size={16} />, onClick: () => {} },
-  { type: 'divider' },
-  { id: 'move', label: 'Move milestone to', icon: <Diamond size={16} />, right: <ChevronRight size={14} />, onClick: () => {} },
-  { id: 'convert', label: 'Convert to project', icon: <Box size={16} />, onClick: () => {} },
-  { type: 'divider' },
-  { id: 'delete', label: 'Delete', icon: <Trash2 size={16} />, right: <span>⌘⌫</span>, onClick: () => {} },
-]
-
-const SectionHeader = styled.button`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  padding: ${(p) => p.theme.spacing[2]}px 0;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: ${(p) => p.theme.colors.text};
-  background: none;
-  border: none;
-  cursor: pointer;
-  text-align: left;
-  svg {
-    flex-shrink: 0;
-    color: ${(p) => p.theme.colors.textMuted};
-  }
-`
+import { ChevronDown, Plus, Diamond, MoreHorizontal } from 'lucide-react'
+import { MILESTONE_MENU_ITEMS } from './milestoneMenuItems'
+import { SectionHeader, CollapsibleContent } from './CollapsibleSection'
 
 const MilestoneRow = styled.div`
   display: flex;
@@ -52,13 +12,6 @@ const MilestoneRow = styled.div`
   gap: ${(p) => p.theme.spacing[2]}px;
   padding: ${(p) => p.theme.spacing[2]}px 0;
   min-height: 36px;
-`
-
-const CollapsibleContent = styled.div<{ $open: boolean }>`
-  overflow: hidden;
-  max-height: ${(p) => (p.$open ? '2000px' : '0')};
-  opacity: ${(p) => (p.$open ? 1 : 0)};
-  transition: max-height 0.2s ease, opacity 0.2s ease;
 `
 
 export type MilestoneItem = {
@@ -130,7 +83,7 @@ export function MilestonesSection({
           <Plus size={16} />
         </IconButton>
       </SectionHeader>
-      <CollapsibleContent $open={open}>{content}</CollapsibleContent>
+      <CollapsibleContent $open={open} $maxHeightWhenOpen={2000}>{content}</CollapsibleContent>
     </Stack>
   )
 }

@@ -19,6 +19,15 @@ const Header = styled.div`
   flex-shrink: 0;
 `
 
+const CollapseStrip = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: ${(p) => p.theme.spacing[2]}px ${(p) => p.theme.spacing[2]}px ${(p) => p.theme.spacing[1]}px;
+  flex-shrink: 0;
+  border-bottom: 1px solid ${(p) => p.theme.colors.border};
+`
+
 const Content = styled.div`
   flex: 1;
   overflow-y: auto;
@@ -32,19 +41,19 @@ const Footer = styled.div`
 `
 
 export const SidebarSection = styled.div`
-  margin-top: ${(p) => p.theme.spacing[3]}px;
+  margin-top: ${(p) => p.theme.spacing[5]}px;
   &:first-child {
     margin-top: 0;
   }
 `
 
 export const SidebarSectionHeading = styled.div`
-  padding: ${(p) => p.theme.spacing[1]}px ${(p) => p.theme.spacing[2]}px;
-  font-size: 0.75rem;
-  font-weight: 500;
+  padding: ${(p) => p.theme.spacing[2]}px ${(p) => p.theme.spacing[3]}px;
+  font-size: 0.6875rem;
+  font-weight: 600;
   color: ${(p) => p.theme.colors.textMuted};
   text-transform: uppercase;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
 `
 
 const CollapsibleHeading = styled.button`
@@ -52,19 +61,25 @@ const CollapsibleHeading = styled.button`
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: ${(p) => p.theme.spacing[1]}px ${(p) => p.theme.spacing[2]}px;
-  font-size: 0.75rem;
-  font-weight: 500;
+  padding: ${(p) => p.theme.spacing[2]}px ${(p) => p.theme.spacing[3]}px;
+  font-size: 0.6875rem;
+  font-weight: 600;
   color: ${(p) => p.theme.colors.textMuted};
   text-transform: uppercase;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
   background: none;
   border: none;
   cursor: pointer;
   text-align: left;
   svg {
     flex-shrink: 0;
+    opacity: 0.8;
   }
+`
+
+const CollapsibleChildren = styled.div`
+  padding-left: ${(p) => p.theme.spacing[4]}px;
+  padding-top: ${(p) => p.theme.spacing[1]}px;
 `
 
 export const SidebarNavItem = styled.a<{ $active?: boolean }>`
@@ -78,7 +93,7 @@ export const SidebarNavItem = styled.a<{ $active?: boolean }>`
   border-radius: 0 ${(p) => p.theme.radii?.md ?? 6}px ${(p) => p.theme.radii?.md ?? 6}px 0;
   text-decoration: none;
   cursor: pointer;
-  margin-bottom: ${(p) => p.theme.spacing[1]}px;
+  margin-bottom: ${(p) => p.theme.spacing[2]}px;
   transition: background 0.15s, color 0.15s;
   &:hover {
     background: ${(p) => (p.$active ? p.theme.colors.primaryHover : p.theme.colors.surfaceHover)};
@@ -86,6 +101,12 @@ export const SidebarNavItem = styled.a<{ $active?: boolean }>`
   svg {
     flex-shrink: 0;
     color: ${(p) => (p.$active ? '#FFFFFF' : p.theme.colors.textMuted)};
+  }
+  /* Fixed-width icon slot so labels align when expanded */
+  > svg:first-of-type {
+    width: 20px;
+    min-width: 20px;
+    height: 20px;
   }
 `
 
@@ -110,13 +131,15 @@ export function SidebarCollapsibleSection({
   const [open, setOpen] = useState(defaultOpen)
   return (
     <SidebarSection>
-      <CollapsibleHeading type="button" onClick={() => setOpen((o) => !o)}>
+      <CollapsibleHeading type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
         {title}
         <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }}>
           <ChevronDown size={14} />
         </motion.span>
       </CollapsibleHeading>
-      <CollapsibleContent $open={open}>{children}</CollapsibleContent>
+      <CollapsibleContent $open={open}>
+        <CollapsibleChildren>{children}</CollapsibleChildren>
+      </CollapsibleContent>
     </SidebarSection>
   )
 }
@@ -125,15 +148,17 @@ const CollapseToggle = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  padding: ${(p) => p.theme.spacing[2]}px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
   margin: 0;
   background: none;
   border: none;
-  border-top: 1px solid ${(p) => p.theme.colors.border};
+  border-radius: ${(p) => p.theme.radii?.md ?? 6}px;
   cursor: pointer;
   color: ${(p) => p.theme.colors.textMuted};
   flex-shrink: 0;
+  transition: color 0.15s, background 0.15s;
   &:hover {
     color: ${(p) => p.theme.colors.text};
     background: ${(p) => p.theme.colors.surfaceHover};
@@ -162,17 +187,19 @@ export function Sidebar({
   return (
     <StyledSidebar className={className} $collapsed={collapsed}>
       {header != null ? <Header>{header}</Header> : null}
+      {onCollapseToggle != null && (
+        <CollapseStrip>
+          <CollapseToggle
+            type="button"
+            onClick={onCollapseToggle}
+            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {collapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+          </CollapseToggle>
+        </CollapseStrip>
+      )}
       <Content>{children}</Content>
       {footer != null ? <Footer>{footer}</Footer> : null}
-      {onCollapseToggle != null && (
-        <CollapseToggle
-          type="button"
-          onClick={onCollapseToggle}
-          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          {collapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
-        </CollapseToggle>
-      )}
     </StyledSidebar>
   )
 }

@@ -22,5 +22,7 @@
       "@design-system/*": ["src/design-system/*"]
     }
   },
-  "include": ["src"]
+  "include": ["src"],
+  "references": [{ "path": "./api" }],
+  "exclude": ["api"]
 }

@@ -3,14 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom'
 import {
   PageHeader,
   Text,
-  IconButton,
   Avatar,
   Card,
   Flex,
   Stack,
   Tabs,
 } from '@design-system'
-import { MoreHorizontal } from 'lucide-react'
 import { StatusSelector, PrioritySelector } from '../components'
 import { STATUS_OPTIONS } from '../components/StatusSelector'
 import type { StatusOption } from '../components'

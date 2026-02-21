@@ -1,6 +1,9 @@
 import { Navigate, Route, Routes, useParams } from 'react-router-dom'
 import {
+  AuthGate,
   MainLayout,
+  LoginScreen,
+  SignupScreen,
   InboxScreen,
   MyIssuesScreen,
   WorkspaceProjectsScreen,
@@ -16,6 +19,7 @@ import {
   TeamLogsScreenWrapper,
   ShowcaseComponents,
 } from '../pages'
+import { LandingPage } from '../landing'
 
 function RedirectToTeamIssues() {
   const { teamId } = useParams<{ teamId: string }>()
@@ -25,8 +29,18 @@ function RedirectToTeamIssues() {
 export function AppRoutes() {
   return (
     <Routes>
+      <Route path="/landing" element={<LandingPage />} />
       <Route path="/showcase" element={<ShowcaseComponents />} />
-      <Route path="/" element={<MainLayout />}>
+      <Route path="/login" element={<LoginScreen />} />
+      <Route path="/signup" element={<SignupScreen />} />
+      <Route
+        path="/"
+        element={
+          <AuthGate>
+            <MainLayout />
+          </AuthGate>
+        }
+      >
         <Route index element={<Navigate to="/team/Test94" replace />} />
         <Route path="inbox" element={<InboxScreen />} />
         <Route path="my-issues" element={<MyIssuesScreen />} />

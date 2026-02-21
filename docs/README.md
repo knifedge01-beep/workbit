@@ -2,6 +2,12 @@
 
 Documentation for the Workbit project.
 
+## Data & API
+
+- **GraphQL (reads):** The frontend uses **Relay** for all GraphQL fetch. Run `npm run relay` after adding or changing queries. See `schema.graphql` and `src/relay/`.
+- **REST (writes):** Mutations (create/update/delete) use REST as per [API_AND_SERVICES_SPEC.md](./API_AND_SERVICES_SPEC.md).
+- **Env:** Set `VITE_GRAPHQL_URL` (see `.env.example`) when a GraphQL server is available.
+
 ## Design System
 
 - **[DESIGN_SYSTEM.md](./DESIGN_SYSTEM.md)** – Reference for `src/design-system` components (imports, props, usage).

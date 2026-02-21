@@ -1,0 +1,163 @@
+# Minimal schema for Relay compiler; matches API_AND_SERVICES_SPEC.md.
+# Replace or point to backend schema when GraphQL server is added.
+
+type Query {
+  workspace: Workspace!
+  me: User!
+  team(id: ID!): Team
+  statusUpdate(id: ID!): StatusUpdate
+}
+
+type User {
+  id: ID!
+  name: String!
+  avatarSrc: String
+  assignedIssues: [Issue!]!
+  notifications(first: Int): NotificationConnection!
+  teams: [Team!]!
+}
+
+type Workspace {
+  projects: [Project!]!
+  teams: [Team!]!
+  members: [Member!]!
+  views: [View!]!
+  roles: [Role!]!
+}
+
+type Project {
+  id: ID!
+  name: String!
+  team: Team!
+  status: String!
+}
+
+type Team {
+  id: ID!
+  name: String!
+  memberCount: Int
+  project: TeamProject
+  views: [View!]!
+  logs(first: Int): LogConnection
+  issues(filter: IssueFilter): [Issue!]!
+}
+
+type TeamProject {
+  id: ID!
+  statusUpdates(first: Int): StatusUpdateConnection!
+  properties: ProjectProperties!
+  milestones: [Milestone!]!
+  activity: [ActivityItem!]!
+}
+
+type StatusUpdateConnection {
+  nodes: [StatusUpdate!]!
+}
+
+type StatusUpdate {
+  id: ID!
+  status: String!
+  content: String!
+  author: User!
+  createdAt: String!
+  commentCount: Int!
+  comments: [StatusUpdateComment!]!
+}
+
+type StatusUpdateComment {
+  id: ID!
+  authorName: String!
+  authorAvatarSrc: String
+  content: String!
+  timestamp: String!
+}
+
+type ProjectProperties {
+  status: String
+  priority: String
+  lead: User
+  startDate: String
+  endDate: String
+  teamIds: [ID!]
+  labelIds: [ID!]
+}
+
+type Milestone {
+  id: ID!
+  name: String!
+  progress: Int!
+  total: Int!
+  targetDate: String!
+}
+
+type ActivityItem {
+  id: ID!
+  icon: String!
+  message: String!
+  date: String!
+}
+
+type LogConnection {
+  nodes: [LogEntry!]!
+}
+
+type LogEntry {
+  id: ID!
+  action: String!
+  actor: User!
+  timestamp: String!
+  details: String
+}
+
+input IssueFilter {
+  tab: String
+}
+
+type Issue {
+  id: ID!
+  title: String!
+  assignee: User
+  date: String!
+  status: String!
+  team: Team
+  project: Project
+}
+
+type Member {
+  id: ID!
+  name: String!
+  username: String!
+  avatarSrc: String
+  status: String!
+  joined: String!
+  teams: [Team!]!
+}
+
+type View {
+  id: ID!
+  name: String!
+  type: String!
+  owner: User!
+}
+
+type Role {
+  id: ID!
+  role: String!
+  memberCount: Int!
+  description: String!
+}
+
+type NotificationConnection {
+  nodes: [Notification!]!
+}
+
+type Notification {
+  id: ID!
+  type: String!
+  title: String!
+  body: String!
+  read: Boolean!
+  createdAt: String!
+  actor: User!
+  targetUrl: String
+}

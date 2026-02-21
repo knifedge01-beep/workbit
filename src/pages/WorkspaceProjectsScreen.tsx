@@ -2,6 +2,10 @@ import { PageHeader, Stack } from '@design-system'
 import { ProjectsTable } from '../components'
 import type { ProjectTableRow } from '../components'
 
+// TODO: When GraphQL endpoint is available (VITE_GRAPHQL_URL), use Relay:
+// useLazyLoadQuery(WorkspaceProjectsQuery) from '../relay/queries/WorkspaceProjectsQuery'
+// and map workspace.projects to ProjectTableRow (team.name -> row.team).
+
 const SAMPLE_PROJECTS: ProjectTableRow[] = [
   { id: '1', name: 'TES', team: 'Test94', status: 'Active' },
   { id: '2', name: 'Design system', team: 'Design', status: 'Active' },

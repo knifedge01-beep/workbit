@@ -10,8 +10,10 @@ import {
   Stack,
   Tabs,
 } from '@design-system'
-import { Circle, MoreHorizontal } from 'lucide-react'
-import { StatusSelector } from '../components'
+import { MoreHorizontal } from 'lucide-react'
+import { StatusSelector, PrioritySelector } from '../components'
+import { STATUS_OPTIONS } from '../components/StatusSelector'
+import type { StatusOption } from '../components'
 import { DEMO_ISSUES } from '../constants'
 import type { Issue } from '../constants'
 
@@ -36,11 +38,27 @@ export function TeamIssuesScreen({ teamName }: Props) {
     )
   }
 
+  const updateIssuePriority = (issueId: string, priority: string) => {
+    setIssues((prev) =>
+      prev.map((i) => (i.id === issueId ? { ...i, priority } : i))
+    )
+  }
+
   const handleTabChange = (id: string) => {
     if (teamId && isValidTab(id)) {
       navigate(`/team/${teamId}/issues/${id}`)
     }
   }
+
+  const statusCounts = issues.reduce<Record<string, number>>((acc, issue) => {
+    const status = issue.status ?? 'todo'
+    acc[status] = (acc[status] ?? 0) + 1
+    return acc
+  }, {})
+
+  const statusSummary = STATUS_OPTIONS.filter(
+    (opt: StatusOption) => (statusCounts[opt.id] ?? 0) > 0
+  ).map((opt: StatusOption) => `${statusCounts[opt.id]} ${opt.label}`)
 
   return (
     <Stack gap={4}>
@@ -57,19 +75,24 @@ export function TeamIssuesScreen({ teamName }: Props) {
         />
       </Flex>
 
-      <Flex align="center" gap={2}>
-        <Circle size={16} style={{ opacity: 0.6 }} />
-        <Text size="sm">Todo</Text>
-        <Text size="sm" muted>{issues.length}</Text>
+      <Flex align="center" gap={2} wrap>
+        {statusSummary.map((part: string, i: number) => (
+          <Flex key={i} align="center" gap={1}>
+            {i > 0 && <Text size="sm" muted>·</Text>}
+            <Text size="sm" muted>{part}</Text>
+          </Flex>
+        ))}
       </Flex>
 
       <Stack gap={1}>
         {issues.map((issue) => (
           <Card key={issue.id}>
             <Flex align="center" gap={2}>
-              <IconButton aria-label="Menu">
-                <MoreHorizontal size={16} />
-              </IconButton>
+              <PrioritySelector
+                triggerVariant="icon"
+                value={issue.priority ?? 'medium'}
+                onChange={(priority) => updateIssuePriority(issue.id, priority)}
+              />
               <StatusSelector
                 triggerVariant="icon"
                 value={issue.status ?? 'todo'}

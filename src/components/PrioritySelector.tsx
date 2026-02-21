@@ -21,29 +21,31 @@ const defaultPriorities: PriorityOption[] = [
   { id: 'urgent', label: 'Urgent', icon: <AlertCircle size={16} style={{ color: 'var(--priority-urgent, #EF4444)' }} /> },
 ]
 
-const Wrapper = styled.div`
+const Wrapper = styled.div<{ $iconOnly?: boolean }>`
   position: relative;
   display: inline-block;
-  min-width: 120px;
+  min-width: ${(p) => (p.$iconOnly ? 'auto' : '120px')};
 `
 
-const Trigger = styled.button`
+const Trigger = styled.button<{ $iconOnly?: boolean }>`
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: ${(p) => (p.$iconOnly ? 'center' : 'flex-start')};
   gap: ${(p) => p.theme.spacing[2]}px;
-  width: 100%;
-  padding: ${(p) => p.theme.spacing[1]}px ${(p) => p.theme.spacing[2]}px;
+  width: ${(p) => (p.$iconOnly ? 'auto' : '100%')};
+  padding: ${(p) => (p.$iconOnly ? p.theme.spacing[1] : p.theme.spacing[1])}px
+    ${(p) => (p.$iconOnly ? p.theme.spacing[1] : p.theme.spacing[2])}px;
   font-size: 0.875rem;
   color: ${(p) => p.theme.colors.text};
-  background: ${(p) => p.theme.colors.surface};
-  border: 1px solid ${(p) => p.theme.colors.border};
+  background: ${(p) => (p.$iconOnly ? 'transparent' : p.theme.colors.surface)};
+  border: ${(p) => (p.$iconOnly ? 'none' : `1px solid ${p.theme.colors.border}`)};
   border-radius: ${(p) => p.theme.radii?.md ?? 6}px;
   cursor: pointer;
   text-align: left;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, background 0.15s;
   &:hover {
-    border-color: ${(p) => p.theme.colors.borderFocus};
+    border-color: ${(p) => (p.$iconOnly ? 'transparent' : p.theme.colors.borderFocus)};
+    background: ${(p) => (p.$iconOnly ? p.theme.colors.surfaceHover : 'inherit')};
   }
   svg {
     flex-shrink: 0;
@@ -110,6 +112,8 @@ type Props = {
   onChange?: (value: string) => void
   placeholder?: string
   options?: PriorityOption[]
+  /** When true, trigger shows only the priority icon (for use in issue cards). */
+  triggerVariant?: 'default' | 'icon'
   className?: string
 }
 
@@ -118,10 +122,12 @@ export function PrioritySelector({
   onChange,
   placeholder = 'Priority',
   options = defaultPriorities,
+  triggerVariant = 'default',
   className,
 }: Props) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const iconOnly = triggerVariant === 'icon'
 
   useEffect(() => {
     if (!open) return
@@ -135,20 +141,23 @@ export function PrioritySelector({
   const selected = options.find((o) => o.id === value)
 
   return (
-    <Wrapper ref={ref} className={className}>
+    <Wrapper ref={ref} className={className} $iconOnly={iconOnly}>
       <Trigger
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-label={selected ? selected.label : placeholder}
+        $iconOnly={iconOnly}
       >
         {selected ? (
           <ItemIcon>{selected.icon}</ItemIcon>
         ) : (
           <ItemIcon>{defaultPriorities[0].icon}</ItemIcon>
         )}
-        <span style={{ color: selected ? undefined : 'var(--text-muted, #64748b)' }}>
-          {selected ? selected.label : placeholder}
-        </span>
+        {!iconOnly && (
+          <span style={{ color: selected ? undefined : 'var(--text-muted, #64748b)' }}>
+            {selected ? selected.label : placeholder}
+          </span>
+        )}
       </Trigger>
       {open && (
         <Panel>

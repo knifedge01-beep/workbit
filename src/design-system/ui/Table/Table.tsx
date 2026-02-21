@@ -54,7 +54,7 @@ const SortButton = styled.button`
   }
 `
 
-const BodyRow = styled.div`
+const BodyRow = styled.div<{ $clickable?: boolean }>`
   display: flex;
   align-items: center;
   gap: ${(p) => p.theme.spacing[4]}px;
@@ -63,9 +63,17 @@ const BodyRow = styled.div`
   color: ${(p) => p.theme.colors.text};
   border-bottom: 1px solid ${(p) => p.theme.colors.border};
   min-height: 56px;
+  ${(p) => p.$clickable && 'cursor: pointer;'}
   &:last-child {
     border-bottom: none;
   }
+  ${(p) =>
+    p.$clickable &&
+    `
+  &:hover {
+    background: ${p.theme.colors.backgroundSubtle ?? p.theme.colors.background};
+  }
+  `}
 `
 
 const BodyCell = styled.div<{ $flex?: number }>`
@@ -91,6 +99,8 @@ type TableProps<T> = {
   enableSorting?: boolean
   /** Initial sorting state. */
   initialState?: { sorting: SortingState }
+  /** Called when a row is clicked. When provided, rows are visually clickable. */
+  onRowClick?: (row: T) => void
   className?: string
 }
 
@@ -99,6 +109,7 @@ export function Table<T>({
   data,
   enableSorting = false,
   initialState,
+  onRowClick,
   className,
 }: TableProps<T>) {
   const [sorting, setSorting] = useState<SortingState>(initialState?.sorting ?? [])
@@ -154,7 +165,12 @@ export function Table<T>({
       ))}
       <div role="rowgroup">
         {rows.map((row) => (
-          <BodyRow key={row.id} role="row">
+          <BodyRow
+            key={row.id}
+            role="row"
+            $clickable={Boolean(onRowClick)}
+            onClick={onRowClick ? () => onRowClick(row.original) : undefined}
+          >
             {row.getVisibleCells().map((cell) => {
               const meta = cell.column.columnDef.meta
               const flex = meta?.flex ?? 1

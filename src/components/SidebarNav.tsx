@@ -107,7 +107,8 @@ export function SidebarNav({ selectedTeam, collapsed = false }: Props) {
     path === `/team/${teamId}` ||
     path === `/team/${teamId}/` ||
     (teamId != null && path.startsWith(`/team/${teamId}/issues`))
-  const isTeamProjects = (path: string) => path === `/team/${teamId}/projects`
+  const isTeamProjects = (path: string) =>
+    teamId != null && (path === `/team/${teamId}/projects` || path.startsWith(`/team/${teamId}/projects/`))
   const isTeamViews = (path: string) => path === `/team/${teamId}/views`
   const isTeamLogs = (path: string) => path === `/team/${teamId}/logs`
   const isOnTeam = location.pathname.startsWith(`/team/${selectedTeam.id}`)

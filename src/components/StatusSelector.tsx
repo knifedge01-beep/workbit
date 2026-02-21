@@ -18,7 +18,8 @@ export type StatusOption = {
   shortcut?: number
 }
 
-const defaultStatuses: StatusOption[] = [
+/** Exported for status count summaries (e.g. issue list headers). */
+export const STATUS_OPTIONS: StatusOption[] = [
   { id: 'backlog', label: 'Backlog', icon: <Loader2 size={16} />, shortcut: 1 },
   { id: 'todo', label: 'Todo', icon: <Circle size={16} />, shortcut: 2 },
   {
@@ -181,7 +182,7 @@ export function StatusSelector({
   value,
   onChange,
   placeholder = 'Change status...',
-  options = defaultStatuses,
+  options = STATUS_OPTIONS,
   triggerVariant = 'default',
   className,
 }: Props) {

@@ -11,6 +11,7 @@ import {
   WorkspaceRolesScreen,
   TeamIssuesScreenWrapper,
   TeamProjectsScreenWrapper,
+  TeamProjectDetailScreenWrapper,
   TeamViewsScreenWrapper,
   TeamLogsScreenWrapper,
   ShowcaseComponents,
@@ -38,6 +39,7 @@ export function AppRoutes() {
         <Route path="team/:teamId" element={<RedirectToTeamIssues />} />
         <Route path="team/:teamId/issues/:tab" element={<TeamIssuesScreenWrapper />} />
         <Route path="team/:teamId/projects" element={<TeamProjectsScreenWrapper />} />
+        <Route path="team/:teamId/projects/:projectId" element={<TeamProjectDetailScreenWrapper />} />
         <Route path="team/:teamId/views" element={<TeamViewsScreenWrapper />} />
         <Route path="team/:teamId/logs" element={<TeamLogsScreenWrapper />} />
       </Route>

@@ -1,4 +1,4 @@
-export { StatusSelector, type StatusOption } from './StatusSelector'
+export { StatusSelector, STATUS_OPTIONS, type StatusOption } from './StatusSelector'
 export { PrioritySelector, type PriorityOption } from './PrioritySelector'
 export { SidebarNav, SidebarFooter } from './SidebarNav'
 export { WhatsNewCard } from './WhatsNewCard'

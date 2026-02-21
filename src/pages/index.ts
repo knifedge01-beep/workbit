@@ -10,6 +10,7 @@ export { WorkspaceRolesScreen } from './WorkspaceRolesScreen'
 export {
   TeamIssuesScreenWrapper,
   TeamProjectsScreenWrapper,
+  TeamProjectDetailScreenWrapper,
   TeamViewsScreenWrapper,
   TeamLogsScreenWrapper,
 } from './TeamRouteWrappers'

@@ -1,133 +1,122 @@
-import { useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import styled from 'styled-components'
-import { PageHeader, Stack } from '@design-system'
-import type { ChatMessage, ChatUser } from '@design-system'
-import {
-  MilestoneForm,
-  ProjectStatusPanel,
-  StatusUpdateCard,
-  StatusUpdateComposer,
-} from '../components'
-import type { StatusUpdateCardData, ProjectStatus } from '../components'
-import { noop } from '../utils/noop'
+import { PageHeader, Stack, Table, Text } from '@design-system'
+import type { ColumnDef } from '@design-system'
 
-type Props = { teamName: string }
+export type TeamProjectRow = {
+  id: string
+  name: string
+  status: string
+}
 
-const DEFAULT_CURRENT_USER: ChatUser = { name: 'You' }
+/* Mock projects per team for demo. In production, fetch by teamId. */
+const MOCK_TEAM_PROJECTS: Record<string, TeamProjectRow[]> = {
+  Test94: [
+    { id: 'tes', name: 'TES', status: 'Active' },
+    { id: 'onboarding', name: 'Onboarding', status: 'In progress' },
+  ],
+  Design: [
+    { id: 'design-system', name: 'Design system', status: 'Active' },
+    { id: 'brand', name: 'Brand refresh', status: 'Planning' },
+  ],
+  Engineering: [
+    { id: 'platform', name: 'Platform', status: 'In progress' },
+    { id: 'api-v2', name: 'API v2', status: 'Active' },
+  ],
+}
 
-/* Break out of main's top/bottom padding so the panel can fill full viewport height */
-const MAIN_PADDING = 24
-
-const Layout = styled.div`
+const SectionHeader = styled.header`
   display: flex;
-  gap: ${(p) => p.theme.spacing[4]}px;
-  flex: 1;
-  min-height: calc(100% + ${MAIN_PADDING * 2}px);
-  margin: -${MAIN_PADDING}px 0;
-  align-items: stretch;
+  align-items: center;
+  justify-content: space-between;
+  gap: ${(p) => p.theme.spacing[3]}px;
+  padding-bottom: ${(p) => p.theme.spacing[2]}px;
+  margin-bottom: 0;
+  border-bottom: 1px solid ${(p) => p.theme.colors.border};
 `
 
-const MainContent = styled.div`
-  flex: 1;
-  min-width: 0;
+const TitleBlock = styled.div`
   display: flex;
-  flex-direction: column;
-  gap: 0;
-  overflow-y: auto;
-  padding: ${MAIN_PADDING}px;
+  align-items: baseline;
+  gap: ${(p) => p.theme.spacing[2]}px;
 `
 
-const Sidebar = styled.aside`
-  width: 380px;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  border-left: 1px solid ${(p) => p.theme.colors.border};
-  background: ${(p) => p.theme.colors.backgroundSubtle ?? p.theme.colors.background};
-  overflow-y: auto;
-  /* Align "Project status" title with PageHeader title: same top offset (main padding + header padding) */
-  padding: ${(p) => MAIN_PADDING + p.theme.spacing[4]}px ${(p) => p.theme.spacing[3]}px ${MAIN_PADDING}px;
-`
-
-const SidebarTitle = styled.h2`
-  margin: 0 0 ${(p) => p.theme.spacing[2]}px;
-  font-size: 0.9375rem;
+const Title = styled.h2`
+  margin: 0;
+  font-size: 1rem;
   font-weight: 600;
   color: ${(p) => p.theme.colors.text};
 `
 
+const Count = styled.span`
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: ${(p) => p.theme.colors.textMuted};
+`
+
+function createColumns(): ColumnDef<TeamProjectRow, unknown>[] {
+  return [
+    {
+      id: 'name',
+      accessorKey: 'name',
+      header: 'Project',
+      enableSorting: true,
+      meta: { flex: 1.5 },
+      cell: ({ row }) => (
+        <Text size="sm" as="span">
+          {row.original.name}
+        </Text>
+      ),
+    },
+    {
+      id: 'status',
+      accessorKey: 'status',
+      header: 'Status',
+      enableSorting: true,
+      meta: { flex: 1 },
+      cell: ({ row }) => (
+        <Text size="sm" as="span">
+          {row.original.status}
+        </Text>
+      ),
+    },
+  ]
+}
+
+const columns = createColumns()
+
+type Props = { teamName: string }
+
 export function TeamProjectsScreen({ teamName }: Props) {
-  const [targetDate, setTargetDate] = useState<Date | undefined>(undefined)
-  const [latestUpdate, setLatestUpdate] = useState<StatusUpdateCardData | null>(null)
-  const [commentsByUpdateId, setCommentsByUpdateId] = useState<Record<string, ChatMessage[]>>({})
+  const { teamId } = useParams<{ teamId: string }>()
+  const navigate = useNavigate()
+  const projects = (teamId ? MOCK_TEAM_PROJECTS[teamId] : undefined) ?? []
 
-  const handlePostUpdate = (content: string, status: ProjectStatus) => {
-    const id = `update-${Date.now()}`
-    setLatestUpdate({
-      id,
-      status,
-      authorName: 'You',
-      timestamp: 'just now',
-      content,
-      commentCount: 0,
-    })
-  }
-
-  const handleSendComment = (updateId: string) => (text: string) => {
-    const newComment: ChatMessage = {
-      id: `comment-${Date.now()}`,
-      authorName: DEFAULT_CURRENT_USER.name,
-      timestamp: 'just now',
-      content: text,
+  const handleRowClick = (row: TeamProjectRow) => {
+    if (teamId) {
+      navigate(`/team/${teamId}/projects/${row.id}`)
     }
-    setCommentsByUpdateId((prev) => ({
-      ...prev,
-      [updateId]: [...(prev[updateId] ?? []), newComment],
-    }))
-    setLatestUpdate((prev) =>
-      prev && prev.id === updateId
-        ? { ...prev, commentCount: (prev.commentCount ?? 0) + 1 }
-        : prev
-    )
   }
 
   return (
-    <Layout>
-      <MainContent>
-        <Stack gap={4}>
-          <PageHeader title={`${teamName} – Projects`} summary="Projects for this team." />
+    <Stack gap={4}>
+      <PageHeader title={`${teamName} – Projects`} summary="Projects for this team." />
 
-          <Stack gap={3}>
-            {latestUpdate && (
-              <StatusUpdateCard
-                data={latestUpdate}
-                comments={commentsByUpdateId[latestUpdate.id]}
-                currentUser={DEFAULT_CURRENT_USER}
-                onSendComment={handleSendComment(latestUpdate.id)}
-                onMore={noop}
-              />
-            )}
-            <StatusUpdateComposer
-              placeholder="Write a project update..."
-              onPost={handlePostUpdate}
-              onChooseFile={noop}
-              onCreateDocument={noop}
-              onAddLink={noop}
-            />
-          </Stack>
-
-          <MilestoneForm
-            targetDate={targetDate}
-            onTargetDateChange={setTargetDate}
-          />
-        </Stack>
-      </MainContent>
-
-      <Sidebar>
-        <SidebarTitle>Project status</SidebarTitle>
-        <ProjectStatusPanel />
-      </Sidebar>
-    </Layout>
+      <section>
+        <SectionHeader>
+          <TitleBlock>
+            <Title>Projects</Title>
+            <Count>{projects.length}</Count>
+          </TitleBlock>
+        </SectionHeader>
+        <Table<TeamProjectRow>
+          columns={columns}
+          data={projects}
+          enableSorting
+          onRowClick={handleRowClick}
+          initialState={{ sorting: [{ id: 'name', desc: false }] }}
+        />
+      </section>
+    </Stack>
   )
 }

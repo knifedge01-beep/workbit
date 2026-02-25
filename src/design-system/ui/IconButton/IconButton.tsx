@@ -1,6 +1,7 @@
 import styled from 'styled-components'
+import { motion } from 'framer-motion'
 
-const StyledIconButton = styled.button`
+const StyledIconButton = styled(motion.button)`
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -40,6 +41,9 @@ export function IconButton({
       onClick={onClick}
       disabled={disabled}
       className={className}
+      whileTap={{ scale: 0.88 }}
+      whileHover={{ scale: 1.08 }}
+      transition={{ duration: 0.12 }}
     >
       {children}
     </StyledIconButton>

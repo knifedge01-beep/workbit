@@ -1,5 +1,5 @@
-import { Plus, Bell } from 'lucide-react'
-import { IconButton, Search } from '@design-system'
+import { Bell, Search as SearchIcon } from 'lucide-react'
+import { IconButton, Avatar } from '@design-system'
 import { TeamDropdown } from './TeamDropdown'
 import type { Team } from '../constants'
 
@@ -12,18 +12,20 @@ export function NavbarLeft({ teams, selectedTeam }: Props) {
   return (
     <>
       <TeamDropdown teams={teams} selectedTeam={selectedTeam} />
-      <Search variant="expandable" placeholder="Search..." expandedWidth={200} />
-      <IconButton aria-label="Create new">
-        <Plus size={18} />
-      </IconButton>
     </>
   )
 }
 
 export function NavbarRight() {
   return (
-    <IconButton aria-label="Notifications">
-      <Bell size={18} />
-    </IconButton>
+    <>
+      <IconButton aria-label="Search">
+        <SearchIcon size={16} />
+      </IconButton>
+      <IconButton aria-label="Notifications">
+        <Bell size={16} />
+      </IconButton>
+      <Avatar name="User" size={24} />
+    </>
   )
 }

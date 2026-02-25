@@ -16,18 +16,34 @@ const Left = styled.div<{ $variant: 'light' | 'dark' }>`
   align-items: center;
   gap: ${(p) => p.theme.spacing[3]}px;
   color: ${(p) => (p.$variant === 'dark' ? '#FFFFFF' : 'inherit')};
-  a { color: inherit; }
+  flex: 1;
+  a {
+    color: inherit;
+  }
+`
+
+const Center = styled.div<{ $variant: 'light' | 'dark' }>`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  color: ${(p) => (p.$variant === 'dark' ? '#FFFFFF' : 'inherit')};
+  font-weight: 500;
+  font-size: 14px;
 `
 
 const Right = styled.div<{ $variant: 'light' | 'dark' }>`
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: ${(p) => p.theme.spacing[2]}px;
   color: ${(p) => (p.$variant === 'dark' ? '#FFFFFF' : 'inherit')};
+  flex: 1;
 `
 
 type Props = {
   left?: React.ReactNode
+  center?: React.ReactNode
   right?: React.ReactNode
   children?: React.ReactNode
   /** White (default) or dark (#2C3042) background */
@@ -37,6 +53,7 @@ type Props = {
 
 export function Navbar({
   left,
+  center,
   right,
   children,
   variant = 'light',
@@ -44,7 +61,10 @@ export function Navbar({
 }: Props) {
   return (
     <StyledNavbar className={className} $variant={variant}>
-      {(left ?? children) != null && <Left $variant={variant}>{left ?? children}</Left>}
+      {(left ?? children) != null && (
+        <Left $variant={variant}>{left ?? children}</Left>
+      )}
+      {center != null && <Center $variant={variant}>{center}</Center>}
       {right != null && <Right $variant={variant}>{right}</Right>}
     </StyledNavbar>
   )

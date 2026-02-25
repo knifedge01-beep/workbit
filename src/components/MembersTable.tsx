@@ -1,7 +1,17 @@
+import { useState } from 'react'
 import styled from 'styled-components'
-import { UserPlus, Plus } from 'lucide-react'
-import { Table, Avatar, Badge, Button, Text } from '@design-system'
+import {
+  Search,
+  UserPlus,
+  Users,
+  MoreHorizontal,
+  Eye,
+  Shield,
+  UserMinus,
+} from 'lucide-react'
+import { Table, Avatar, Badge, Button, Text, Menu } from '@design-system'
 import type { ColumnDef } from '@design-system'
+import type { MenuEntry } from '@design-system'
 
 export type MemberRow = {
   id: string
@@ -13,14 +23,46 @@ export type MemberRow = {
   teams: string
 }
 
+const Toolbar = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${(p) => p.theme.spacing[2]}px;
+  margin-bottom: ${(p) => p.theme.spacing[3]}px;
+`
+
+const SearchBox = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  background: ${(p) => p.theme.colors.backgroundSubtle};
+  border: 1px solid ${(p) => p.theme.colors.border};
+  border-radius: ${(p) => p.theme.radii?.sm ?? 4}px;
+  flex: 1;
+  max-width: 280px;
+  input {
+    border: none;
+    background: transparent;
+    outline: none;
+    font-size: 13px;
+    color: ${(p) => p.theme.colors.text};
+    width: 100%;
+    &::placeholder {
+      color: ${(p) => p.theme.colors.textMuted};
+    }
+  }
+  svg {
+    color: ${(p) => p.theme.colors.textMuted};
+    flex-shrink: 0;
+  }
+`
+
 const SectionHeader = styled.header`
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: ${(p) => p.theme.spacing[3]}px;
-  padding-bottom: ${(p) => p.theme.spacing[2]}px;
-  margin-bottom: 0;
-  border-bottom: 1px solid ${(p) => p.theme.colors.border};
+  margin-bottom: ${(p) => p.theme.spacing[2]}px;
 `
 
 const TitleBlock = styled.div`
@@ -31,13 +73,13 @@ const TitleBlock = styled.div`
 
 const Title = styled.h2`
   margin: 0;
-  font-size: 1rem;
+  font-size: 14px;
   font-weight: 600;
   color: ${(p) => p.theme.colors.text};
 `
 
 const Count = styled.span`
-  font-size: 0.875rem;
+  font-size: 13px;
   font-weight: 400;
   color: ${(p) => p.theme.colors.textMuted};
 `
@@ -45,19 +87,19 @@ const Count = styled.span`
 const NameCell = styled.div`
   display: flex;
   align-items: center;
-  gap: ${(p) => p.theme.spacing[2]}px;
+  gap: 8px;
   min-width: 0;
 `
 
 const NameBlock = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
   min-width: 0;
 `
 
 const MemberName = styled.span`
-  font-size: 0.875rem;
+  font-size: 14px;
   font-weight: 500;
   color: ${(p) => p.theme.colors.text};
 `
@@ -66,12 +108,59 @@ const TeamsCell = styled.div`
   display: flex;
   align-items: center;
   gap: ${(p) => p.theme.spacing[1]}px;
-  color: ${(p) => p.theme.colors.text};
+  color: ${(p) => p.theme.colors.textMuted};
+  font-size: 13px;
   svg {
-    color: ${(p) => p.theme.colors.textMuted};
     flex-shrink: 0;
   }
 `
+
+const ActionsCell = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.15s;
+`
+
+const MoreBtn = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: none;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  color: ${(p) => p.theme.colors.textMuted};
+  &:hover {
+    background: ${(p) => p.theme.colors.surfaceHover};
+    color: ${(p) => p.theme.colors.text};
+  }
+`
+
+const MEMBER_MENU_ITEMS: MenuEntry[] = [
+  {
+    id: 'view',
+    label: 'View profile',
+    icon: <Eye size={16} />,
+    onClick: () => {},
+  },
+  {
+    id: 'role',
+    label: 'Change role',
+    icon: <Shield size={16} />,
+    onClick: () => {},
+  },
+  { type: 'divider' },
+  {
+    id: 'remove',
+    label: 'Remove from workspace',
+    icon: <UserMinus size={16} />,
+    onClick: () => {},
+  },
+]
 
 function createColumns(): ColumnDef<MemberRow, unknown>[] {
   return [
@@ -85,10 +174,10 @@ function createColumns(): ColumnDef<MemberRow, unknown>[] {
         const { name, username, avatarSrc } = row.original
         return (
           <NameCell>
-            <Avatar name={name} src={avatarSrc} size={40} />
+            <Avatar name={name} src={avatarSrc} size={28} />
             <NameBlock>
               <MemberName>{name}</MemberName>
-              <Text size="sm" muted as="span">
+              <Text size="xs" muted as="span">
                 {username}
               </Text>
             </NameBlock>
@@ -99,10 +188,10 @@ function createColumns(): ColumnDef<MemberRow, unknown>[] {
     {
       id: 'status',
       accessorKey: 'status',
-      header: 'Status',
-      meta: { flex: 0.8 },
+      header: 'Role',
+      meta: { flex: 0.7 },
       cell: ({ row }) => (
-        <Badge variant="solid" color="blue" size="small">
+        <Badge variant="light" color="grey" size="small">
           {row.original.status}
         </Badge>
       ),
@@ -111,9 +200,9 @@ function createColumns(): ColumnDef<MemberRow, unknown>[] {
       id: 'joined',
       accessorKey: 'joined',
       header: 'Joined',
-      meta: { flex: 0.8 },
+      meta: { flex: 0.7 },
       cell: ({ row }) => (
-        <Text size="sm" as="span">
+        <Text size="xs" muted as="span">
           {row.original.joined}
         </Text>
       ),
@@ -122,14 +211,29 @@ function createColumns(): ColumnDef<MemberRow, unknown>[] {
       id: 'teams',
       accessorKey: 'teams',
       header: 'Teams',
-      meta: { flex: 1 },
+      meta: { flex: 0.8 },
       cell: ({ row }) => (
         <TeamsCell>
-          <UserPlus size={14} />
-          <Text size="sm" as="span">
-            {row.original.teams}
-          </Text>
+          <Users size={12} />
+          <span>{row.original.teams}</span>
         </TeamsCell>
+      ),
+    },
+    {
+      id: 'actions',
+      header: '',
+      meta: { flex: 0.3 },
+      cell: () => (
+        <ActionsCell className="member-actions">
+          <Menu
+            trigger={
+              <MoreBtn aria-label="More options">
+                <MoreHorizontal size={14} />
+              </MoreBtn>
+            }
+            items={MEMBER_MENU_ITEMS}
+          />
+        </ActionsCell>
       ),
     },
   ]
@@ -144,6 +248,15 @@ type Props = {
 }
 
 export function MembersTable({ members, onInvite, className }: Props) {
+  const [query, setQuery] = useState('')
+  const filtered = query
+    ? members.filter(
+        (m) =>
+          m.name.toLowerCase().includes(query.toLowerCase()) ||
+          m.username.toLowerCase().includes(query.toLowerCase())
+      )
+    : members
+
   return (
     <section className={className}>
       <SectionHeader>
@@ -152,15 +265,25 @@ export function MembersTable({ members, onInvite, className }: Props) {
           <Count>{members.length}</Count>
         </TitleBlock>
         {onInvite && (
-          <Button variant="ghost" size="sm" onClick={onInvite}>
-            <Plus size={16} />
+          <Button variant="primary" size="sm" onClick={onInvite}>
+            <UserPlus size={14} />
             Invite
           </Button>
         )}
       </SectionHeader>
+      <Toolbar>
+        <SearchBox>
+          <Search size={13} />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search members..."
+          />
+        </SearchBox>
+      </Toolbar>
       <Table<MemberRow>
         columns={columns}
-        data={members}
+        data={filtered}
         enableSorting
         initialState={{ sorting: [{ id: 'name', desc: false }] }}
       />

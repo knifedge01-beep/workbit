@@ -1,18 +1,31 @@
-import { PageHeader, Stack } from '@design-system'
+import { PageHeader, Stack, Text } from '@design-system'
 import { ViewsTable } from '../components'
 import type { ViewTableRow } from '../components'
-
-const SAMPLE_VIEWS: ViewTableRow[] = [
-  { id: '1', name: 'Active issues', type: 'List', owner: 'You' },
-  { id: '2', name: 'My backlog', type: 'Board', owner: 'You' },
-  { id: '3', name: 'Team roadmap', type: 'Roadmap', owner: 'Manoj Bhat' },
-]
+import { fetchWorkspaceViews } from '../api/client'
+import { useFetch } from '../hooks/useFetch'
 
 export function WorkspaceViewsScreen() {
+  const { data, loading, error } = useFetch(fetchWorkspaceViews)
+
+  const views: ViewTableRow[] = (data ?? []).map((v) => ({
+    id: v.id,
+    name: v.name,
+    type: v.type,
+    owner: v.owner?.name ?? '',
+  }))
+
   return (
     <Stack gap={4}>
-      <PageHeader title="Workspace views" summary="Saved views across the workspace." />
-      <ViewsTable views={SAMPLE_VIEWS} />
+      <PageHeader
+        title="Workspace views"
+        summary="Saved views across the workspace."
+      />
+      {error && (
+        <Text size="sm" muted>
+          Failed to load views: {error}
+        </Text>
+      )}
+      {!loading && <ViewsTable views={views} />}
     </Stack>
   )
 }

@@ -25,12 +25,23 @@ export function TeamProjectsScreenWrapper() {
 }
 
 export function TeamProjectDetailScreenWrapper() {
-  const { teamId, projectId } = useParams<{ teamId: string; projectId: string }>()
+  const { teamId, projectId } = useParams<{
+    teamId: string
+    projectId: string
+  }>()
   const team = DEMO_TEAMS.find((t) => t.id === teamId)
   const teamName = team?.name ?? teamId ?? 'Team'
   const projectName =
-    (teamId && projectId && MOCK_PROJECT_NAMES[teamId]?.[projectId]) ?? projectId ?? 'Project'
-  return <TeamProjectDetailScreen teamName={teamName} projectName={projectName} />
+    (teamId && projectId && MOCK_PROJECT_NAMES[teamId]?.[projectId]) ??
+    projectId ??
+    'Project'
+  return (
+    <TeamProjectDetailScreen
+      teamName={teamName}
+      projectName={projectName}
+      teamId={teamId ?? ''}
+    />
+  )
 }
 
 export function TeamViewsScreenWrapper() {

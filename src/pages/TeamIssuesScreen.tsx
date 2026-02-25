@@ -12,8 +12,8 @@ import {
 import { StatusSelector, PrioritySelector } from '../components'
 import { STATUS_OPTIONS } from '../components/StatusSelector'
 import type { StatusOption } from '../components'
-import { DEMO_ISSUES } from '../constants'
-import type { Issue } from '../constants'
+import { fetchTeamIssues, updateIssue as apiUpdateIssue } from '../api/client'
+import { useFetch } from '../hooks/useFetch'
 
 const ISSUE_TAB_IDS = ['all', 'active', 'backlog'] as const
 type IssueTabId = (typeof ISSUE_TAB_IDS)[number]
@@ -25,21 +25,42 @@ function isValidTab(tab: string | undefined): tab is IssueTabId {
 type Props = { teamName: string }
 
 export function TeamIssuesScreen({ teamName }: Props) {
-  const [issues, setIssues] = useState<Issue[]>(DEMO_ISSUES)
   const { teamId, tab: tabParam } = useParams<{ teamId: string; tab: string }>()
   const navigate = useNavigate()
   const activeTab = isValidTab(tabParam) ? tabParam : 'active'
 
+  const { data: apiIssues } = useFetch(
+    () => (teamId ? fetchTeamIssues(teamId, activeTab) : Promise.resolve([])),
+    [teamId, activeTab]
+  )
+
+  // local overrides for optimistic status / priority (priority not in API)
+  const [overrides, setOverrides] = useState<
+    Record<string, { status?: string; priority?: string }>
+  >({})
+
+  const issues = (apiIssues ?? []).map((i) => ({
+    id: i.id,
+    title: i.title,
+    assignee: i.assignee?.name ?? '',
+    date: i.date,
+    status: overrides[i.id]?.status ?? i.status ?? 'todo',
+    priority: overrides[i.id]?.priority ?? 'medium',
+  }))
+
   const updateIssueStatus = (issueId: string, status: string) => {
-    setIssues((prev) =>
-      prev.map((i) => (i.id === issueId ? { ...i, status } : i))
-    )
+    setOverrides((prev) => ({
+      ...prev,
+      [issueId]: { ...prev[issueId], status },
+    }))
+    void apiUpdateIssue(issueId, { status }).catch(console.error)
   }
 
   const updateIssuePriority = (issueId: string, priority: string) => {
-    setIssues((prev) =>
-      prev.map((i) => (i.id === issueId ? { ...i, priority } : i))
-    )
+    setOverrides((prev) => ({
+      ...prev,
+      [issueId]: { ...prev[issueId], priority },
+    }))
   }
 
   const handleTabChange = (id: string) => {
@@ -76,8 +97,14 @@ export function TeamIssuesScreen({ teamName }: Props) {
       <Flex align="center" gap={2} wrap>
         {statusSummary.map((part: string, i: number) => (
           <Flex key={i} align="center" gap={1}>
-            {i > 0 && <Text size="sm" muted>·</Text>}
-            <Text size="sm" muted>{part}</Text>
+            {i > 0 && (
+              <Text size="sm" muted>
+                ·
+              </Text>
+            )}
+            <Text size="sm" muted>
+              {part}
+            </Text>
           </Flex>
         ))}
       </Flex>
@@ -98,14 +125,18 @@ export function TeamIssuesScreen({ teamName }: Props) {
               />
               <Text size="sm">{issue.id}</Text>
               <span style={{ flex: 1 }}>
-                <Text size="sm" as="span">{issue.title}</Text>
+                <Text size="sm" as="span">
+                  {issue.title}
+                </Text>
               </span>
               {issue.assignee ? (
                 <Avatar name={issue.assignee} size={24} />
               ) : (
                 <span style={{ width: 24 }} />
               )}
-              <Text size="xs" muted>{issue.date}</Text>
+              <Text size="xs" muted>
+                {issue.date}
+              </Text>
             </Flex>
           </Card>
         ))}

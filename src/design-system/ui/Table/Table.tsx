@@ -4,9 +4,14 @@ import {
   getSortedRowModel,
   flexRender,
 } from '@tanstack/react-table'
-import type { ColumnDef, SortingState, Table as TanStackTableType } from '@tanstack/react-table'
+import type {
+  ColumnDef,
+  SortingState,
+  Table as TanStackTableType,
+} from '@tanstack/react-table'
 import { useState } from 'react'
 import styled from 'styled-components'
+import { motion } from 'framer-motion'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 
 const TableWrapper = styled.div`
@@ -22,11 +27,14 @@ const HeaderRow = styled.div`
   align-items: center;
   gap: ${(p) => p.theme.spacing[4]}px;
   padding: ${(p) => p.theme.spacing[2]}px ${(p) => p.theme.spacing[3]}px;
-  font-size: 0.875rem;
+  font-size: 12px;
   font-weight: 500;
   color: ${(p) => p.theme.colors.textMuted};
-  background: ${(p) => p.theme.colors.backgroundSubtle ?? p.theme.colors.background};
+  background: ${(p) =>
+    p.theme.colors.backgroundSubtle ?? p.theme.colors.background};
   border-bottom: 1px solid ${(p) => p.theme.colors.border};
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 `
 
 const HeaderCell = styled.div<{ $flex?: number }>`
@@ -54,26 +62,27 @@ const SortButton = styled.button`
   }
 `
 
-const BodyRow = styled.div<{ $clickable?: boolean }>`
+const BodyRow = styled(motion.div)<{ $clickable?: boolean }>`
   display: flex;
   align-items: center;
   gap: ${(p) => p.theme.spacing[4]}px;
   padding: ${(p) => p.theme.spacing[2]}px ${(p) => p.theme.spacing[3]}px;
-  font-size: 0.875rem;
+  font-size: 13px;
   color: ${(p) => p.theme.colors.text};
   border-bottom: 1px solid ${(p) => p.theme.colors.border};
-  min-height: 56px;
+  min-height: 52px;
+  transition: background 0.12s ease;
   ${(p) => p.$clickable && 'cursor: pointer;'}
   &:last-child {
     border-bottom: none;
   }
-  ${(p) =>
-    p.$clickable &&
-    `
   &:hover {
-    background: ${p.theme.colors.backgroundSubtle ?? p.theme.colors.background};
+    background: ${(p) =>
+      p.theme.colors.backgroundSubtle ?? p.theme.colors.background};
   }
-  `}
+  &:hover .member-actions {
+    opacity: 1;
+  }
 `
 
 const BodyCell = styled.div<{ $flex?: number }>`
@@ -112,7 +121,9 @@ export function Table<T>({
   onRowClick,
   className,
 }: TableProps<T>) {
-  const [sorting, setSorting] = useState<SortingState>(initialState?.sorting ?? [])
+  const [sorting, setSorting] = useState<SortingState>(
+    initialState?.sorting ?? []
+  )
 
   const table = useReactTable({
     data,
@@ -135,7 +146,10 @@ export function Table<T>({
             const flex = meta?.flex ?? 1
             const canSort = enableSorting && header.column.getCanSort()
             const isSorted = header.column.getIsSorted()
-            const content = flexRender(header.column.columnDef.header, header.getContext())
+            const content = flexRender(
+              header.column.columnDef.header,
+              header.getContext()
+            )
 
             return (
               <HeaderCell key={header.id} $flex={flex} role="columnheader">
@@ -153,7 +167,9 @@ export function Table<T>({
                   >
                     {content}
                     {isSorted === 'asc' && <ChevronUp size={14} aria-hidden />}
-                    {isSorted === 'desc' && <ChevronDown size={14} aria-hidden />}
+                    {isSorted === 'desc' && (
+                      <ChevronDown size={14} aria-hidden />
+                    )}
                   </SortButton>
                 ) : (
                   content
@@ -164,12 +180,15 @@ export function Table<T>({
         </HeaderRow>
       ))}
       <div role="rowgroup">
-        {rows.map((row) => (
+        {rows.map((row, i) => (
           <BodyRow
             key={row.id}
             role="row"
             $clickable={Boolean(onRowClick)}
             onClick={onRowClick ? () => onRowClick(row.original) : undefined}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.18, delay: i * 0.04 }}
           >
             {row.getVisibleCells().map((cell) => {
               const meta = cell.column.columnDef.meta

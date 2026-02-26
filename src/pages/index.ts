@@ -13,6 +13,7 @@ export {
 } from './auth'
 export { InboxScreen } from './InboxScreen'
 export { MyIssuesScreen } from './MyIssuesScreen'
+export { IssueDetailScreen } from './IssueDetailScreen'
 export { WorkspaceProjectsScreen } from './WorkspaceProjectsScreen'
 export { WorkspaceViewsScreen } from './WorkspaceViewsScreen'
 export { WorkspaceMoreScreen } from './WorkspaceMoreScreen'
@@ -25,5 +26,6 @@ export {
   TeamProjectDetailScreenWrapper,
   TeamViewsScreenWrapper,
   TeamLogsScreenWrapper,
+  IssueDetailScreenWrapper,
 } from './TeamRouteWrappers'
 export { ShowcaseComponents } from './ShowcaseComponents'

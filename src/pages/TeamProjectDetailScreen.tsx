@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import styled from 'styled-components'
-import { Stack, Text } from '@design-system'
-import type { ChatMessage, ChatUser } from '@design-system'
+import { Stack, Text, Tabs } from '@design-system'
+import type { ChatMessage, ChatUser, TabItem } from '@design-system'
 import {
   StatusUpdateCard,
   StatusUpdateComposer,
@@ -25,7 +25,21 @@ import {
 } from '../api/client'
 import type { ApiStatusUpdate, ApiProjectProperties } from '../api/client'
 
-type Props = { teamName: string; projectName: string; teamId: string }
+const ContentSection = styled.div`
+  padding: 24px 0;
+`
+
+const EmptyState = styled.div`
+  text-align: center;
+  padding: 80px 20px;
+`
+
+const CenterMessage = styled.div`
+  text-align: center;
+  padding: 48px 0;
+`
+
+type Props = { projectName: string; teamId: string }
 
 const DEFAULT_CURRENT_USER: ChatUser = { name: 'You' }
 
@@ -53,48 +67,77 @@ function apiUpdateToCard(u: ApiStatusUpdate): StatusUpdateCardData {
 
 const Layout = styled.div`
   display: grid;
-  grid-template-columns: 1fr 300px;
-  gap: 24px;
+  grid-template-columns: 1fr 320px;
+  gap: 32px;
   align-items: start;
   min-height: 0;
+`
+
+const Breadcrumb = styled.div`
+  font-size: 13px;
+  color: ${(p) => p.theme.colors.textMuted};
+  margin-bottom: 16px;
+  span {
+    color: ${(p) => p.theme.colors.text};
+  }
+`
+
+const TabsContainer = styled.div`
+  border-bottom: 1px solid ${(p) => p.theme.colors.border};
+  margin-bottom: 24px;
+`
+
+const PageHeader = styled.div`
+  text-align: center;
+  padding: 32px 0;
+  border-bottom: 1px solid ${(p) => p.theme.colors.border};
+  margin-bottom: 24px;
+`
+
+const ProjectIcon = styled.div`
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: ${(p) => p.theme.colors.primary};
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px;
+  font-weight: 600;
+  font-size: 18px;
 `
 
 const MainContent = styled.div`
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 20px;
-`
-
-const PageTitleRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid ${(p) => p.theme.colors.border};
+  gap: 0;
 `
 
 const ProjectTitle = styled.h1`
-  margin: 0;
-  font-size: 18px;
+  margin: 0 0 8px;
+  font-size: 24px;
   font-weight: 600;
   color: ${(p) => p.theme.colors.text};
-  flex: 1;
 `
 
-const SubTitle = styled.span`
-  font-size: 13px;
+const ProjectSummary = styled.p`
+  margin: 0;
+  font-size: 14px;
   color: ${(p) => p.theme.colors.textMuted};
+  max-width: 600px;
+  margin: 0 auto;
 `
 
 const PropertiesSidebar = styled.aside`
   position: sticky;
-  top: 0;
+  top: 16px;
   display: flex;
   flex-direction: column;
   gap: 0;
   border: 1px solid ${(p) => p.theme.colors.border};
-  border-radius: ${(p) => p.theme.radii?.md ?? 6}px;
+  border-radius: 8px;
   background: ${(p) => p.theme.colors.backgroundSubtle};
   overflow: hidden;
 `
@@ -115,11 +158,7 @@ const SectionLabel = styled.div`
   letter-spacing: 0.03em;
 `
 
-export function TeamProjectDetailScreen({
-  teamName,
-  projectName,
-  teamId,
-}: Props) {
+export function TeamProjectDetailScreen({ projectName, teamId }: Props) {
   const [updates, setUpdates] = useState<StatusUpdateCardData[]>([])
   const [milestones, setMilestones] = useState<MilestoneItem[]>([])
   const [activity, setActivity] = useState<ActivityItem[]>([])
@@ -130,6 +169,13 @@ export function TeamProjectDetailScreen({
     Record<string, ChatMessage[]>
   >({})
   const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState('overview')
+
+  const tabs: TabItem[] = [
+    { id: 'overview', label: 'Overview' },
+    { id: 'updates', label: 'Updates' },
+    { id: 'issues', label: 'Issues' },
+  ]
 
   useEffect(() => {
     if (!teamId) return
@@ -222,6 +268,9 @@ export function TeamProjectDetailScreen({
     return (
       <Layout>
         <MainContent>
+          <Breadcrumb>
+            Projects &gt; <span>{projectName}</span>
+          </Breadcrumb>
           <Text size="sm" muted>
             Loading project...
           </Text>
@@ -234,35 +283,112 @@ export function TeamProjectDetailScreen({
   return (
     <Layout>
       <MainContent>
-        <PageTitleRow>
-          <div>
-            <ProjectTitle>{projectName}</ProjectTitle>
-            <SubTitle>in {teamName}</SubTitle>
-          </div>
-        </PageTitleRow>
+        <Breadcrumb>
+          Projects &gt; <span>{projectName}</span>
+        </Breadcrumb>
 
-        <Stack gap={3}>
-          {updates.map((u) => (
-            <StatusUpdateCard
-              key={u.id}
-              data={u}
-              comments={commentsByUpdateId[u.id]}
-              currentUser={DEFAULT_CURRENT_USER}
-              onSendComment={handleSendComment(u.id)}
-              onMore={noop}
-            />
-          ))}
-          <StatusUpdateComposer
-            placeholder="Write a project update..."
-            onPost={handlePostUpdate}
-            onChooseFile={noop}
-            onCreateDocument={noop}
-            onAddLink={noop}
-          />
-        </Stack>
+        <TabsContainer>
+          <Tabs tabs={tabs} activeId={activeTab} onChange={setActiveTab} />
+        </TabsContainer>
 
-        <MilestonesSection milestones={milestones} onAdd={handleAddMilestone} />
-        <ActivitySection items={activity} />
+        {activeTab === 'overview' && (
+          <>
+            <PageHeader>
+              <ProjectIcon>{projectName[0]?.toUpperCase() ?? 'P'}</ProjectIcon>
+              <ProjectTitle>{projectName}</ProjectTitle>
+              <ProjectSummary>
+                Track progress,updates, and milestones for this project
+              </ProjectSummary>
+            </PageHeader>
+
+            <Stack gap={3}>
+              {updates.length === 0 ? (
+                <CenterMessage>
+                  <Text size="sm" muted>
+                    Write the first project update to get started
+                  </Text>
+                </CenterMessage>
+              ) : (
+                updates.map((u) => (
+                  <StatusUpdateCard
+                    key={u.id}
+                    data={u}
+                    comments={commentsByUpdateId[u.id]}
+                    currentUser={DEFAULT_CURRENT_USER}
+                    onSendComment={handleSendComment(u.id)}
+                    onMore={noop}
+                  />
+                ))
+              )}
+              <StatusUpdateComposer
+                placeholder="Write a project update..."
+                onPost={handlePostUpdate}
+                onChooseFile={noop}
+                onCreateDocument={noop}
+                onAddLink={noop}
+              />
+            </Stack>
+
+            <ContentSection>
+              <MilestonesSection
+                milestones={milestones}
+                onAdd={handleAddMilestone}
+              />
+            </ContentSection>
+
+            <ContentSection>
+              <ActivitySection items={activity} />
+            </ContentSection>
+          </>
+        )}
+
+        {activeTab === 'updates' && (
+          <ContentSection>
+            <Stack gap={3}>
+              {updates.map((u) => (
+                <StatusUpdateCard
+                  key={u.id}
+                  data={u}
+                  comments={commentsByUpdateId[u.id]}
+                  currentUser={DEFAULT_CURRENT_USER}
+                  onSendComment={handleSendComment(u.id)}
+                  onMore={noop}
+                />
+              ))}
+              <StatusUpdateComposer
+                placeholder="Write a project update..."
+                onPost={handlePostUpdate}
+                onChooseFile={noop}
+                onCreateDocument={noop}
+                onAddLink={noop}
+              />
+            </Stack>
+          </ContentSection>
+        )}
+
+        {activeTab === 'issues' && (
+          <EmptyState>
+            <div style={{ marginBottom: 16 }}>
+              <Text size="sm" muted>
+                No issues added to this project yet
+              </Text>
+            </div>
+            <button
+              style={{
+                padding: '8px 16px',
+                background: '#6366f1',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: 500,
+              }}
+            >
+              Create new issue
+            </button>
+          </EmptyState>
+        )}
       </MainContent>
 
       <PropertiesSidebar>

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import styled from 'styled-components'
 import {
   PageHeader,
   Text,
@@ -14,9 +15,24 @@ import { STATUS_OPTIONS } from '../components/StatusSelector'
 import type { StatusOption } from '../components'
 import { fetchTeamIssues, updateIssue as apiUpdateIssue } from '../api/client'
 import { useFetch } from '../hooks/useFetch'
+import { formatRelativeTime, logError, countBy } from '../utils'
 
 const ISSUE_TAB_IDS = ['all', 'active', 'backlog'] as const
 type IssueTabId = (typeof ISSUE_TAB_IDS)[number]
+
+const ClickableCardWrapper = styled.div`
+  cursor: pointer;
+  transition: transform 0.15s;
+  &:hover {
+    transform: translateY(-1px);
+  }
+  > * {
+    transition: background 0.15s;
+  }
+  &:hover > * {
+    background: ${(p) => p.theme.colors.surfaceHover};
+  }
+`
 
 function isValidTab(tab: string | undefined): tab is IssueTabId {
   return tab != null && ISSUE_TAB_IDS.includes(tab as IssueTabId)
@@ -43,7 +59,7 @@ export function TeamIssuesScreen({ teamName }: Props) {
     id: i.id,
     title: i.title,
     assignee: i.assignee?.name ?? '',
-    date: i.date,
+    date: formatRelativeTime(i.date),
     status: overrides[i.id]?.status ?? i.status ?? 'todo',
     priority: overrides[i.id]?.priority ?? 'medium',
   }))
@@ -53,7 +69,9 @@ export function TeamIssuesScreen({ teamName }: Props) {
       ...prev,
       [issueId]: { ...prev[issueId], status },
     }))
-    void apiUpdateIssue(issueId, { status }).catch(console.error)
+    void apiUpdateIssue(issueId, { status }).catch((e) =>
+      logError(e, 'Update issue status')
+    )
   }
 
   const updateIssuePriority = (issueId: string, priority: string) => {
@@ -69,11 +87,7 @@ export function TeamIssuesScreen({ teamName }: Props) {
     }
   }
 
-  const statusCounts = issues.reduce<Record<string, number>>((acc, issue) => {
-    const status = issue.status ?? 'todo'
-    acc[status] = (acc[status] ?? 0) + 1
-    return acc
-  }, {})
+  const statusCounts = countBy(issues, (issue) => issue.status ?? 'todo')
 
   const statusSummary = STATUS_OPTIONS.filter(
     (opt: StatusOption) => (statusCounts[opt.id] ?? 0) > 0
@@ -111,34 +125,45 @@ export function TeamIssuesScreen({ teamName }: Props) {
 
       <Stack gap={1}>
         {issues.map((issue) => (
-          <Card key={issue.id}>
-            <Flex align="center" gap={2}>
-              <PrioritySelector
-                triggerVariant="icon"
-                value={issue.priority ?? 'medium'}
-                onChange={(priority) => updateIssuePriority(issue.id, priority)}
-              />
-              <StatusSelector
-                triggerVariant="icon"
-                value={issue.status ?? 'todo'}
-                onChange={(status) => updateIssueStatus(issue.id, status)}
-              />
-              <Text size="sm">{issue.id}</Text>
-              <span style={{ flex: 1 }}>
-                <Text size="sm" as="span">
-                  {issue.title}
+          <ClickableCardWrapper
+            key={issue.id}
+            onClick={() => navigate(`/team/${teamId}/issue/${issue.id}`)}
+          >
+            <Card>
+              <Flex align="center" gap={2}>
+                <div onClick={(e) => e.stopPropagation()}>
+                  <PrioritySelector
+                    triggerVariant="icon"
+                    value={issue.priority ?? 'medium'}
+                    onChange={(priority) =>
+                      updateIssuePriority(issue.id, priority)
+                    }
+                  />
+                </div>
+                <div onClick={(e) => e.stopPropagation()}>
+                  <StatusSelector
+                    triggerVariant="icon"
+                    value={issue.status ?? 'todo'}
+                    onChange={(status) => updateIssueStatus(issue.id, status)}
+                  />
+                </div>
+                <Text size="sm">{issue.id}</Text>
+                <span style={{ flex: 1 }}>
+                  <Text size="sm" as="span">
+                    {issue.title}
+                  </Text>
+                </span>
+                {issue.assignee ? (
+                  <Avatar name={issue.assignee} size={24} />
+                ) : (
+                  <span style={{ width: 24 }} />
+                )}
+                <Text size="xs" muted>
+                  {issue.date}
                 </Text>
-              </span>
-              {issue.assignee ? (
-                <Avatar name={issue.assignee} size={24} />
-              ) : (
-                <span style={{ width: 24 }} />
-              )}
-              <Text size="xs" muted>
-                {issue.date}
-              </Text>
-            </Flex>
-          </Card>
+              </Flex>
+            </Card>
+          </ClickableCardWrapper>
         ))}
       </Stack>
     </Stack>

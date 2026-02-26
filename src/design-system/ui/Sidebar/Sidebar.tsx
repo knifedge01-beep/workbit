@@ -52,10 +52,13 @@ export const SidebarSection = styled.div`
 
 export const SidebarSectionHeading = styled.div`
   padding: ${(p) => p.theme.spacing[1]}px ${(p) => p.theme.spacing[2]}px;
-  font-size: 0.75rem;
-  font-weight: 500;
+  font-size: 0.6875rem;
+  font-weight: 600;
   color: ${(p) => p.theme.colors.textMuted};
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
   margin-bottom: ${(p) => p.theme.spacing[1]}px;
+  margin-top: ${(p) => p.theme.spacing[2]}px;
 `
 
 const CollapsibleHeading = styled.button`

@@ -76,6 +76,12 @@ export interface ApiIssue {
   status: string
 }
 
+export interface ApiIssueDetail extends ApiIssue {
+  teamId: string
+  team: { id: string; name: string } | null
+  project: { id: string; name: string } | null
+}
+
 export interface ApiStatusUpdate {
   id: string
   status: 'on-track' | 'at-risk' | 'off-track'
@@ -236,6 +242,9 @@ export const fetchTeamLogs = (teamId: string) =>
   }>(`/teams/${teamId}/logs`)
 
 // ---- Issues ----
+
+export const fetchIssue = (issueId: string) =>
+  apiFetch<ApiIssueDetail>(`/issues/${issueId}`)
 
 export const updateIssue = (
   issueId: string,

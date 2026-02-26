@@ -1,6 +1,7 @@
-import { Router } from 'express';
-import * as ctrl from '../controllers/issuesController.js';
+import { Router } from 'express'
+import * as ctrl from '../controllers/issuesController.js'
 
-export const issuesRoutes = Router();
+export const issuesRoutes = Router()
 
-issuesRoutes.patch('/:issueId', ctrl.updateIssue);
+issuesRoutes.get('/:issueId', ctrl.getIssue)
+issuesRoutes.patch('/:issueId', ctrl.updateIssue)

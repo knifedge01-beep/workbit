@@ -15,18 +15,18 @@ const badgePaletteSolid = {
 } as const
 
 export const colorsLight = {
-  primary: '#5b6af9',
-  primaryHover: '#4756f5',
+  primary: '#6366f1',
+  primaryHover: '#4f46e5',
   secondary: '#64748b',
   secondaryHover: '#475569',
   background: '#ffffff',
-  backgroundSubtle: '#f9fafb',
+  backgroundSubtle: '#f8f9fb',
   surface: '#ffffff',
   surfaceHover: '#f3f4f6',
   text: '#111827',
   textMuted: '#6b7280',
-  border: '#e5e7eb',
-  borderFocus: '#5b6af9',
+  border: '#e6e8eb',
+  borderFocus: '#6366f1',
   success: '#10B981',
   successBg: '#D1FAE5',
   warning: '#F97316',

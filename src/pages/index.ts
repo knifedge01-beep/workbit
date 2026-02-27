@@ -20,6 +20,7 @@ export { WorkspaceMoreScreen } from './WorkspaceMoreScreen'
 export { WorkspaceMemberScreen } from './WorkspaceMemberScreen'
 export { WorkspaceTeamsScreen } from './WorkspaceTeamsScreen'
 export { WorkspaceRolesScreen } from './WorkspaceRolesScreen'
+export { WorkspacesScreen } from './WorkspacesScreen'
 export {
   TeamIssuesScreenWrapper,
   TeamProjectsScreenWrapper,

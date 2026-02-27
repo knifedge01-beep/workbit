@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Outlet, useParams, useLocation } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Outlet, useParams, useLocation, Navigate } from 'react-router-dom'
 import { ThemeProvider as StyledThemeProvider } from 'styled-components'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Navbar, Sidebar } from '@design-system'
@@ -7,6 +7,8 @@ import { lightTheme } from '@design-system'
 import { DEMO_TEAMS } from '../constants'
 import { NavbarLeft, NavbarRight } from '../components/NavbarLeft'
 import { SidebarNav, SidebarFooter } from '../components/SidebarNav'
+import { WorkspaceDropdown } from '../components/WorkspaceDropdown'
+import { useWorkspace } from '../contexts/WorkspaceContext'
 
 function getPageTitle(pathname: string, teamName: string) {
   if (pathname === '/') return 'Dashboard'
@@ -28,12 +30,49 @@ export function MainLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const { teamId } = useParams<{ teamId: string }>()
   const location = useLocation()
+  const {
+    currentWorkspace,
+    setCurrentWorkspace,
+    workspaces,
+    workspacesLoading,
+  } = useWorkspace()
+
   const selectedTeam =
     teamId != null
       ? (DEMO_TEAMS.find((t) => t.id === teamId) ?? DEMO_TEAMS[0])
       : DEMO_TEAMS[0]
 
   const pageTitle = getPageTitle(location.pathname, selectedTeam.name)
+
+  // Auto-select first workspace when we have list but none selected
+  useEffect(() => {
+    if (!workspacesLoading && workspaces.length > 0 && !currentWorkspace) {
+      setCurrentWorkspace(workspaces[0])
+    }
+  }, [workspacesLoading, workspaces, currentWorkspace, setCurrentWorkspace])
+
+  // Require a selected workspace when on workspace routes; redirect if none
+  const isWorkspaceRoute = location.pathname.startsWith('/workspace')
+  const shouldRedirectToWorkspaces =
+    isWorkspaceRoute &&
+    !workspacesLoading &&
+    !currentWorkspace &&
+    workspaces.length === 0
+
+  if (shouldRedirectToWorkspaces) {
+    return <Navigate to="/workspaces" replace />
+  }
+
+  const navbarLeft =
+    currentWorkspace && workspaces.length > 0 ? (
+      <WorkspaceDropdown
+        workspaces={workspaces}
+        selectedWorkspace={currentWorkspace}
+        onSelect={setCurrentWorkspace}
+      />
+    ) : (
+      <NavbarLeft teams={DEMO_TEAMS} selectedTeam={selectedTeam} />
+    )
 
   return (
     <StyledThemeProvider theme={lightTheme}>
@@ -42,7 +81,7 @@ export function MainLayout() {
       >
         <Navbar
           variant="light"
-          left={<NavbarLeft teams={DEMO_TEAMS} selectedTeam={selectedTeam} />}
+          left={navbarLeft}
           center={<span>{pageTitle}</span>}
           right={<NavbarRight />}
         />

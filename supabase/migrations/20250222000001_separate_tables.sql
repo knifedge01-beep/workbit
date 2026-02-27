@@ -1,6 +1,16 @@
 -- Separate tables for workspace entities (replaces single store.data blob).
 -- Run in Supabase SQL Editor or via supabase db push.
 
+-- Workspaces
+create table if not exists public.workspaces (
+  id text primary key,
+  name text not null,
+  slug text not null,
+  region text not null default 'us',
+  member_ids jsonb not null default '[]'::jsonb,
+  constraint workspaces_slug_unique unique (slug)
+);
+
 -- Projects (workspace projects list)
 create table if not exists public.projects (
   id text primary key,
@@ -134,6 +144,7 @@ create table if not exists public.notifications (
 );
 
 -- RLS: allow service role full access (API uses service role)
+alter table public.workspaces enable row level security;
 alter table public.projects enable row level security;
 alter table public.teams enable row level security;
 alter table public.members enable row level security;
@@ -148,6 +159,7 @@ alter table public.activity enable row level security;
 alter table public.issues enable row level security;
 alter table public.notifications enable row level security;
 
+create policy "workspaces_service_role" on public.workspaces for all using (true) with check (true);
 create policy "projects_service_role" on public.projects for all using (true) with check (true);
 create policy "teams_service_role" on public.teams for all using (true) with check (true);
 create policy "members_service_role" on public.members for all using (true) with check (true);

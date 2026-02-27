@@ -50,6 +50,8 @@ export interface ApiMember {
   avatarSrc?: string
   status: string
   joined: string
+  provisioned: boolean
+  uid?: string | null
   teams: string
 }
 
@@ -148,6 +150,13 @@ export interface ApiNotification {
   targetUrl?: string
 }
 
+export interface ApiWorkspace {
+  id: string
+  name: string
+  slug: string
+  region: string
+}
+
 export interface ApiMyIssue extends ApiIssue {
   team: { id: string; name: string } | null
   project: { id: string; name: string } | null
@@ -158,6 +167,23 @@ export interface ApiMyIssue extends ApiIssue {
 export const fetchProjects = () => apiFetch<ApiProject[]>('/workspace/projects')
 export const fetchWorkspaceTeams = () => apiFetch<ApiTeam[]>('/workspace/teams')
 export const fetchMembers = () => apiFetch<ApiMember[]>('/workspace/members')
+
+export const createMember = (body: {
+  name: string
+  username: string
+  status?: string
+  teamIds?: string[]
+}) =>
+  apiFetch<ApiMember>('/workspace/members', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
+
+export const provisionMember = (memberId: string, email: string) =>
+  apiFetch<ApiMember>(`/workspace/members/${memberId}/provision`, {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  })
 export const inviteMember = (email: string, roleId?: string) =>
   apiFetch<{ id: string }>('/workspace/members/invite', {
     method: 'POST',
@@ -262,3 +288,21 @@ export const fetchNotifications = (first = 50) =>
   apiFetch<ApiNotification[]>(`/me/notifications?first=${first}`)
 export const fetchMyTeams = () =>
   apiFetch<{ id: string; name: string }[]>('/me/teams')
+
+// ---- Workspaces ----
+
+export const fetchWorkspaces = (memberId: string) =>
+  apiFetch<ApiWorkspace[]>(
+    `/workspaces?memberId=${encodeURIComponent(memberId)}`
+  )
+
+export const createWorkspace = (body: {
+  name: string
+  slug: string
+  region?: string
+  memberId: string
+}) =>
+  apiFetch<ApiWorkspace>('/workspaces', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })

@@ -12,6 +12,7 @@ import {
   WorkspaceMemberScreen,
   WorkspaceTeamsScreen,
   WorkspaceRolesScreen,
+  WorkspacesScreen,
   TeamIssuesScreenWrapper,
   TeamProjectsScreenWrapper,
   TeamProjectDetailScreenWrapper,
@@ -35,6 +36,14 @@ export function AppRoutes() {
       <Route path="/login" element={<LoginScreen />} />
       <Route path="/signup" element={<SignupScreen />} />
       <Route
+        path="/workspaces"
+        element={
+          <AuthGate>
+            <WorkspacesScreen />
+          </AuthGate>
+        }
+      />
+      <Route
         path="/"
         element={
           <AuthGate>
@@ -42,7 +51,7 @@ export function AppRoutes() {
           </AuthGate>
         }
       >
-        <Route index element={<Navigate to="/team/Test94" replace />} />
+        <Route index element={<Navigate to="/landing" replace />} />
         <Route path="inbox" element={<InboxScreen />} />
         <Route path="my-issues" element={<MyIssuesScreen />} />
         <Route

@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 
 const navItems = [
@@ -8,6 +8,7 @@ const navItems = [
 ]
 
 export function LandingNav() {
+  const navigate = useNavigate()
   return (
     <motion.nav
       className="landing__nav"
@@ -28,7 +29,10 @@ export function LandingNav() {
         margin: '0 auto',
       }}
     >
-      <Link to="/landing" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <Link
+        to="/landing"
+        style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+      >
         <motion.span
           style={{
             fontSize: '1.5rem',
@@ -64,15 +68,15 @@ export function LandingNav() {
           transition={{ delay: 0.4 }}
           style={{ display: 'flex', gap: 12 }}
         >
-          <Link to="/login">
-            <motion.span
-              className="landing__btn landing__btn--secondary"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              Log in
-            </motion.span>
-          </Link>
+          <motion.button
+            type="button"
+            className="landing__btn landing__btn--secondary"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => navigate('/login')}
+          >
+            Log in
+          </motion.button>
           <Link to="/signup">
             <motion.span
               className="landing__btn landing__btn--primary"

@@ -62,15 +62,24 @@ export function LoginScreen() {
   const location = useLocation()
   const { isAllowed } = useAuth()
 
-  const state = location.state as { returnTo?: string; from?: { pathname: string; search: string } } | null
+  const state = location.state as {
+    returnTo?: string
+    from?: { pathname: string; search: string }
+  } | null
   const returnTo =
-    state?.returnTo ?? (state?.from ? state.from.pathname + state.from.search : '/')
+    state?.returnTo ??
+    (state?.from ? state.from.pathname + state.from.search : '/workspaces')
+  const cameFromProtectedRoute = Boolean(state?.from || state?.returnTo)
 
   if (!isAuthConfigured) {
     return <Navigate to="/" replace />
   }
 
-  if (isAllowed) {
+  // Only auto-redirect away from /login when the user is already
+  // authenticated *and* they arrived here via an AuthGate redirect.
+  // This prevents a loop where manually visiting /login immediately
+  // sends you back to the workspace.
+  if (isAllowed && cameFromProtectedRoute) {
     return <Navigate to={returnTo} replace />
   }
 
@@ -84,7 +93,10 @@ export function LoginScreen() {
       setLoading(false)
       return
     }
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
     setLoading(false)
     if (signInError) {
       setError(signInError.message)

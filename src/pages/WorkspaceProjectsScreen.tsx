@@ -120,16 +120,15 @@ export function WorkspaceProjectsScreen() {
             </Text>
             <Select
               value={selectedTeam}
-              onChange={(e) => setSelectedTeam(e.target.value)}
-              disabled={creating}
-            >
-              <option value="">Select a team</option>
-              {(teams ?? []).map((team) => (
-                <option key={team.id} value={team.id}>
-                  {team.name}
-                </option>
-              ))}
-            </Select>
+              onChange={setSelectedTeam}
+              options={[
+                { value: '', label: 'Select a team' },
+                ...(teams ?? []).map((team) => ({
+                  value: team.id,
+                  label: team.name,
+                })),
+              ]}
+            />
           </div>
         </Stack>
       </Modal>

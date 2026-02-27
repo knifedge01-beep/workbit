@@ -1,135 +1,92 @@
-import { useState, useEffect } from 'react'
-import { Outlet, useParams, useLocation, Navigate } from 'react-router-dom'
-import { ThemeProvider as StyledThemeProvider } from 'styled-components'
-import { AnimatePresence, motion } from 'framer-motion'
-import { Navbar, Sidebar } from '@design-system'
-import { lightTheme } from '@design-system'
+import { useState } from 'react'
+import { Outlet, useParams } from 'react-router-dom'
+import styled from 'styled-components'
+import { Navbar, Sidebar, ThemeProvider } from '@design-system'
 import { DEMO_TEAMS } from '../constants'
 import { NavbarLeft, NavbarRight } from '../components/NavbarLeft'
 import { SidebarNav, SidebarFooter } from '../components/SidebarNav'
-import { WorkspaceDropdown } from '../components/WorkspaceDropdown'
-import { useWorkspace } from '../contexts/WorkspaceContext'
 
-function getPageTitle(pathname: string, teamName: string) {
-  if (pathname === '/') return 'Dashboard'
-  if (pathname === '/inbox') return 'Inbox'
-  if (pathname === '/my-issues') return 'My Issues'
-  if (pathname.startsWith('/workspace/projects')) return 'Workspace Projects'
-  if (pathname.startsWith('/workspace/teams')) return 'Workspace Teams'
-  if (pathname.startsWith('/workspace/member')) return 'Workspace Members'
-  if (pathname.startsWith('/workspace/views')) return 'Workspace Views'
-  if (pathname.startsWith('/workspace/roles')) return 'Workspace Roles'
-  if (pathname.includes('/projects')) return `${teamName} Projects`
-  if (pathname.includes('/issues')) return `${teamName} Issues`
-  if (pathname.includes('/views')) return `${teamName} Views`
-  if (pathname.includes('/logs')) return `${teamName} Logs`
-  return 'Workbit'
-}
+const LayoutContainer = styled.div`
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+`
+
+const MainContainer = styled.div`
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+`
+
+const ContentWrapper = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: auto;
+  background: ${(p) => p.theme.colors.background};
+
+  /* Custom scrollbar */
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  &::-webkit-scrollbar-track {
+    background: ${(p) => p.theme.colors.backgroundSubtle};
+  }
+  &::-webkit-scrollbar-thumb {
+    background: ${(p) => p.theme.colors.border};
+    border-radius: 4px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: ${(p) => p.theme.colors.textMuted};
+  }
+`
+
+const ContentInner = styled.div`
+  flex: 1;
+  padding: ${(p) => p.theme.spacing[8]}px ${(p) => p.theme.spacing[6]}px;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+
+  @media (min-width: 1200px) {
+    padding: ${(p) => p.theme.spacing[10]}px ${(p) => p.theme.spacing[8]}px;
+  }
+`
 
 export function MainLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const { teamId } = useParams<{ teamId: string }>()
-  const location = useLocation()
-  const {
-    currentWorkspace,
-    setCurrentWorkspace,
-    workspaces,
-    workspacesLoading,
-  } = useWorkspace()
-
   const selectedTeam =
     teamId != null
       ? (DEMO_TEAMS.find((t) => t.id === teamId) ?? DEMO_TEAMS[0])
       : DEMO_TEAMS[0]
 
-  const pageTitle = getPageTitle(location.pathname, selectedTeam.name)
-
-  // Auto-select first workspace when we have list but none selected
-  useEffect(() => {
-    if (!workspacesLoading && workspaces.length > 0 && !currentWorkspace) {
-      setCurrentWorkspace(workspaces[0])
-    }
-  }, [workspacesLoading, workspaces, currentWorkspace, setCurrentWorkspace])
-
-  // Require a selected workspace when on workspace routes; redirect if none
-  const isWorkspaceRoute = location.pathname.startsWith('/workspace')
-  const shouldRedirectToWorkspaces =
-    isWorkspaceRoute &&
-    !workspacesLoading &&
-    !currentWorkspace &&
-    workspaces.length === 0
-
-  if (shouldRedirectToWorkspaces) {
-    return <Navigate to="/workspaces" replace />
-  }
-
-  const navbarLeft =
-    currentWorkspace && workspaces.length > 0 ? (
-      <WorkspaceDropdown
-        workspaces={workspaces}
-        selectedWorkspace={currentWorkspace}
-        onSelect={setCurrentWorkspace}
-      />
-    ) : (
-      <NavbarLeft teams={DEMO_TEAMS} selectedTeam={selectedTeam} />
-    )
-
   return (
-    <StyledThemeProvider theme={lightTheme}>
-      <div
-        style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}
-      >
+    <ThemeProvider>
+      <LayoutContainer>
         <Navbar
           variant="light"
-          left={navbarLeft}
-          center={<span>{pageTitle}</span>}
+          left={<NavbarLeft teams={DEMO_TEAMS} selectedTeam={selectedTeam} />}
           right={<NavbarRight />}
         />
 
-        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+        <MainContainer>
           <Sidebar
             collapsed={sidebarCollapsed}
             onCollapseToggle={() => setSidebarCollapsed((c) => !c)}
-            footer={<SidebarFooter collapsed={sidebarCollapsed} />}
+            footer={<SidebarFooter />}
           >
-            <SidebarNav
-              selectedTeam={selectedTeam}
-              collapsed={sidebarCollapsed}
-            />
+            <SidebarNav selectedTeam={selectedTeam} />
           </Sidebar>
 
-          <main
-            style={{
-              flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              minHeight: 0,
-              overflow: 'hidden',
-            }}
-          >
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={location.pathname}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
-                transition={{ duration: 0.2 }}
-                style={{
-                  flex: 1,
-                  minHeight: 0,
-                  overflowY: 'auto',
-                  padding: 28,
-                  maxWidth: 1280,
-                  margin: '0 auto',
-                  width: '100%',
-                }}
-              >
-                <Outlet />
-              </motion.div>
-            </AnimatePresence>
-          </main>
-        </div>
-      </div>
-    </StyledThemeProvider>
+          <ContentWrapper>
+            <ContentInner>
+              <Outlet />
+            </ContentInner>
+          </ContentWrapper>
+        </MainContainer>
+      </LayoutContainer>
+    </ThemeProvider>
   )
 }

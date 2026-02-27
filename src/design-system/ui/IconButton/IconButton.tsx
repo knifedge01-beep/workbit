@@ -1,21 +1,31 @@
 import styled from 'styled-components'
-import { motion } from 'framer-motion'
 
-const StyledIconButton = styled(motion.button)`
+const StyledIconButton = styled.button`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   padding: 0;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   background: transparent;
-  color: ${(p) => p.theme.colors.text};
+  color: ${(p) => p.theme.colors.textMuted};
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: all 0.15s ease;
+
   &:hover {
     background: ${(p) => p.theme.colors.surfaceHover};
+    color: ${(p) => p.theme.colors.text};
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 `
 
@@ -41,9 +51,6 @@ export function IconButton({
       onClick={onClick}
       disabled={disabled}
       className={className}
-      whileTap={{ scale: 0.88 }}
-      whileHover={{ scale: 1.08 }}
-      transition={{ duration: 0.12 }}
     >
       {children}
     </StyledIconButton>

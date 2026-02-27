@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import styled from 'styled-components'
-import { Stack, Text, Tabs } from '@design-system'
+import { Stack, Text, Tabs, Modal, Input } from '@design-system'
 import type { ChatMessage, ChatUser, TabItem } from '@design-system'
 import {
   StatusUpdateCard,
@@ -170,6 +170,9 @@ export function TeamProjectDetailScreen({ projectName, teamId }: Props) {
   >({})
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('overview')
+  const [showMilestoneModal, setShowMilestoneModal] = useState(false)
+  const [milestoneName, setMilestoneName] = useState('')
+  const [milestoneDate, setMilestoneDate] = useState('')
 
   const tabs: TabItem[] = [
     { id: 'overview', label: 'Overview' },
@@ -232,12 +235,16 @@ export function TeamProjectDetailScreen({ projectName, teamId }: Props) {
   }
 
   const handleAddMilestone = () => {
-    if (!teamId) return
-    const name = window.prompt('Milestone name:')
-    if (!name) return
-    const targetDate = window.prompt('Target date (e.g. Mar 15):', '') ?? ''
-    void createMilestone(teamId, { name, targetDate })
-      .then((m) =>
+    setShowMilestoneModal(true)
+  }
+
+  const handleCreateMilestone = () => {
+    if (!teamId || !milestoneName.trim()) return
+    void createMilestone(teamId, {
+      name: milestoneName,
+      targetDate: milestoneDate,
+    })
+      .then((m) => {
         setMilestones((prev) => [
           ...prev,
           {
@@ -248,7 +255,10 @@ export function TeamProjectDetailScreen({ projectName, teamId }: Props) {
             targetDate: m.targetDate,
           },
         ])
-      )
+        setShowMilestoneModal(false)
+        setMilestoneName('')
+        setMilestoneDate('')
+      })
       .catch(console.error)
   }
 
@@ -410,6 +420,49 @@ export function TeamProjectDetailScreen({ projectName, teamId }: Props) {
           />
         </SidebarSection>
       </PropertiesSidebar>
+
+      <Modal
+        open={showMilestoneModal}
+        onClose={() => setShowMilestoneModal(false)}
+        title="Create New Milestone"
+        primaryLabel="Create"
+        onPrimary={handleCreateMilestone}
+        secondaryLabel="Cancel"
+        onSecondary={() => setShowMilestoneModal(false)}
+      >
+        <Stack gap={3}>
+          <div>
+            <Text
+              as="label"
+              size="sm"
+              weight="medium"
+              style={{ display: 'block', marginBottom: '8px' }}
+            >
+              Milestone Name
+            </Text>
+            <Input
+              value={milestoneName}
+              onChange={(e) => setMilestoneName(e.target.value)}
+              placeholder="Enter milestone name"
+            />
+          </div>
+          <div>
+            <Text
+              as="label"
+              size="sm"
+              weight="medium"
+              style={{ display: 'block', marginBottom: '8px' }}
+            >
+              Target Date
+            </Text>
+            <Input
+              value={milestoneDate}
+              onChange={(e) => setMilestoneDate(e.target.value)}
+              placeholder="e.g. Mar 15"
+            />
+          </div>
+        </Stack>
+      </Modal>
     </Layout>
   )
 }

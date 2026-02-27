@@ -13,6 +13,45 @@ const StyledSidebar = styled.aside<{ $collapsed?: boolean }>`
   transition:
     width 0.2s ease,
     min-width 0.2s ease;
+
+  /* Handle collapsed state globally */
+  ${(p) =>
+    p.$collapsed &&
+    `
+    ${SidebarSectionHeading} {
+      opacity: 0;
+      pointer-events: none;
+      max-height: 0;
+      padding: 0;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    ${CollapsibleHeading} {
+      opacity: 0;
+      pointer-events: none;
+      max-height: 0;
+      padding: 0;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    ${SidebarNavItem} {
+      justify-content: center;
+      padding-left: ${p.theme.spacing[2]}px;
+      padding-right: ${p.theme.spacing[2]}px;
+
+      > span:not([aria-hidden]) {
+        opacity: 0;
+        width: 0;
+        overflow: hidden;
+      }
+    }
+
+    ${CollapsibleChildren} {
+      padding-left: 0;
+    }
+  `}
 `
 
 const Header = styled.div`
@@ -34,7 +73,22 @@ const CollapseStrip = styled.div`
 const Content = styled.div`
   flex: 1;
   overflow-y: auto;
-  padding: ${(p) => p.theme.spacing[2]}px ${(p) => p.theme.spacing[2]}px;
+  padding: ${(p) => p.theme.spacing[3]}px ${(p) => p.theme.spacing[2]}px;
+
+  /* Custom scrollbar */
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: ${(p) => p.theme.colors.border};
+    border-radius: 3px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: ${(p) => p.theme.colors.textMuted};
+  }
 `
 
 const Footer = styled.div`
@@ -44,21 +98,25 @@ const Footer = styled.div`
 `
 
 export const SidebarSection = styled.div`
-  margin-top: ${(p) => p.theme.spacing[4]}px;
+  margin-top: ${(p) => p.theme.spacing[5]}px;
   &:first-child {
     margin-top: 0;
   }
 `
 
 export const SidebarSectionHeading = styled.div`
-  padding: ${(p) => p.theme.spacing[1]}px ${(p) => p.theme.spacing[2]}px;
+  padding: ${(p) => p.theme.spacing[2]}px ${(p) => p.theme.spacing[3]}px;
   font-size: 0.6875rem;
-  font-weight: 600;
+  font-weight: 700;
   color: ${(p) => p.theme.colors.textMuted};
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.05em;
   margin-bottom: ${(p) => p.theme.spacing[1]}px;
-  margin-top: ${(p) => p.theme.spacing[2]}px;
+  transition:
+    opacity 0.2s,
+    max-height 0.2s,
+    padding 0.2s,
+    margin 0.2s;
 `
 
 const CollapsibleHeading = styled.button`
@@ -66,15 +124,22 @@ const CollapsibleHeading = styled.button`
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: ${(p) => p.theme.spacing[1]}px ${(p) => p.theme.spacing[2]}px;
-  font-size: 0.75rem;
-  font-weight: 500;
+  padding: ${(p) => p.theme.spacing[2]}px ${(p) => p.theme.spacing[3]}px;
+  font-size: 0.6875rem;
+  font-weight: 700;
   color: ${(p) => p.theme.colors.textMuted};
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   background: none;
   border: none;
   cursor: pointer;
   text-align: left;
   margin-bottom: ${(p) => p.theme.spacing[1]}px;
+  transition:
+    opacity 0.2s,
+    max-height 0.2s,
+    padding 0.2s,
+    margin 0.2s;
   svg {
     flex-shrink: 0;
     opacity: 0.8;
@@ -82,62 +147,71 @@ const CollapsibleHeading = styled.button`
 `
 
 const CollapsibleChildren = styled.div`
-  padding-left: ${(p) => p.theme.spacing[3]}px;
+  padding-left: ${(p) => p.theme.spacing[5]}px;
   padding-top: ${(p) => p.theme.spacing[1]}px;
+  transition: padding-left 0.2s;
 `
 
 export const SidebarNavItem = styled.a<{ $active?: boolean }>`
+  position: relative;
   display: flex;
   align-items: center;
   gap: ${(p) => p.theme.spacing[2]}px;
-  padding: 8px 10px;
+  padding: ${(p) => p.theme.spacing[2]}px ${(p) => p.theme.spacing[3]}px;
   font-size: 0.875rem;
+  font-weight: ${(p) => (p.$active ? 500 : 400)};
   color: ${(p) => (p.$active ? p.theme.colors.text : p.theme.colors.textMuted)};
   background: ${(p) =>
     p.$active ? p.theme.colors.surfaceHover : 'transparent'};
-  border-radius: ${(p) => p.theme.radii?.sm ?? 4}px;
+  border-radius: ${(p) => p.theme.radii?.md ?? 6}px;
   text-decoration: none;
   cursor: pointer;
   margin-bottom: 2px;
   transition:
     background 0.15s,
     color 0.15s,
-    transform 0.12s;
-  position: relative;
+    padding 0.2s,
+    justify-content 0.2s;
+
+  /* Left indicator bar for active state */
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 25%;
+    bottom: 25%;
+    width: 3px;
+    background: ${(p) => p.theme.colors.primary};
+    border-radius: 0 2px 2px 0;
+    opacity: ${(p) => (p.$active ? 1 : 0)};
+    transition: opacity 0.15s;
+  }
+
   &:hover {
-    transform: translateX(2px);
     background: ${(p) => p.theme.colors.surfaceHover};
     color: ${(p) => p.theme.colors.text};
   }
-  &:active {
-    transform: translateX(2px) scale(0.97);
-  }
-
-  ${(p) =>
-    p.$active &&
-    `
-    &::before {
-      content: '';
-      position: absolute;
-      left: -8px;
-      top: 10%;
-      height: 80%;
-      width: 4px;
-      background: ${p.theme.colors.primary};
-      border-radius: 0 4px 4px 0;
-    }
-  `}
 
   svg {
     flex-shrink: 0;
     color: ${(p) =>
       p.$active ? p.theme.colors.primary : p.theme.colors.textMuted};
   }
+
   /* Fixed-width icon slot so labels align when expanded */
   > svg:first-of-type {
-    width: 16px;
-    min-width: 16px;
-    height: 16px;
+    width: 20px;
+    min-width: 20px;
+    height: 20px;
+  }
+
+  /* Text label transitions */
+  > span:not([aria-hidden]) {
+    transition:
+      opacity 0.2s,
+      width 0.2s;
+    white-space: nowrap;
+    overflow: hidden;
   }
 `
 

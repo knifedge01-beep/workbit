@@ -4,23 +4,21 @@ import { Box } from 'lucide-react'
 const Header = styled.header`
   display: flex;
   align-items: flex-start;
-  gap: ${(p) => p.theme.spacing[3]}px;
-  padding: ${(p) => p.theme.spacing[4]}px;
-  color: #000000;
-  /* Only break out horizontally so the header isn't clipped by overflow on the scroll container */
-  margin: 0 -24px 24px -24px;
+  gap: ${(p) => p.theme.spacing[4]}px;
+  padding: 0;
+  margin-bottom: ${(p) => p.theme.spacing[6]}px;
 `
 
 const IconWrap = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 48px;
-  height: 48px;
+  width: 40px;
+  height: 40px;
   flex-shrink: 0;
-  background: rgba(0, 0, 0, 0.08);
-  border-radius: ${(p) => p.theme.radii?.md ?? 6}px;
-  color: rgba(0, 0, 0, 0.9);
+  background: ${(p) => p.theme.colors.primaryBg};
+  border-radius: ${(p) => p.theme.radii?.lg ?? 8}px;
+  color: ${(p) => p.theme.colors.primary};
 `
 
 const TextBlock = styled.div`
@@ -32,18 +30,18 @@ const TextBlock = styled.div`
 
 const Title = styled.h1`
   margin: 0;
-  font-size: 1.25rem;
-  font-weight: 700;
+  font-size: 1.5rem;
+  font-weight: 600;
   line-height: 1.3;
-  color: #000000;
+  color: ${(p) => p.theme.colors.text};
 `
 
 const Summary = styled.p<{ $placeholder?: boolean }>`
   margin: 0;
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   font-weight: 400;
-  line-height: 1.4;
-  color: rgba(0, 0, 0, 0.6);
+  line-height: 1.5;
+  color: ${(p) => p.theme.colors.textMuted};
   font-style: ${(p) => (p.$placeholder ? 'italic' : 'normal')};
 `
 
@@ -58,20 +56,13 @@ type Props = {
 
 const SUMMARY_PLACEHOLDER = 'Add a short summary...'
 
-export function PageHeader({
-  title,
-  summary = '',
-  icon,
-  className,
-}: Props) {
+export function PageHeader({ title, summary = '', icon, className }: Props) {
   const showPlaceholder = summary.trim() === ''
   const displaySummary = showPlaceholder ? SUMMARY_PLACEHOLDER : summary
 
   return (
     <Header className={className}>
-      <IconWrap>
-        {icon ?? <Box size={24} strokeWidth={1.5} />}
-      </IconWrap>
+      <IconWrap>{icon ?? <Box size={24} strokeWidth={1.5} />}</IconWrap>
       <TextBlock>
         <Title>{title}</Title>
         <Summary $placeholder={showPlaceholder}>{displaySummary}</Summary>

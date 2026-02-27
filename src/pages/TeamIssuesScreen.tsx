@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import styled from 'styled-components'
+import { Plus } from 'lucide-react'
 import {
   PageHeader,
   Text,
@@ -9,11 +10,18 @@ import {
   Flex,
   Stack,
   Tabs,
+  Button,
+  Modal,
+  Input,
 } from '@design-system'
 import { StatusSelector, PrioritySelector } from '../components'
 import { STATUS_OPTIONS } from '../components/StatusSelector'
 import type { StatusOption } from '../components'
-import { fetchTeamIssues, updateIssue as apiUpdateIssue } from '../api/client'
+import {
+  fetchTeamIssues,
+  updateIssue as apiUpdateIssue,
+  createIssue,
+} from '../api/client'
 import { useFetch } from '../hooks/useFetch'
 import { formatRelativeTime, logError, countBy } from '../utils'
 
@@ -45,7 +53,7 @@ export function TeamIssuesScreen({ teamName }: Props) {
   const navigate = useNavigate()
   const activeTab = isValidTab(tabParam) ? tabParam : 'active'
 
-  const { data: apiIssues } = useFetch(
+  const { data: apiIssues, reload } = useFetch(
     () => (teamId ? fetchTeamIssues(teamId, activeTab) : Promise.resolve([])),
     [teamId, activeTab]
   )
@@ -54,6 +62,9 @@ export function TeamIssuesScreen({ teamName }: Props) {
   const [overrides, setOverrides] = useState<
     Record<string, { status?: string; priority?: string }>
   >({})
+  const [creating, setCreating] = useState(false)
+  const [showModal, setShowModal] = useState(false)
+  const [issueTitle, setIssueTitle] = useState('')
 
   const issues = (apiIssues ?? []).map((i) => ({
     id: i.id,
@@ -93,9 +104,31 @@ export function TeamIssuesScreen({ teamName }: Props) {
     (opt: StatusOption) => (statusCounts[opt.id] ?? 0) > 0
   ).map((opt: StatusOption) => `${statusCounts[opt.id]} ${opt.label}`)
 
+  const handleCreateIssue = async () => {
+    if (!teamId || !issueTitle.trim()) return
+
+    setCreating(true)
+    try {
+      await createIssue(teamId, { title: issueTitle, status: 'todo' })
+      await reload()
+      setShowModal(false)
+      setIssueTitle('')
+    } catch (err) {
+      alert(`Failed to create issue: ${err}`)
+    } finally {
+      setCreating(false)
+    }
+  }
+
   return (
     <Stack gap={4}>
-      <PageHeader title={teamName} />
+      <Flex align="center" justify="space-between">
+        <PageHeader title={teamName} />
+        <Button variant="primary" onClick={() => setShowModal(true)}>
+          <Plus size={16} />
+          New Issue
+        </Button>
+      </Flex>
       <Flex align="center" gap={2}>
         <Tabs
           tabs={[
@@ -166,6 +199,35 @@ export function TeamIssuesScreen({ teamName }: Props) {
           </ClickableCardWrapper>
         ))}
       </Stack>
+
+      <Modal
+        open={showModal}
+        onClose={() => setShowModal(false)}
+        title="Create New Issue"
+        primaryLabel="Create"
+        onPrimary={handleCreateIssue}
+        secondaryLabel="Cancel"
+        onSecondary={() => setShowModal(false)}
+      >
+        <Stack gap={3}>
+          <div>
+            <Text
+              as="label"
+              size="sm"
+              weight="medium"
+              style={{ display: 'block', marginBottom: '8px' }}
+            >
+              Issue Title
+            </Text>
+            <Input
+              value={issueTitle}
+              onChange={(e) => setIssueTitle(e.target.value)}
+              placeholder="Enter issue title"
+              disabled={creating}
+            />
+          </div>
+        </Stack>
+      </Modal>
     </Stack>
   )
 }

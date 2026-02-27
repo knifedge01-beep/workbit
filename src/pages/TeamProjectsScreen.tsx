@@ -1,7 +1,19 @@
 import { useNavigate, useParams } from 'react-router-dom'
+import { useState } from 'react'
+import { Plus } from 'lucide-react'
 import styled from 'styled-components'
-import { PageHeader, Stack, Table, Text } from '@design-system'
+import {
+  PageHeader,
+  Stack,
+  Table,
+  Text,
+  Button,
+  Flex,
+  Modal,
+  Input,
+} from '@design-system'
 import type { ColumnDef } from '@design-system'
+import { createProject } from '../api/client'
 
 export type TeamProjectRow = {
   id: string
@@ -91,6 +103,9 @@ export function TeamProjectsScreen({ teamName }: Props) {
   const { teamId } = useParams<{ teamId: string }>()
   const navigate = useNavigate()
   const projects = (teamId ? MOCK_TEAM_PROJECTS[teamId] : undefined) ?? []
+  const [creating, setCreating] = useState(false)
+  const [showModal, setShowModal] = useState(false)
+  const [projectName, setProjectName] = useState('')
 
   const handleRowClick = (row: TeamProjectRow) => {
     if (teamId) {
@@ -98,9 +113,35 @@ export function TeamProjectsScreen({ teamName }: Props) {
     }
   }
 
+  const handleCreateProject = async () => {
+    if (!teamId || !projectName.trim()) return
+
+    setCreating(true)
+    try {
+      await createProject({ name: projectName, teamId, status: 'Active' })
+      // In real app, would reload the projects list
+      alert('Project created! (Reload page to see it in list)')
+      setShowModal(false)
+      setProjectName('')
+    } catch (err) {
+      alert(`Failed to create project: ${err}`)
+    } finally {
+      setCreating(false)
+    }
+  }
+
   return (
     <Stack gap={4}>
-      <PageHeader title={`${teamName} – Projects`} summary="Projects for this team." />
+      <Flex align="center" justify="space-between">
+        <PageHeader
+          title={`${teamName} – Projects`}
+          summary="Projects for this team."
+        />
+        <Button variant="primary" onClick={() => setShowModal(true)}>
+          <Plus size={16} />
+          New Project
+        </Button>
+      </Flex>
 
       <section>
         <SectionHeader>
@@ -117,6 +158,35 @@ export function TeamProjectsScreen({ teamName }: Props) {
           initialState={{ sorting: [{ id: 'name', desc: false }] }}
         />
       </section>
+
+      <Modal
+        open={showModal}
+        onClose={() => setShowModal(false)}
+        title="Create New Project"
+        primaryLabel="Create"
+        onPrimary={handleCreateProject}
+        secondaryLabel="Cancel"
+        onSecondary={() => setShowModal(false)}
+      >
+        <Stack gap={3}>
+          <div>
+            <Text
+              as="label"
+              size="sm"
+              weight="medium"
+              style={{ display: 'block', marginBottom: '8px' }}
+            >
+              Project Name
+            </Text>
+            <Input
+              value={projectName}
+              onChange={(e) => setProjectName(e.target.value)}
+              placeholder="Enter project name"
+              disabled={creating}
+            />
+          </div>
+        </Stack>
+      </Modal>
     </Stack>
   )
 }

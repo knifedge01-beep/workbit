@@ -1,36 +1,64 @@
+import { PageHeader, Stack, Button } from '@design-system'
+import { useNavigate } from 'react-router-dom'
 import styled from 'styled-components'
-import { PageHeader, Stack, Text } from '@design-system'
-import { fetchNotifications } from '../api/client'
-import { useFetch } from '../hooks/useFetch'
+import { Mail, Plus, FolderKanban } from 'lucide-react'
 
-const NotifCard = styled.div<{ $unread?: boolean }>`
+const EmptyStateContainer = styled.div`
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 12px 16px;
-  border-radius: 8px;
-  background: ${(p) =>
-    p.$unread ? p.theme.colors.backgroundSubtle : 'transparent'};
-  border: 1px solid
-    ${(p) => (p.$unread ? p.theme.colors.border : 'transparent')};
-  cursor: default;
-  transition: background 0.15s;
-  &:hover {
-    background: ${(p) => p.theme.colors.backgroundSubtle};
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 450px;
+  max-width: 480px;
+  margin: ${(p) => p.theme.spacing[8]}px auto;
+  text-align: center;
+  padding: ${(p) => p.theme.spacing[8]}px ${(p) => p.theme.spacing[6]}px;
+  background: ${(p) => p.theme.colors.surface};
+  border-radius: 16px;
+  border: 1px solid ${(p) => p.theme.colors.border};
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+`
+
+const EmptyIconWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  margin-bottom: ${(p) => p.theme.spacing[5]}px;
+  background: ${(p) => p.theme.colors.primaryBg};
+  border-radius: 50%;
+
+  svg {
+    color: ${(p) => p.theme.colors.primary};
   }
 `
 
-const UnreadDot = styled.div`
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: ${(p) => p.theme.colors.primary};
-  flex-shrink: 0;
-  margin-top: 4px;
+const EmptyTitle = styled.h3`
+  font-size: 1.375rem;
+  font-weight: 600;
+  color: ${(p) => p.theme.colors.text};
+  margin: 0 0 ${(p) => p.theme.spacing[3]}px 0;
+  line-height: 1.3;
+`
+
+const EmptyDescription = styled.p`
+  font-size: 0.9375rem;
+  color: ${(p) => p.theme.colors.textMuted};
+  margin: 0 0 ${(p) => p.theme.spacing[6]}px 0;
+  line-height: 1.6;
+  max-width: 380px;
+`
+
+const ActionButtons = styled.div`
+  display: flex;
+  gap: ${(p) => p.theme.spacing[3]}px;
+  flex-wrap: wrap;
+  justify-content: center;
 `
 
 export function InboxScreen() {
-  const { data, loading, error } = useFetch(fetchNotifications)
+  const navigate = useNavigate()
 
   return (
     <Stack gap={4}>
@@ -38,56 +66,32 @@ export function InboxScreen() {
         title="Inbox"
         summary="Your notifications and updates will appear here."
       />
-      {error && (
-        <Text size="sm" muted>
-          Failed to load notifications: {error}
-        </Text>
-      )}
-      {!loading && (
-        <Stack gap={1}>
-          {(data ?? []).map((n) => (
-            <NotifCard key={n.id} $unread={!n.read}>
-              {!n.read && <UnreadDot />}
-              <div
-                style={{ flex: 1, minWidth: 0, paddingLeft: n.read ? 20 : 0 }}
-              >
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    marginBottom: 2,
-                  }}
-                >
-                  <span
-                    style={{ fontWeight: n.read ? 400 : 600, fontSize: 14 }}
-                  >
-                    {n.title}
-                  </span>
-                  <Text size="xs" muted as="span">
-                    · {n.createdAt}
-                  </Text>
-                </div>
-                {n.body && (
-                  <Text size="xs" muted>
-                    {n.body}
-                  </Text>
-                )}
-                {n.actor && (
-                  <Text size="xs" muted>
-                    From: {n.actor.name}
-                  </Text>
-                )}
-              </div>
-            </NotifCard>
-          ))}
-          {data?.length === 0 && (
-            <Text size="sm" muted>
-              No new notifications.
-            </Text>
-          )}
-        </Stack>
-      )}
+
+      <EmptyStateContainer>
+        <EmptyIconWrapper>
+          <Mail size={36} />
+        </EmptyIconWrapper>
+
+        <EmptyTitle>No notifications yet</EmptyTitle>
+        <EmptyDescription>
+          When you have new updates, mentions, or assignments, they'll appear
+          here. Get started by creating an issue or exploring projects.
+        </EmptyDescription>
+
+        <ActionButtons>
+          <Button variant="primary" onClick={() => navigate('/my-issues')}>
+            <Plus size={16} />
+            Create Issue
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => navigate('/workspace/projects')}
+          >
+            <FolderKanban size={16} />
+            View Projects
+          </Button>
+        </ActionButtons>
+      </EmptyStateContainer>
     </Stack>
   )
 }

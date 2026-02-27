@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import styled from 'styled-components'
 import { motion } from 'framer-motion'
 import {
-  Search,
   Users,
   Folder,
   MoreHorizontal,
@@ -11,7 +10,15 @@ import {
   Settings,
   Pencil,
 } from 'lucide-react'
-import { Avatar, Menu } from '@design-system'
+import {
+  Avatar,
+  Menu,
+  Flex,
+  Heading,
+  Text,
+  Search,
+  IconButton,
+} from '@design-system'
 import type { MenuEntry } from '@design-system'
 
 export type TeamTableRow = {
@@ -49,67 +56,6 @@ const TEAM_MENU_ITEMS: MenuEntry[] = [
   },
 ]
 
-const SectionHeader = styled.header`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: ${(p) => p.theme.spacing[3]}px;
-  margin-bottom: ${(p) => p.theme.spacing[3]}px;
-`
-
-const TitleBlock = styled.div`
-  display: flex;
-  align-items: baseline;
-  gap: ${(p) => p.theme.spacing[2]}px;
-`
-
-const Title = styled.h2`
-  margin: 0;
-  font-size: 14px;
-  font-weight: 600;
-  color: ${(p) => p.theme.colors.text};
-`
-
-const Count = styled.span`
-  font-size: 13px;
-  font-weight: 400;
-  color: ${(p) => p.theme.colors.textMuted};
-`
-
-const Toolbar = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${(p) => p.theme.spacing[2]}px;
-  margin-bottom: ${(p) => p.theme.spacing[3]}px;
-`
-
-const SearchBox = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 10px;
-  background: ${(p) => p.theme.colors.backgroundSubtle};
-  border: 1px solid ${(p) => p.theme.colors.border};
-  border-radius: ${(p) => p.theme.radii?.sm ?? 4}px;
-  flex: 1;
-  max-width: 260px;
-  input {
-    border: none;
-    background: transparent;
-    outline: none;
-    font-size: 13px;
-    color: ${(p) => p.theme.colors.text};
-    width: 100%;
-    &::placeholder {
-      color: ${(p) => p.theme.colors.textMuted};
-    }
-  }
-  svg {
-    color: ${(p) => p.theme.colors.textMuted};
-    flex-shrink: 0;
-  }
-`
-
 const CardGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -140,14 +86,8 @@ const TeamCard = styled(motion.div)`
   }
 `
 
-const CardTop = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-`
-
 const TeamName = styled.div`
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 600;
   color: ${(p) => p.theme.colors.text};
   margin-top: ${(p) => p.theme.spacing[1]}px;
@@ -157,29 +97,17 @@ const MetaRow = styled.div`
   display: flex;
   align-items: center;
   gap: ${(p) => p.theme.spacing[2]}px;
-  font-size: 12px;
+  font-size: 0.75rem;
   color: ${(p) => p.theme.colors.textMuted};
   svg {
     flex-shrink: 0;
   }
 `
 
-const ActionsBtn = styled.button`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  background: none;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  color: ${(p) => p.theme.colors.textMuted};
-  transition: background 0.15s;
-  &:hover {
-    background: ${(p) => p.theme.colors.surfaceHover};
-    color: ${(p) => p.theme.colors.text};
-  }
+const SearchWrapper = styled.div`
+  margin-top: ${(p) => p.theme.spacing[3]}px;
+  margin-bottom: ${(p) => p.theme.spacing[3]}px;
+  max-width: 260px;
 `
 
 type Props = {
@@ -198,22 +126,24 @@ export function TeamsTable({ teams, className }: Props) {
 
   return (
     <section className={className}>
-      <SectionHeader>
-        <TitleBlock>
-          <Title>Teams</Title>
-          <Count>{teams.length}</Count>
-        </TitleBlock>
-      </SectionHeader>
-      <Toolbar>
-        <SearchBox>
-          <Search size={13} />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Filter teams..."
-          />
-        </SearchBox>
-      </Toolbar>
+      <Flex justify="space-between" align="center" gap={3}>
+        <Flex align="baseline" gap={2}>
+          <Heading level={3} as="h2">
+            Teams
+          </Heading>
+          <Text size="sm" muted as="span">
+            {teams.length}
+          </Text>
+        </Flex>
+      </Flex>
+      <SearchWrapper>
+        <Search
+          variant="inline"
+          value={query}
+          onChange={(value) => setQuery(value)}
+          placeholder="Filter teams..."
+        />
+      </SearchWrapper>
       <CardGrid>
         {filtered.map((team, i) => (
           <TeamCard
@@ -225,19 +155,19 @@ export function TeamsTable({ teams, className }: Props) {
             whileTap={{ scale: 0.99 }}
             onClick={() => navigate(`/team/${team.id}/issues/active`)}
           >
-            <CardTop>
+            <Flex justify="space-between" align="center">
               <Avatar name={team.teamName} size={36} />
               <TeamActionsWrap onClick={(e) => e.stopPropagation()}>
                 <Menu
                   trigger={
-                    <ActionsBtn aria-label="More options">
+                    <IconButton aria-label="More options">
                       <MoreHorizontal size={14} />
-                    </ActionsBtn>
+                    </IconButton>
                   }
                   items={TEAM_MENU_ITEMS}
                 />
               </TeamActionsWrap>
-            </CardTop>
+            </Flex>
             <TeamName>{team.teamName}</TeamName>
             <MetaRow>
               <Users size={12} />

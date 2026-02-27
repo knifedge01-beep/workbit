@@ -84,3 +84,26 @@ export async function updateIssue(req: Request, res: Response) {
     res.status(500).json({ error: (e as Error).message })
   }
 }
+
+export async function createIssue(req: Request, res: Response) {
+  try {
+    const { teamId } = req.params
+    const body = req.body as {
+      title: string
+      projectId?: string
+      assigneeId?: string
+      status?: string
+    }
+    if (!body.title) {
+      res.status(400).json({ error: 'Title is required' })
+      return
+    }
+    const issue = await issuesModel.createIssue({
+      ...body,
+      teamId,
+    })
+    res.json(issue)
+  } catch (e) {
+    res.status(500).json({ error: (e as Error).message })
+  }
+}

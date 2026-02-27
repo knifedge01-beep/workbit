@@ -1,17 +1,6 @@
-import { useState } from 'react'
 import styled from 'styled-components'
-import {
-  Search,
-  UserPlus,
-  Users,
-  MoreHorizontal,
-  Eye,
-  Shield,
-  UserMinus,
-} from 'lucide-react'
-import { Table, Avatar, Badge, Button, Text, Menu } from '@design-system'
+import { Table, Avatar, Tags, Text } from '@design-system'
 import type { ColumnDef } from '@design-system'
-import type { MenuEntry } from '@design-system'
 
 export type MemberRow = {
   id: string
@@ -23,144 +12,53 @@ export type MemberRow = {
   teams: string
 }
 
-const Toolbar = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${(p) => p.theme.spacing[2]}px;
-  margin-bottom: ${(p) => p.theme.spacing[3]}px;
-`
-
-const SearchBox = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 10px;
-  background: ${(p) => p.theme.colors.backgroundSubtle};
-  border: 1px solid ${(p) => p.theme.colors.border};
-  border-radius: ${(p) => p.theme.radii?.sm ?? 4}px;
-  flex: 1;
-  max-width: 280px;
-  input {
-    border: none;
-    background: transparent;
-    outline: none;
-    font-size: 13px;
-    color: ${(p) => p.theme.colors.text};
-    width: 100%;
-    &::placeholder {
-      color: ${(p) => p.theme.colors.textMuted};
-    }
-  }
-  svg {
-    color: ${(p) => p.theme.colors.textMuted};
-    flex-shrink: 0;
-  }
-`
-
-const SectionHeader = styled.header`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: ${(p) => p.theme.spacing[3]}px;
-  margin-bottom: ${(p) => p.theme.spacing[2]}px;
-`
-
-const TitleBlock = styled.div`
-  display: flex;
-  align-items: baseline;
-  gap: ${(p) => p.theme.spacing[2]}px;
-`
-
-const Title = styled.h2`
-  margin: 0;
-  font-size: 14px;
-  font-weight: 600;
-  color: ${(p) => p.theme.colors.text};
-`
-
-const Count = styled.span`
-  font-size: 13px;
-  font-weight: 400;
-  color: ${(p) => p.theme.colors.textMuted};
+const TableContainer = styled.div`
+  background: ${(p) => p.theme.colors.surface};\n  border: 1px solid ${(p) => p.theme.colors.border};
+  border-radius: ${(p) => p.theme.radii?.lg ?? 8}px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 `
 
 const NameCell = styled.div`
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: ${(p) => p.theme.spacing[3]}px;
   min-width: 0;
+
+  @media (max-width: 640px) {
+    gap: ${(p) => p.theme.spacing[2]}px;
+  }
 `
 
 const NameBlock = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: ${(p) => p.theme.spacing[1]}px;
   min-width: 0;
+  overflow: hidden;
 `
 
 const MemberName = styled.span`
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 500;
   color: ${(p) => p.theme.colors.text};
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 `
 
-const TeamsCell = styled.div`
-  display: flex;
+const StatusBadge = styled.span`
+  display: inline-flex;
   align-items: center;
-  gap: ${(p) => p.theme.spacing[1]}px;
+  padding: ${(p) => p.theme.spacing[1]}px ${(p) => p.theme.spacing[2]}px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: ${(p) => p.theme.colors.surfaceSecondary};
   color: ${(p) => p.theme.colors.textMuted};
-  font-size: 13px;
-  svg {
-    flex-shrink: 0;
-  }
+  border-radius: ${(p) => p.theme.radii?.sm ?? 4}px;
+  border: 1px solid ${(p) => p.theme.colors.border};
 `
-
-const ActionsCell = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  opacity: 0;
-  transition: opacity 0.15s;
-`
-
-const MoreBtn = styled.button`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  background: none;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  color: ${(p) => p.theme.colors.textMuted};
-  &:hover {
-    background: ${(p) => p.theme.colors.surfaceHover};
-    color: ${(p) => p.theme.colors.text};
-  }
-`
-
-const MEMBER_MENU_ITEMS: MenuEntry[] = [
-  {
-    id: 'view',
-    label: 'View profile',
-    icon: <Eye size={16} />,
-    onClick: () => {},
-  },
-  {
-    id: 'role',
-    label: 'Change role',
-    icon: <Shield size={16} />,
-    onClick: () => {},
-  },
-  { type: 'divider' },
-  {
-    id: 'remove',
-    label: 'Remove from workspace',
-    icon: <UserMinus size={16} />,
-    onClick: () => {},
-  },
-]
 
 function createColumns(): ColumnDef<MemberRow, unknown>[] {
   return [
@@ -169,16 +67,16 @@ function createColumns(): ColumnDef<MemberRow, unknown>[] {
       accessorKey: 'name',
       header: 'Name',
       enableSorting: true,
-      meta: { flex: 1.5 },
+      meta: { flex: 2 },
       cell: ({ row }) => {
         const { name, username, avatarSrc } = row.original
         return (
           <NameCell>
-            <Avatar name={name} src={avatarSrc} size={28} />
+            <Avatar name={name} src={avatarSrc} size={36} />
             <NameBlock>
               <MemberName>{name}</MemberName>
               <Text size="xs" muted as="span">
-                {username}
+                @{username}
               </Text>
             </NameBlock>
           </NameCell>
@@ -188,21 +86,17 @@ function createColumns(): ColumnDef<MemberRow, unknown>[] {
     {
       id: 'status',
       accessorKey: 'status',
-      header: 'Role',
-      meta: { flex: 0.7 },
-      cell: ({ row }) => (
-        <Badge variant="light" color="grey" size="small">
-          {row.original.status}
-        </Badge>
-      ),
+      header: 'Status',
+      meta: { flex: 1 },
+      cell: ({ row }) => <StatusBadge>{row.original.status}</StatusBadge>,
     },
     {
       id: 'joined',
       accessorKey: 'joined',
       header: 'Joined',
-      meta: { flex: 0.7 },
+      meta: { flex: 1 },
       cell: ({ row }) => (
-        <Text size="xs" muted as="span">
+        <Text size="sm" muted as="span">
           {row.original.joined}
         </Text>
       ),
@@ -211,30 +105,8 @@ function createColumns(): ColumnDef<MemberRow, unknown>[] {
       id: 'teams',
       accessorKey: 'teams',
       header: 'Teams',
-      meta: { flex: 0.8 },
-      cell: ({ row }) => (
-        <TeamsCell>
-          <Users size={12} />
-          <span>{row.original.teams}</span>
-        </TeamsCell>
-      ),
-    },
-    {
-      id: 'actions',
-      header: '',
-      meta: { flex: 0.3 },
-      cell: () => (
-        <ActionsCell className="member-actions">
-          <Menu
-            trigger={
-              <MoreBtn aria-label="More options">
-                <MoreHorizontal size={14} />
-              </MoreBtn>
-            }
-            items={MEMBER_MENU_ITEMS}
-          />
-        </ActionsCell>
-      ),
+      meta: { flex: 1.2 },
+      cell: ({ row }) => <Tags label={row.original.teams} size="small" />,
     },
   ]
 }
@@ -243,50 +115,18 @@ const columns = createColumns()
 
 type Props = {
   members: MemberRow[]
-  onInvite?: () => void
   className?: string
 }
 
-export function MembersTable({ members, onInvite, className }: Props) {
-  const [query, setQuery] = useState('')
-  const filtered = query
-    ? members.filter(
-        (m) =>
-          m.name.toLowerCase().includes(query.toLowerCase()) ||
-          m.username.toLowerCase().includes(query.toLowerCase())
-      )
-    : members
-
+export function MembersTable({ members, className }: Props) {
   return (
-    <section className={className}>
-      <SectionHeader>
-        <TitleBlock>
-          <Title>Members</Title>
-          <Count>{members.length}</Count>
-        </TitleBlock>
-        {onInvite && (
-          <Button variant="primary" size="sm" onClick={onInvite}>
-            <UserPlus size={14} />
-            Invite
-          </Button>
-        )}
-      </SectionHeader>
-      <Toolbar>
-        <SearchBox>
-          <Search size={13} />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search members..."
-          />
-        </SearchBox>
-      </Toolbar>
+    <TableContainer className={className}>
       <Table<MemberRow>
         columns={columns}
-        data={filtered}
+        data={members}
         enableSorting
         initialState={{ sorting: [{ id: 'name', desc: false }] }}
       />
-    </section>
+    </TableContainer>
   )
 }

@@ -17,9 +17,10 @@ const InlineInputWrap = styled.div`
   position: relative;
   flex: 1;
   min-width: 0;
+
   svg {
     position: absolute;
-    left: ${(p) => p.theme.spacing[2]}px;
+    left: ${(p) => p.theme.spacing[3]}px;
     top: 50%;
     transform: translateY(-50%);
     width: 16px;
@@ -27,13 +28,28 @@ const InlineInputWrap = styled.div`
     color: ${(p) => p.theme.colors.textMuted};
     pointer-events: none;
   }
+
   input {
-    padding-left: ${(p) => p.theme.spacing[2] + 20}px;
+    padding-left: ${(p) => p.theme.spacing[3] + 24}px;
+    background: ${(p) => p.theme.colors.surfaceSecondary};
+    border-color: transparent;
+
+    &:focus {
+      background: ${(p) => p.theme.colors.surface};
+      border-color: ${(p) => p.theme.colors.borderFocus};
+    }
   }
 `
 
 const ExpandableInput = styled(Input)`
   width: 100%;
+  background: ${(p) => p.theme.colors.surfaceSecondary};
+  border-color: transparent;
+
+  &:focus {
+    background: ${(p) => p.theme.colors.surface};
+    border-color: ${(p) => p.theme.colors.borderFocus};
+  }
 `
 
 export type SearchVariant = 'expandable' | 'inline'
@@ -103,7 +119,8 @@ export function Search(props: Props) {
     )
   }
 
-  const expandedWidth = 'expandedWidth' in props ? props.expandedWidth ?? 200 : 200
+  const expandedWidth =
+    'expandedWidth' in props ? (props.expandedWidth ?? 200) : 200
 
   return (
     <>

@@ -11,12 +11,11 @@ import type {
 } from '@tanstack/react-table'
 import { useState } from 'react'
 import styled from 'styled-components'
-import { motion } from 'framer-motion'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 
 const TableWrapper = styled.div`
   width: 100%;
-  border: 1px solid ${(p) => p.theme.colors.border};
+  border: none;
   border-radius: ${(p) => p.theme.radii?.md ?? 6}px;
   overflow: hidden;
   background: ${(p) => p.theme.colors.surface};
@@ -26,15 +25,14 @@ const HeaderRow = styled.div`
   display: flex;
   align-items: center;
   gap: ${(p) => p.theme.spacing[4]}px;
-  padding: ${(p) => p.theme.spacing[2]}px ${(p) => p.theme.spacing[3]}px;
-  font-size: 12px;
-  font-weight: 500;
-  color: ${(p) => p.theme.colors.textMuted};
-  background: ${(p) =>
-    p.theme.colors.backgroundSubtle ?? p.theme.colors.background};
-  border-bottom: 1px solid ${(p) => p.theme.colors.border};
-  letter-spacing: 0.02em;
+  padding: ${(p) => p.theme.spacing[3]}px ${(p) => p.theme.spacing[4]}px;
+  font-size: 0.75rem;
+  font-weight: 600;
   text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: ${(p) => p.theme.colors.textMuted};
+  background: transparent;
+  border-bottom: 1px solid ${(p) => p.theme.colors.border};
 `
 
 const HeaderCell = styled.div<{ $flex?: number }>`
@@ -57,32 +55,33 @@ const SortButton = styled.button`
   color: inherit;
   cursor: pointer;
   text-align: left;
+  transition: color 0.15s;
   &:hover {
     color: ${(p) => p.theme.colors.text};
   }
 `
 
-const BodyRow = styled(motion.div)<{ $clickable?: boolean }>`
+const BodyRow = styled.div<{ $clickable?: boolean }>`
   display: flex;
   align-items: center;
   gap: ${(p) => p.theme.spacing[4]}px;
-  padding: ${(p) => p.theme.spacing[2]}px ${(p) => p.theme.spacing[3]}px;
-  font-size: 13px;
+  padding: ${(p) => p.theme.spacing[4]}px;
+  font-size: 0.875rem;
   color: ${(p) => p.theme.colors.text};
   border-bottom: 1px solid ${(p) => p.theme.colors.border};
-  min-height: 52px;
-  transition: background 0.12s ease;
+  min-height: 64px;
+  transition: background 0.15s;
   ${(p) => p.$clickable && 'cursor: pointer;'}
   &:last-child {
     border-bottom: none;
   }
+  ${(p) =>
+    p.$clickable &&
+    `
   &:hover {
-    background: ${(p) =>
-      p.theme.colors.backgroundSubtle ?? p.theme.colors.background};
+    background: ${p.theme.colors.surfaceHover};
   }
-  &:hover .member-actions {
-    opacity: 1;
-  }
+  `}
 `
 
 const BodyCell = styled.div<{ $flex?: number }>`
@@ -180,15 +179,12 @@ export function Table<T>({
         </HeaderRow>
       ))}
       <div role="rowgroup">
-        {rows.map((row, i) => (
+        {rows.map((row) => (
           <BodyRow
             key={row.id}
             role="row"
             $clickable={Boolean(onRowClick)}
             onClick={onRowClick ? () => onRowClick(row.original) : undefined}
-            initial={{ opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.18, delay: i * 0.04 }}
           >
             {row.getVisibleCells().map((cell) => {
               const meta = cell.column.columnDef.meta

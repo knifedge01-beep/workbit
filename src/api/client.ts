@@ -306,3 +306,31 @@ export const createWorkspace = (body: {
     method: 'POST',
     body: JSON.stringify(body),
   })
+
+// ---- Create Project ----
+
+export const createProject = (body: {
+  name: string
+  teamId: string
+  status?: string
+}) =>
+  apiFetch<ApiProject>('/workspace/projects', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
+
+// ---- Create Issue ----
+
+export const createIssue = (
+  teamId: string,
+  body: {
+    title: string
+    projectId?: string
+    assigneeId?: string
+    status?: string
+  }
+) =>
+  apiFetch<ApiIssue>(`/teams/${teamId}/issues`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })

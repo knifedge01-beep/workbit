@@ -1,14 +1,36 @@
 import { useState } from 'react'
-import { PageHeader, Stack, Text, Card, Flex, Avatar } from '@design-system'
+import { Plus } from 'lucide-react'
+import {
+  PageHeader,
+  Stack,
+  Text,
+  Card,
+  Flex,
+  Avatar,
+  Button,
+  Modal,
+  Input,
+  Select,
+} from '@design-system'
 import { StatusSelector, PrioritySelector } from '../components'
-import { fetchMyIssues, updateIssue as apiUpdateIssue } from '../api/client'
+import {
+  fetchMyIssues,
+  updateIssue as apiUpdateIssue,
+  createIssue,
+  fetchWorkspaceTeams,
+} from '../api/client'
 import { useFetch } from '../hooks/useFetch'
 
 export function MyIssuesScreen() {
-  const { data, loading, error } = useFetch(fetchMyIssues)
+  const { data, loading, error, reload } = useFetch(fetchMyIssues)
+  const { data: teams } = useFetch(fetchWorkspaceTeams)
   const [overrides, setOverrides] = useState<
     Record<string, { status?: string; priority?: string }>
   >({})
+  const [creating, setCreating] = useState(false)
+  const [showModal, setShowModal] = useState(false)
+  const [issueTitle, setIssueTitle] = useState('')
+  const [selectedTeam, setSelectedTeam] = useState('')
 
   const issues = (data ?? []).map((i) => ({
     ...i,
@@ -31,12 +53,35 @@ export function MyIssuesScreen() {
     }))
   }
 
+  const handleCreateIssue = async () => {
+    if (!issueTitle.trim() || !selectedTeam) return
+
+    setCreating(true)
+    try {
+      await createIssue(selectedTeam, { title: issueTitle, status: 'todo' })
+      await reload()
+      setShowModal(false)
+      setIssueTitle('')
+      setSelectedTeam('')
+    } catch (err) {
+      alert(`Failed to create issue: ${err}`)
+    } finally {
+      setCreating(false)
+    }
+  }
+
   return (
     <Stack gap={4}>
-      <PageHeader
-        title="My issues"
-        summary="Issues assigned to you across all teams."
-      />
+      <Flex align="center" justify="space-between">
+        <PageHeader
+          title="My issues"
+          summary="Issues assigned to you across all teams."
+        />
+        <Button variant="primary" onClick={() => setShowModal(true)}>
+          <Plus size={16} />
+          New Issue
+        </Button>
+      </Flex>
       {error && (
         <Text size="sm" muted>
           Failed to load issues: {error}
@@ -91,6 +136,57 @@ export function MyIssuesScreen() {
           )}
         </Stack>
       )}
+
+      <Modal
+        open={showModal}
+        onClose={() => setShowModal(false)}
+        title="Create New Issue"
+        primaryLabel="Create"
+        onPrimary={handleCreateIssue}
+        secondaryLabel="Cancel"
+        onSecondary={() => setShowModal(false)}
+      >
+        <Stack gap={3}>
+          <div>
+            <Text
+              as="label"
+              size="sm"
+              weight="medium"
+              style={{ display: 'block', marginBottom: '8px' }}
+            >
+              Issue Title
+            </Text>
+            <Input
+              value={issueTitle}
+              onChange={(e) => setIssueTitle(e.target.value)}
+              placeholder="Enter issue title"
+              disabled={creating}
+            />
+          </div>
+          <div>
+            <Text
+              as="label"
+              size="sm"
+              weight="medium"
+              style={{ display: 'block', marginBottom: '8px' }}
+            >
+              Team
+            </Text>
+            <Select
+              value={selectedTeam}
+              onChange={(e) => setSelectedTeam(e.target.value)}
+              disabled={creating}
+            >
+              <option value="">Select a team</option>
+              {(teams ?? []).map((team) => (
+                <option key={team.id} value={team.id}>
+                  {team.name}
+                </option>
+              ))}
+            </Select>
+          </div>
+        </Stack>
+      </Modal>
     </Stack>
   )
 }

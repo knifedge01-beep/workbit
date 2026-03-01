@@ -14,27 +14,12 @@ import {
 } from '@design-system'
 import type { ColumnDef } from '@design-system'
 import { createProject } from '../api/client'
+import { useWorkspace } from '../contexts/WorkspaceContext'
 
 export type TeamProjectRow = {
   id: string
   name: string
   status: string
-}
-
-/* Mock projects per team for demo. In production, fetch by teamId. */
-const MOCK_TEAM_PROJECTS: Record<string, TeamProjectRow[]> = {
-  Test94: [
-    { id: 'tes', name: 'TES', status: 'Active' },
-    { id: 'onboarding', name: 'Onboarding', status: 'In progress' },
-  ],
-  Design: [
-    { id: 'design-system', name: 'Design system', status: 'Active' },
-    { id: 'brand', name: 'Brand refresh', status: 'Planning' },
-  ],
-  Engineering: [
-    { id: 'platform', name: 'Platform', status: 'In progress' },
-    { id: 'api-v2', name: 'API v2', status: 'Active' },
-  ],
 }
 
 const SectionHeader = styled.header`
@@ -102,7 +87,13 @@ type Props = { teamName: string }
 export function TeamProjectsScreen({ teamName }: Props) {
   const { teamId } = useParams<{ teamId: string }>()
   const navigate = useNavigate()
-  const projects = (teamId ? MOCK_TEAM_PROJECTS[teamId] : undefined) ?? []
+  const { projects: workspaceProjects, refreshTeamsAndProjects } =
+    useWorkspace()
+  const projects: TeamProjectRow[] = teamId
+    ? workspaceProjects
+        .filter((p) => p.team.id === teamId)
+        .map((p) => ({ id: p.id, name: p.name, status: p.status }))
+    : []
   const [creating, setCreating] = useState(false)
   const [showModal, setShowModal] = useState(false)
   const [projectName, setProjectName] = useState('')
@@ -119,8 +110,7 @@ export function TeamProjectsScreen({ teamName }: Props) {
     setCreating(true)
     try {
       await createProject({ name: projectName, teamId, status: 'Active' })
-      // In real app, would reload the projects list
-      alert('Project created! (Reload page to see it in list)')
+      await refreshTeamsAndProjects()
       setShowModal(false)
       setProjectName('')
     } catch (err) {

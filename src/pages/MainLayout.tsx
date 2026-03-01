@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { Outlet, useParams } from 'react-router-dom'
 import styled from 'styled-components'
 import { Navbar, Sidebar, ThemeProvider } from '@design-system'
-import { DEMO_TEAMS } from '../constants'
+import type { Team } from '../constants'
+import { useWorkspace } from '../contexts/WorkspaceContext'
 import { NavbarLeft, NavbarRight } from '../components/NavbarLeft'
 import { SidebarNav, SidebarFooter } from '../components/SidebarNav'
 
@@ -54,20 +55,26 @@ const ContentInner = styled.div`
   }
 `
 
+const fallbackTeam: Team = { id: '', name: 'Team' }
+
 export function MainLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const { teamId } = useParams<{ teamId: string }>()
-  const selectedTeam =
-    teamId != null
-      ? (DEMO_TEAMS.find((t) => t.id === teamId) ?? DEMO_TEAMS[0])
-      : DEMO_TEAMS[0]
+  const { teams } = useWorkspace()
+  const selectedTeam: Team =
+    teamId != null ? (teams.find((t) => t.id === teamId) ?? teams[0]) : teams[0]
+  const teamsSafe = teams.length > 0 ? teams : []
+  const selectedTeamSafe =
+    selectedTeam ?? (teamId ? { id: teamId, name: teamId } : fallbackTeam)
 
   return (
     <ThemeProvider>
       <LayoutContainer>
         <Navbar
           variant="light"
-          left={<NavbarLeft teams={DEMO_TEAMS} selectedTeam={selectedTeam} />}
+          left={
+            <NavbarLeft teams={teamsSafe} selectedTeam={selectedTeamSafe} />
+          }
           right={<NavbarRight />}
         />
 
@@ -77,7 +84,7 @@ export function MainLayout() {
             onCollapseToggle={() => setSidebarCollapsed((c) => !c)}
             footer={<SidebarFooter />}
           >
-            <SidebarNav selectedTeam={selectedTeam} />
+            <SidebarNav selectedTeam={selectedTeamSafe} />
           </Sidebar>
 
           <ContentWrapper>

@@ -21,7 +21,7 @@ import {
 import { useFetch } from '../hooks/useFetch'
 import { fetchIssue, updateIssue } from '../api/client'
 import {
-  formatRelativeTime,
+  formatDateTime,
   logError,
   IconBtn,
   AddButton,
@@ -374,13 +374,13 @@ This issue is currently being worked on. More details coming soon.
 
 Add implementation details here.`,
     createdBy: issueData.assignee?.name || 'Unknown',
-    createdAt: formatRelativeTime(issueData.date),
+    createdAt: formatDateTime(issueData.date),
     status: issueData.status,
     priority: 'medium', // TODO: Add to backend
     assignee: issueData.assignee?.name || 'Unassigned',
     labels: [], // TODO: Add to backend
     project: issueData.project?.name || projectName || 'No Project',
-    dueDate: issueData.date,
+    dueDate: formatDateTime(issueData.date),
     teamId: issueData.teamId,
   }
 

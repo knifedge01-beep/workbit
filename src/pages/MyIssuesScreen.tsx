@@ -20,6 +20,7 @@ import {
   fetchWorkspaceTeams,
 } from '../api/client'
 import { useFetch } from '../hooks/useFetch'
+import { formatDateTime } from '../utils/format'
 
 export function MyIssuesScreen() {
   const { data, loading, error, reload } = useFetch(fetchMyIssues)
@@ -34,6 +35,7 @@ export function MyIssuesScreen() {
 
   const issues = (data ?? []).map((i) => ({
     ...i,
+    date: i.date ? formatDateTime(i.date) : '—',
     status: overrides[i.id]?.status ?? i.status ?? 'todo',
     priority: overrides[i.id]?.priority ?? 'medium',
   }))

@@ -10,6 +10,7 @@ import {
   Flex,
 } from '@design-system'
 import { useApiKeys, type CreateKeyResponse } from '../hooks/useApiKeys'
+import { formatDateTime } from '../utils/format'
 
 type KeyRow = {
   revoking?: boolean
@@ -71,7 +72,7 @@ export function ApiKeysTab() {
     {
       accessorKey: 'created_at',
       header: 'Created',
-      cell: ({ getValue }) => new Date(getValue() as string).toLocaleString(),
+      cell: ({ getValue }) => formatDateTime((getValue() as string) ?? ''),
     },
     {
       id: 'actions',

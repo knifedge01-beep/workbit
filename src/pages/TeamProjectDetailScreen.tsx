@@ -16,6 +16,7 @@ import type {
   ActivityItem,
 } from '../components'
 import { noop } from '../utils/noop'
+import { formatDateTime } from '../utils/format'
 import {
   fetchTeamProject,
   postStatusUpdate,
@@ -43,23 +44,12 @@ type Props = { projectName: string; teamId: string }
 
 const DEFAULT_CURRENT_USER: ChatUser = { name: 'You' }
 
-function fmtDate(iso: string) {
-  try {
-    return new Date(iso).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-    })
-  } catch {
-    return iso
-  }
-}
-
 function apiUpdateToCard(u: ApiStatusUpdate): StatusUpdateCardData {
   return {
     id: u.id,
     status: u.status,
     authorName: u.author.name,
-    timestamp: fmtDate(u.createdAt),
+    timestamp: formatDateTime(u.createdAt),
     content: u.content,
     commentCount: u.commentCount,
   }
@@ -195,7 +185,12 @@ export function TeamProjectDetailScreen({ projectName, teamId }: Props) {
             targetDate: m.targetDate,
           }))
         )
-        setActivity(data.project.activity)
+        setActivity(
+          data.project.activity.map((a) => ({
+            ...a,
+            date: formatDateTime(a.date),
+          }))
+        )
         setProperties(data.project.properties)
       })
       .catch(console.error)
@@ -216,7 +211,7 @@ export function TeamProjectDetailScreen({ projectName, teamId }: Props) {
         const msg: ChatMessage = {
           id: c.id,
           authorName: c.authorName,
-          timestamp: fmtDate(c.timestamp),
+          timestamp: formatDateTime(c.timestamp),
           content: c.content,
         }
         setCommentsByUpdateId((prev) => ({

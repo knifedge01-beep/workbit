@@ -2,6 +2,25 @@
  * Formatting utilities for dates, strings, numbers, etc.
  */
 
+/** Format for all UI timestamps: dd-mm-yyyy hh:mm a (e.g. 01-03-2025 02:30 PM) */
+export function formatDateTime(dateStr: string): string {
+  try {
+    const d = new Date(dateStr)
+    if (Number.isNaN(d.getTime())) return dateStr
+    const day = String(d.getDate()).padStart(2, '0')
+    const month = String(d.getMonth() + 1).padStart(2, '0')
+    const year = d.getFullYear()
+    const hours = d.getHours()
+    const h = hours % 12 || 12
+    const hh = String(h).padStart(2, '0')
+    const min = String(d.getMinutes()).padStart(2, '0')
+    const a = hours < 12 ? 'AM' : 'PM'
+    return `${day}-${month}-${year} ${hh}:${min} ${a}`
+  } catch {
+    return dateStr
+  }
+}
+
 /**
  * Format a date string to a relative time (e.g., "2 days ago", "just now")
  */

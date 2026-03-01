@@ -7,11 +7,24 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { fetchMembers, fetchWorkspaces } from '../api/client'
+import {
+  fetchMembers,
+  fetchWorkspaces,
+  fetchWorkspaceTeams,
+  fetchProjects,
+} from '../api/client'
 import type { ApiWorkspace } from '../api/client'
+import type { Team } from '../constants'
 import { useAuth } from '../pages/auth/AuthContext'
 
 const STORAGE_KEY = 'workbit.currentWorkspaceId'
+
+export type WorkspaceProject = {
+  id: string
+  name: string
+  team: { id: string; name: string }
+  status: string
+}
 
 type WorkspaceContextValue = {
   currentWorkspace: ApiWorkspace | null
@@ -20,6 +33,11 @@ type WorkspaceContextValue = {
   workspacesLoading: boolean
   workspacesError: string | null
   refreshWorkspaces: () => Promise<void>
+  teams: Team[]
+  projects: WorkspaceProject[]
+  teamsLoading: boolean
+  projectsLoading: boolean
+  refreshTeamsAndProjects: () => Promise<void>
 }
 
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null)
@@ -34,6 +52,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [workspaces, setWorkspaces] = useState<ApiWorkspace[]>([])
   const [workspacesLoading, setWorkspacesLoading] = useState(true)
   const [workspacesError, setWorkspacesError] = useState<string | null>(null)
+  const [teams, setTeams] = useState<Team[]>([])
+  const [projects, setProjects] = useState<WorkspaceProject[]>([])
+  const [teamsLoading, setTeamsLoading] = useState(false)
+  const [projectsLoading, setProjectsLoading] = useState(false)
 
   const setCurrentWorkspace = useCallback((ws: ApiWorkspace | null) => {
     setCurrentWorkspaceState(ws)
@@ -125,6 +147,66 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     }
   }, [userId])
 
+  const loadTeamsAndProjects = useCallback(async () => {
+    setTeamsLoading(true)
+    setProjectsLoading(true)
+    try {
+      const [teamsRes, projectsRes] = await Promise.all([
+        fetchWorkspaceTeams(),
+        fetchProjects(),
+      ])
+      setTeams(teamsRes.map((t) => ({ id: t.id, name: t.name })))
+      setProjects(projectsRes)
+    } catch {
+      setTeams([])
+      setProjects([])
+    } finally {
+      setTeamsLoading(false)
+      setProjectsLoading(false)
+    }
+  }, [])
+
+  const refreshTeamsAndProjects = useCallback(async () => {
+    await loadTeamsAndProjects()
+  }, [loadTeamsAndProjects])
+
+  useEffect(() => {
+    if (!currentWorkspace) {
+      setTeams([])
+      setProjects([])
+      setTeamsLoading(false)
+      setProjectsLoading(false)
+      return
+    }
+    let cancelled = false
+    setTeamsLoading(true)
+    setProjectsLoading(true)
+    void (async () => {
+      try {
+        const [teamsRes, projectsRes] = await Promise.all([
+          fetchWorkspaceTeams(),
+          fetchProjects(),
+        ])
+        if (cancelled) return
+        setTeams(teamsRes.map((t) => ({ id: t.id, name: t.name })))
+        setProjects(projectsRes)
+      } catch {
+        if (!cancelled) {
+          setTeams([])
+          setProjects([])
+        }
+      } finally {
+        if (!cancelled) {
+          setTeamsLoading(false)
+          setProjectsLoading(false)
+        }
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [currentWorkspace])
+
   const value = useMemo<WorkspaceContextValue>(
     () => ({
       currentWorkspace,
@@ -133,6 +215,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       workspacesLoading,
       workspacesError,
       refreshWorkspaces: loadWorkspaces,
+      teams,
+      projects,
+      teamsLoading,
+      projectsLoading,
+      refreshTeamsAndProjects,
     }),
     [
       currentWorkspace,
@@ -141,6 +228,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       workspacesLoading,
       workspacesError,
       loadWorkspaces,
+      teams,
+      projects,
+      teamsLoading,
+      projectsLoading,
+      refreshTeamsAndProjects,
     ]
   )
 

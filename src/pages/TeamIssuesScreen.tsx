@@ -23,7 +23,7 @@ import {
   createIssue,
 } from '../api/client'
 import { useFetch } from '../hooks/useFetch'
-import { formatRelativeTime, logError, countBy } from '../utils'
+import { formatDateTime, logError, countBy } from '../utils'
 
 const ISSUE_TAB_IDS = ['all', 'active', 'backlog'] as const
 type IssueTabId = (typeof ISSUE_TAB_IDS)[number]
@@ -70,7 +70,7 @@ export function TeamIssuesScreen({ teamName }: Props) {
     id: i.id,
     title: i.title,
     assignee: i.assignee?.name ?? '',
-    date: formatRelativeTime(i.date),
+    date: formatDateTime(i.date),
     status: overrides[i.id]?.status ?? i.status ?? 'todo',
     priority: overrides[i.id]?.priority ?? 'medium',
   }))

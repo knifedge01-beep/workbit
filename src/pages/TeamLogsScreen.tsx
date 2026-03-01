@@ -8,6 +8,7 @@ import {
   type ApiTeamLogsResponse,
 } from '../api/client'
 import { useFetch } from '../hooks/useFetch'
+import { formatDateTime } from '../utils/format'
 
 type Props = { teamName: string }
 
@@ -90,7 +91,7 @@ export function TeamLogsScreen({ teamName }: Props) {
                   {item.details}
                 </Text>{' '}
                 <Text size="xs" muted as="span">
-                  · {item.timestamp}
+                  · {formatDateTime(item.timestamp)}
                 </Text>
               </div>
             </TimelineItem>

@@ -49,7 +49,15 @@ function isValidTab(tab: string | undefined): tab is IssueTabId {
 type Props = { teamName: string }
 
 export function TeamIssuesScreen({ teamName }: Props) {
-  const { teamId, tab: tabParam } = useParams<{ teamId: string; tab: string }>()
+  const {
+    workspaceId,
+    teamId,
+    tab: tabParam,
+  } = useParams<{
+    workspaceId: string
+    teamId: string
+    tab: string
+  }>()
   const navigate = useNavigate()
   const activeTab = isValidTab(tabParam) ? tabParam : 'active'
 
@@ -93,8 +101,8 @@ export function TeamIssuesScreen({ teamName }: Props) {
   }
 
   const handleTabChange = (id: string) => {
-    if (teamId && isValidTab(id)) {
-      navigate(`/team/${teamId}/issues/${id}`)
+    if (workspaceId && teamId && isValidTab(id)) {
+      navigate(`/workspace/${workspaceId}/team/${teamId}/issues/${id}`)
     }
   }
 
@@ -160,7 +168,11 @@ export function TeamIssuesScreen({ teamName }: Props) {
         {issues.map((issue) => (
           <ClickableCardWrapper
             key={issue.id}
-            onClick={() => navigate(`/team/${teamId}/issue/${issue.id}`)}
+            onClick={() =>
+              navigate(
+                `/workspace/${workspaceId}/team/${teamId}/issue/${issue.id}`
+              )
+            }
           >
             <Card>
               <Flex align="center" gap={2}>

@@ -27,6 +27,10 @@ export async function getTeamProject(req: Request, res: Response) {
       res.status(404).json({ error: 'Team not found' })
       return
     }
+    if (data.project === null) {
+      res.json({ team: data.team, project: null })
+      return
+    }
     const nodes = data.project.statusUpdates.nodes.map((u) => ({
       id: u.id,
       status: u.status,

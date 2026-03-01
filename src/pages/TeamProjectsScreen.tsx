@@ -1,19 +1,8 @@
 import { useNavigate, useParams } from 'react-router-dom'
-import { useState } from 'react'
 import { Plus } from 'lucide-react'
 import styled from 'styled-components'
-import {
-  PageHeader,
-  Stack,
-  Table,
-  Text,
-  Button,
-  Flex,
-  Modal,
-  Input,
-} from '@design-system'
+import { PageHeader, Stack, Table, Text, Button, Flex } from '@design-system'
 import type { ColumnDef } from '@design-system'
-import { createProject } from '../api/client'
 import { useWorkspace } from '../contexts/WorkspaceContext'
 
 export type TeamProjectRow = {
@@ -85,38 +74,27 @@ const columns = createColumns()
 type Props = { teamName: string }
 
 export function TeamProjectsScreen({ teamName }: Props) {
-  const { teamId } = useParams<{ teamId: string }>()
+  const { workspaceId, teamId } = useParams<{
+    workspaceId: string
+    teamId: string
+  }>()
   const navigate = useNavigate()
-  const { projects: workspaceProjects, refreshTeamsAndProjects } =
-    useWorkspace()
+  const { projects: workspaceProjects } = useWorkspace()
   const projects: TeamProjectRow[] = teamId
     ? workspaceProjects
         .filter((p) => p.team.id === teamId)
         .map((p) => ({ id: p.id, name: p.name, status: p.status }))
     : []
-  const [creating, setCreating] = useState(false)
-  const [showModal, setShowModal] = useState(false)
-  const [projectName, setProjectName] = useState('')
 
   const handleRowClick = (row: TeamProjectRow) => {
-    if (teamId) {
-      navigate(`/team/${teamId}/projects/${row.id}`)
+    if (workspaceId && teamId) {
+      navigate(`/workspace/${workspaceId}/team/${teamId}/projects/${row.id}`)
     }
   }
 
-  const handleCreateProject = async () => {
-    if (!teamId || !projectName.trim()) return
-
-    setCreating(true)
-    try {
-      await createProject({ name: projectName, teamId, status: 'Active' })
-      await refreshTeamsAndProjects()
-      setShowModal(false)
-      setProjectName('')
-    } catch (err) {
-      alert(`Failed to create project: ${err}`)
-    } finally {
-      setCreating(false)
+  const handleNewProject = () => {
+    if (workspaceId && teamId) {
+      navigate(`/workspace/${workspaceId}/team/${teamId}/projects/new`)
     }
   }
 
@@ -127,7 +105,7 @@ export function TeamProjectsScreen({ teamName }: Props) {
           title={`${teamName} – Projects`}
           summary="Projects for this team."
         />
-        <Button variant="primary" onClick={() => setShowModal(true)}>
+        <Button variant="primary" onClick={handleNewProject}>
           <Plus size={16} />
           New Project
         </Button>
@@ -148,35 +126,6 @@ export function TeamProjectsScreen({ teamName }: Props) {
           initialState={{ sorting: [{ id: 'name', desc: false }] }}
         />
       </section>
-
-      <Modal
-        open={showModal}
-        onClose={() => setShowModal(false)}
-        title="Create New Project"
-        primaryLabel="Create"
-        onPrimary={handleCreateProject}
-        secondaryLabel="Cancel"
-        onSecondary={() => setShowModal(false)}
-      >
-        <Stack gap={3}>
-          <div>
-            <Text
-              as="label"
-              size="sm"
-              weight="medium"
-              style={{ display: 'block', marginBottom: '8px' }}
-            >
-              Project Name
-            </Text>
-            <Input
-              value={projectName}
-              onChange={(e) => setProjectName(e.target.value)}
-              placeholder="Enter project name"
-              disabled={creating}
-            />
-          </div>
-        </Stack>
-      </Modal>
     </Stack>
   )
 }

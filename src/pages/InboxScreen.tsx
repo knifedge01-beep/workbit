@@ -1,5 +1,5 @@
 import { PageHeader, Stack, Button } from '@design-system'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import styled from 'styled-components'
 import { Mail, Plus, FolderKanban } from 'lucide-react'
 
@@ -59,6 +59,8 @@ const ActionButtons = styled.div`
 
 export function InboxScreen() {
   const navigate = useNavigate()
+  const { workspaceId } = useParams<{ workspaceId: string }>()
+  const base = workspaceId ? `/workspace/${workspaceId}` : ''
 
   return (
     <Stack gap={4}>
@@ -79,13 +81,16 @@ export function InboxScreen() {
         </EmptyDescription>
 
         <ActionButtons>
-          <Button variant="primary" onClick={() => navigate('/my-issues')}>
+          <Button
+            variant="primary"
+            onClick={() => navigate(`${base}/my-issues`)}
+          >
             <Plus size={16} />
             Create Issue
           </Button>
           <Button
             variant="outline"
-            onClick={() => navigate('/workspace/projects')}
+            onClick={() => navigate(`${base}/workspace/projects`)}
           >
             <FolderKanban size={16} />
             View Projects

@@ -48,24 +48,28 @@ export function getDummyStore(): Store {
       {
         id: 'team-product',
         name: 'Product',
+        workspaceId: 'ws-1',
         projectId: 'proj-1',
         memberIds: ['1', '2'],
       },
       {
         id: 'team-design',
         name: 'Design',
+        workspaceId: 'ws-1',
         projectId: 'proj-2',
         memberIds: ['2', '3'],
       },
       {
         id: 'team-platform',
         name: 'Platform',
+        workspaceId: 'ws-1',
         projectId: 'proj-3',
         memberIds: ['1', '3'],
       },
       {
         id: 'team-mobile',
         name: 'Mobile',
+        workspaceId: 'ws-1',
         projectId: 'proj-4',
         memberIds: ['2'],
       },

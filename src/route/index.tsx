@@ -13,6 +13,10 @@ import {
   WorkspaceTeamsScreen,
   WorkspaceRolesScreen,
   WorkspacesScreen,
+  CreateTeamScreen,
+  CreateMemberScreen,
+  CreateProjectScreen,
+  CreateIssueScreen,
   TeamIssuesScreenWrapper,
   TeamProjectsScreenWrapper,
   TeamProjectDetailScreenWrapper,
@@ -25,8 +29,16 @@ import {
 import { LandingPage } from '../landing'
 
 function RedirectToTeamIssues() {
-  const { teamId } = useParams<{ teamId: string }>()
-  return <Navigate to={`/team/${teamId}/issues/active`} replace />
+  const { workspaceId, teamId } = useParams<{
+    workspaceId: string
+    teamId: string
+  }>()
+  return (
+    <Navigate
+      to={`/workspace/${workspaceId}/team/${teamId}/issues/active`}
+      replace
+    />
+  )
 }
 
 export function AppRoutes() {
@@ -44,15 +56,16 @@ export function AppRoutes() {
           </AuthGate>
         }
       />
+      <Route path="/" element={<Navigate to="/workspaces" replace />} />
       <Route
-        path="/"
+        path="/workspace/:workspaceId"
         element={
           <AuthGate>
             <MainLayout />
           </AuthGate>
         }
       >
-        <Route index element={<Navigate to="/landing" replace />} />
+        <Route index element={<Navigate to="/workspaces" replace />} />
         <Route path="inbox" element={<InboxScreen />} />
         <Route path="my-issues" element={<MyIssuesScreen />} />
         <Route path="profile" element={<ProfilePage />} />
@@ -63,8 +76,15 @@ export function AppRoutes() {
         <Route path="workspace/views" element={<WorkspaceViewsScreen />} />
         <Route path="workspace/more" element={<WorkspaceMoreScreen />} />
         <Route path="workspace/member" element={<WorkspaceMemberScreen />} />
+        <Route path="workspace/member/new" element={<CreateMemberScreen />} />
         <Route path="workspace/teams" element={<WorkspaceTeamsScreen />} />
+        <Route path="workspace/teams/new" element={<CreateTeamScreen />} />
+        <Route
+          path="workspace/projects/new"
+          element={<CreateProjectScreen />}
+        />
         <Route path="workspace/roles" element={<WorkspaceRolesScreen />} />
+        <Route path="issues/new" element={<CreateIssueScreen />} />
         <Route path="team/:teamId" element={<RedirectToTeamIssues />} />
         <Route
           path="team/:teamId/issues/:tab"
@@ -79,9 +99,19 @@ export function AppRoutes() {
           element={<TeamProjectsScreenWrapper />}
         />
         <Route
+          path="team/:teamId/projects/new"
+          element={<CreateProjectScreen />}
+        />
+        <Route
           path="team/:teamId/projects/:projectId"
           element={<TeamProjectDetailScreenWrapper />}
         />
+        <Route path="team/:teamId/issues/new" element={<CreateIssueScreen />} />
+        <Route
+          path="team/:teamId/member/new"
+          element={<CreateMemberScreen />}
+        />
+        <Route path="team/:teamId/teams/new" element={<CreateTeamScreen />} />
         <Route path="team/:teamId/views" element={<TeamViewsScreenWrapper />} />
         <Route path="team/:teamId/logs" element={<TeamLogsScreenWrapper />} />
       </Route>

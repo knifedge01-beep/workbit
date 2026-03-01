@@ -56,7 +56,12 @@ export async function insertIssue(issue: Issue): Promise<void> {
 
 export async function updateIssue(
   issueId: string,
-  patch: Partial<Pick<Issue, 'status' | 'assigneeId' | 'assigneeName'>>
+  patch: Partial<
+    Pick<
+      Issue,
+      'status' | 'assigneeId' | 'assigneeName' | 'projectId' | 'description'
+    >
+  >
 ): Promise<Issue | null> {
   const existing = await getIssueById(issueId)
   if (!existing) return null

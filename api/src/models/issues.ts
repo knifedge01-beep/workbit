@@ -15,7 +15,12 @@ export async function getMyIssues(assigneeId: string): Promise<Issue[]> {
 
 export async function updateIssue(
   issueId: string,
-  patch: Partial<Pick<Issue, 'status' | 'assigneeId' | 'assigneeName'>>
+  patch: Partial<
+    Pick<
+      Issue,
+      'status' | 'assigneeId' | 'assigneeName' | 'projectId' | 'description'
+    >
+  >
 ): Promise<Issue | null> {
   return db.updateIssue(issueId, patch)
 }

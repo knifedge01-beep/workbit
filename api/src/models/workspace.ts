@@ -6,6 +6,7 @@ import * as dbMembers from '../db/members.js'
 import * as dbViews from '../db/views.js'
 import * as dbRoles from '../db/roles.js'
 import * as dbInvitations from '../db/invitations.js'
+import { insertTeam } from '../db/teams.js'
 
 export async function getProjects(): Promise<Project[]> {
   return dbProjects.getProjects()
@@ -106,6 +107,21 @@ export async function provisionMember(
     userAuthId,
   })
   return { ...member, provisioned: true, uid: userAuthId, userAuthId }
+}
+
+export async function createTeam(input: {
+  workspaceId: string
+  name: string
+}): Promise<Team> {
+  const team: Team = {
+    id: generateId(),
+    name: input.name,
+    workspaceId: input.workspaceId,
+    projectId: null,
+    memberIds: [],
+  }
+  await insertTeam(team)
+  return team
 }
 
 export async function createProject(input: {

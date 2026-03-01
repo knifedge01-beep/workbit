@@ -1,8 +1,14 @@
-import { useState } from 'react'
-import { Outlet, useParams } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Outlet, useParams, useNavigate, useLocation } from 'react-router-dom'
 import styled from 'styled-components'
-import { Navbar, Sidebar, ThemeProvider } from '@design-system'
-import type { Team } from '../constants'
+import {
+  Navbar,
+  Sidebar,
+  ThemeProvider,
+  Modal,
+  Stack,
+  Text,
+} from '@design-system'
 import { useWorkspace } from '../contexts/WorkspaceContext'
 import { NavbarLeft, NavbarRight } from '../components/NavbarLeft'
 import { SidebarNav, SidebarFooter } from '../components/SidebarNav'
@@ -55,27 +61,79 @@ const ContentInner = styled.div`
   }
 `
 
-const fallbackTeam: Team = { id: '', name: 'Team' }
-
 export function MainLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
-  const { teamId } = useParams<{ teamId: string }>()
-  const { teams } = useWorkspace()
-  const selectedTeam: Team =
-    teamId != null ? (teams.find((t) => t.id === teamId) ?? teams[0]) : teams[0]
-  const teamsSafe = teams.length > 0 ? teams : []
-  const selectedTeamSafe =
-    selectedTeam ?? (teamId ? { id: teamId, name: teamId } : fallbackTeam)
+  const navigate = useNavigate()
+  const location = useLocation()
+  const { workspaceId } = useParams<{
+    workspaceId: string
+    teamId: string
+  }>()
+  const {
+    workspaces,
+    workspacesLoading,
+    teams,
+    teamsLoading,
+    currentWorkspace,
+    setCurrentWorkspace,
+  } = useWorkspace()
+
+  const isOnCreateTeamPage = location.pathname.includes('/workspace/teams/new')
+  const showNoTeamBlocker =
+    Boolean(workspaceId) &&
+    !workspacesLoading &&
+    !teamsLoading &&
+    teams.length === 0 &&
+    !isOnCreateTeamPage
+
+  useEffect(() => {
+    if (!workspaceId || workspacesLoading) return
+    const ws = workspaces.find((w) => w.id === workspaceId)
+    if (ws) setCurrentWorkspace(ws)
+    else navigate('/workspaces', { replace: true })
+  }, [
+    workspaceId,
+    workspaces,
+    workspacesLoading,
+    setCurrentWorkspace,
+    navigate,
+  ])
+
+  if (!workspaceId) return null
 
   return (
     <ThemeProvider>
       <LayoutContainer>
+        <Modal
+          open={showNoTeamBlocker}
+          onClose={() => navigate('/workspaces')}
+          title="Create your first team"
+          primaryLabel="Create team"
+          onPrimary={() =>
+            workspaceId &&
+            navigate(`/workspace/${workspaceId}/workspace/teams/new`)
+          }
+          secondaryLabel="Back to workspaces"
+          onSecondary={() => navigate('/workspaces')}
+        >
+          <Stack gap={2}>
+            <Text as="p">
+              This workspace has no teams yet. Create a team to get started with
+              projects and issues.
+            </Text>
+          </Stack>
+        </Modal>
+
         <Navbar
           variant="light"
           left={
-            <NavbarLeft teams={teamsSafe} selectedTeam={selectedTeamSafe} />
+            <NavbarLeft
+              workspaces={workspaces}
+              currentWorkspace={currentWorkspace}
+              onSelectWorkspace={setCurrentWorkspace}
+            />
           }
-          right={<NavbarRight />}
+          right={<NavbarRight workspaceId={workspaceId} />}
         />
 
         <MainContainer>
@@ -84,7 +142,7 @@ export function MainLayout() {
             onCollapseToggle={() => setSidebarCollapsed((c) => !c)}
             footer={<SidebarFooter />}
           >
-            <SidebarNav selectedTeam={selectedTeamSafe} />
+            <SidebarNav workspaceId={workspaceId} teams={teams} />
           </Sidebar>
 
           <ContentWrapper>

@@ -67,33 +67,47 @@ export async function getIssue(req: Request, res: Response) {
 
 export async function createIssue(req: Request, res: Response) {
   try {
+    const { teamId } = req.params as { teamId: string }
     const body = req.body as {
       projectId?: string
       title?: string
       description?: string
       body?: string
     }
-    const projectId = body.projectId
     const title = body.title
     const description = body.description ?? body.body
-    if (!projectId || !title) {
-      res.status(400).json({ error: 'projectId and title are required' })
+    if (!teamId || !title) {
+      res.status(400).json({ error: 'teamId and title are required' })
       return
     }
-    const project = await getProjectById(projectId)
-    if (!project) {
-      res.status(404).json({ error: `Project not found: ${projectId}` })
+    const team = await getTeamById(teamId)
+    if (!team) {
+      res.status(404).json({ error: `Team not found: ${teamId}` })
       return
+    }
+    let projectId: string | undefined = body.projectId
+    if (projectId != null && projectId !== '') {
+      const project = await getProjectById(projectId)
+      if (!project) {
+        res.status(404).json({ error: `Project not found: ${projectId}` })
+        return
+      }
+      if (project.teamId !== teamId) {
+        res.status(400).json({ error: 'Project does not belong to this team' })
+        return
+      }
+    } else {
+      projectId = undefined
     }
     const issue = await issuesModel.createIssue({
-      teamId: project.teamId,
+      teamId,
       projectId,
       title,
       description,
     })
-    const [team, assignee] = await Promise.all([
-      getTeamById(issue.teamId),
+    const [assignee, project] = await Promise.all([
       issue.assigneeId ? getMemberById(issue.assigneeId) : null,
+      issue.projectId ? getProjectById(issue.projectId) : null,
     ])
     res.status(201).json({
       id: issue.id,
@@ -107,12 +121,15 @@ export async function createIssue(req: Request, res: Response) {
       date: issue.date,
       status: issue.status,
       teamId: issue.teamId,
-      team: team ? { id: team.id, name: team.name } : null,
+      team: { id: team.id, name: team.name },
       project: project ? { id: project.id, name: project.name } : null,
     })
   } catch (e) {
     const msg = (e as Error).message
-    if (msg.startsWith('Project not found:')) {
+    if (
+      msg.startsWith('Team not found:') ||
+      msg.startsWith('Project not found:')
+    ) {
       res.status(404).json({ error: msg })
       return
     }
@@ -127,13 +144,66 @@ export async function updateIssue(req: Request, res: Response) {
       status?: string
       assigneeId?: string
       assigneeName?: string
+      projectId?: string | null
+      description?: string
     }
-    const issue = await issuesModel.updateIssue(issueId, body)
+    const existing = await issuesModel.getIssueById(issueId)
+    if (!existing) {
+      res.status(404).json({ error: 'Issue not found' })
+      return
+    }
+    let projectId: string | undefined | null = body.projectId
+    if (projectId !== undefined) {
+      if (projectId != null && projectId !== '') {
+        const project = await getProjectById(projectId)
+        if (!project) {
+          res.status(404).json({ error: `Project not found: ${projectId}` })
+          return
+        }
+        if (project.teamId !== existing.teamId) {
+          res
+            .status(400)
+            .json({ error: "Project does not belong to this issue's team" })
+          return
+        }
+      } else {
+        projectId = undefined
+      }
+    }
+    const patch = {
+      ...(body.status !== undefined && { status: body.status }),
+      ...(body.assigneeId !== undefined && { assigneeId: body.assigneeId }),
+      ...(body.assigneeName !== undefined && {
+        assigneeName: body.assigneeName,
+      }),
+      ...(projectId !== undefined && { projectId: projectId ?? undefined }),
+      ...(body.description !== undefined && { description: body.description }),
+    }
+    const issue = await issuesModel.updateIssue(issueId, patch)
     if (!issue) {
       res.status(404).json({ error: 'Issue not found' })
       return
     }
-    res.json(issue)
+    const [assignee, team, project] = await Promise.all([
+      issue.assigneeId ? getMemberById(issue.assigneeId) : null,
+      getTeamById(issue.teamId),
+      issue.projectId ? getProjectById(issue.projectId) : null,
+    ])
+    res.json({
+      id: issue.id,
+      title: issue.title,
+      description: issue.description,
+      assignee: assignee
+        ? { id: assignee.id, name: assignee.name }
+        : issue.assigneeName
+          ? { id: '', name: issue.assigneeName }
+          : null,
+      date: issue.date,
+      status: issue.status,
+      teamId: issue.teamId,
+      team: team ? { id: team.id, name: team.name } : null,
+      project: project ? { id: project.id, name: project.name } : null,
+    })
   } catch (e) {
     res.status(500).json({ error: (e as Error).message })
   }

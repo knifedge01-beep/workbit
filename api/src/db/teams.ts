@@ -23,6 +23,37 @@ export async function getTeams(): Promise<Team[]> {
   return (data ?? []).map((r) => rowToTeam(r as DbRow))
 }
 
+export async function getTeamsByWorkspace(
+  workspaceId: string,
+  memberId?: string
+): Promise<Team[]> {
+  let query = getClient()
+    .from('teams')
+    .select('*')
+    .eq('workspace_id', workspaceId)
+    .order('id')
+  if (memberId != null && memberId !== '') {
+    query = query.filter('member_ids', 'cs', JSON.stringify([memberId]))
+  }
+  const { data, error } = await query
+  if (error) throw error
+  return (data ?? []).map((r) => rowToTeam(r as DbRow))
+}
+
+export async function insertTeam(team: Team): Promise<void> {
+  const row = {
+    id: team.id,
+    name: team.name,
+    workspace_id: team.workspaceId ?? null,
+    project_id: team.projectId ?? null,
+    member_ids: team.memberIds ?? [],
+  }
+  const { error } = await getClient()
+    .from('teams')
+    .insert(row as never)
+  if (error) throw error
+}
+
 export async function updateTeam(
   teamId: string,
   patch: Partial<Pick<Team, 'projectId' | 'memberIds'>>

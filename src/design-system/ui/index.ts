@@ -3,6 +3,7 @@ export { IconButton } from './IconButton'
 export { Input } from './Input'
 export { Search, type SearchVariant } from './Search'
 export { Textarea } from './Textarea'
+export { RichText, type RichTextProps } from './RichText'
 export { Checkbox } from './Checkbox'
 export { Select } from './Select'
 export { Switch } from './Switch'
@@ -34,7 +35,12 @@ export {
   SidebarNavItem,
 } from './Sidebar'
 export { TableHeader } from './TableHeader'
-export { Table, type ColumnDef, type SortingState, type TanStackTableType } from './Table'
+export {
+  Table,
+  type ColumnDef,
+  type SortingState,
+  type TanStackTableType,
+} from './Table'
 export { StarRating } from './StarRating'
 export { Tags } from './Tags'
 export { Notification } from './Notification'

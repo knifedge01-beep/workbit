@@ -1,7 +1,10 @@
 import type { Request, Response } from 'express'
 import * as workspaceModel from '../models/workspace.js'
 import { getProjects as dbGetProjects } from '../db/projects.js'
-import { getTeams as dbGetTeams } from '../db/teams.js'
+import {
+  getTeams as dbGetTeams,
+  getTeamsByWorkspace as dbGetTeamsByWorkspace,
+} from '../db/teams.js'
 import { getMembers as dbGetMembers } from '../db/members.js'
 import { getViewsWithoutTeamId } from '../db/views.js'
 import { getMemberById } from '../db/members.js'
@@ -49,9 +52,18 @@ export async function getProjects(_req: Request, res: Response) {
   }
 }
 
-export async function getTeams(_req: Request, res: Response) {
+export async function getTeams(req: Request, res: Response) {
   try {
-    const [teams, projects] = await Promise.all([dbGetTeams(), dbGetProjects()])
+    const workspaceId = req.query.workspaceId as string | undefined
+    if (!workspaceId || typeof workspaceId !== 'string') {
+      sendError(res, new Error('workspaceId is required'), 400)
+      return
+    }
+    const memberId = req.query.memberId as string | undefined
+    const [teams, projects] = await Promise.all([
+      dbGetTeamsByWorkspace(workspaceId, memberId),
+      dbGetProjects(),
+    ])
     const projectsById = new Map(projects.map((p) => [p.id, p]))
     const list = teams.map((t) => {
       const project = t.projectId ? projectsById.get(t.projectId) : undefined
@@ -63,6 +75,32 @@ export async function getTeams(_req: Request, res: Response) {
       }
     })
     res.json(list)
+  } catch (e) {
+    sendError(res, e)
+  }
+}
+
+export async function createTeam(req: Request, res: Response) {
+  try {
+    const { workspaceId, name } = req.body as {
+      workspaceId?: string
+      name?: string
+    }
+    if (!workspaceId || typeof workspaceId !== 'string') {
+      sendError(res, new Error('workspaceId is required'), 400)
+      return
+    }
+    if (!name || typeof name !== 'string') {
+      sendError(res, new Error('name is required'), 400)
+      return
+    }
+    const team = await workspaceModel.createTeam({ workspaceId, name })
+    res.status(201).json({
+      id: team.id,
+      name: team.name,
+      memberCount: 0,
+      project: null,
+    })
   } catch (e) {
     sendError(res, e)
   }

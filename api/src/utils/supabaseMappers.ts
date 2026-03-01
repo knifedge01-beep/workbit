@@ -47,6 +47,7 @@ export function rowToTeam(r: DbRow): Team {
   return {
     id: r.id as string,
     name: r.name as string,
+    workspaceId: (r.workspace_id as string) ?? '',
     projectId: r.project_id as string | undefined,
     memberIds: (r.member_ids as string[]) ?? [],
   }
@@ -201,6 +202,7 @@ function teamToRow(t: Team): Record<string, unknown> {
   return {
     id: t.id,
     name: t.name,
+    workspace_id: t.workspaceId ?? null,
     project_id: t.projectId ?? null,
     member_ids: t.memberIds ?? [],
   }

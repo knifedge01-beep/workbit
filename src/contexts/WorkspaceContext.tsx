@@ -148,11 +148,13 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   }, [userId])
 
   const loadTeamsAndProjects = useCallback(async () => {
+    if (!currentWorkspace) return
     setTeamsLoading(true)
     setProjectsLoading(true)
     try {
+      // Load all workspace teams (no memberId filter) for navbar dropdown and sidebar
       const [teamsRes, projectsRes] = await Promise.all([
-        fetchWorkspaceTeams(),
+        fetchWorkspaceTeams(currentWorkspace.id),
         fetchProjects(),
       ])
       setTeams(teamsRes.map((t) => ({ id: t.id, name: t.name })))
@@ -164,7 +166,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setTeamsLoading(false)
       setProjectsLoading(false)
     }
-  }, [])
+  }, [currentWorkspace])
 
   const refreshTeamsAndProjects = useCallback(async () => {
     await loadTeamsAndProjects()
@@ -183,8 +185,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setProjectsLoading(true)
     void (async () => {
       try {
+        // Load all workspace teams (no memberId filter) for navbar dropdown and sidebar
         const [teamsRes, projectsRes] = await Promise.all([
-          fetchWorkspaceTeams(),
+          fetchWorkspaceTeams(currentWorkspace.id),
           fetchProjects(),
         ])
         if (cancelled) return

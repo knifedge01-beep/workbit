@@ -20,11 +20,19 @@ import {
   fetchWorkspaceTeams,
 } from '../api/client'
 import { useFetch } from '../hooks/useFetch'
+import { useWorkspace } from '../contexts/WorkspaceContext'
 import { formatDateTime } from '../utils/format'
 
 export function MyIssuesScreen() {
+  const { currentWorkspace } = useWorkspace()
   const { data, loading, error, reload } = useFetch(fetchMyIssues)
-  const { data: teams } = useFetch(fetchWorkspaceTeams)
+  const { data: teams } = useFetch(
+    () =>
+      currentWorkspace
+        ? fetchWorkspaceTeams(currentWorkspace.id)
+        : Promise.resolve([]),
+    [currentWorkspace?.id]
+  )
   const [overrides, setOverrides] = useState<
     Record<string, { status?: string; priority?: string }>
   >({})

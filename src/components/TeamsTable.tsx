@@ -111,11 +111,12 @@ const SearchWrapper = styled.div`
 `
 
 type Props = {
+  workspaceId: string
   teams: TeamTableRow[]
   className?: string
 }
 
-export function TeamsTable({ teams, className }: Props) {
+export function TeamsTable({ workspaceId, teams, className }: Props) {
   const [query, setQuery] = useState('')
   const navigate = useNavigate()
   const filtered = query
@@ -153,7 +154,11 @@ export function TeamsTable({ teams, className }: Props) {
             transition={{ duration: 0.24, delay: i * 0.07 }}
             whileHover={{ y: -4, boxShadow: '0 8px 24px rgba(0,0,0,0.1)' }}
             whileTap={{ scale: 0.99 }}
-            onClick={() => navigate(`/team/${team.id}/issues/active`)}
+            onClick={() =>
+              navigate(
+                `/workspace/${workspaceId}/team/${team.id}/issues/active`
+              )
+            }
           >
             <Flex justify="space-between" align="center">
               <Avatar name={team.teamName} size={36} />

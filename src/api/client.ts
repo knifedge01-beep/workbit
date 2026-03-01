@@ -117,6 +117,28 @@ export async function fetchMembers(): Promise<ApiMember[]> {
   return authFetch('/workspace/members') as Promise<ApiMember[]>
 }
 
+export async function createMember(body: {
+  name: string
+  username: string
+  email: string
+  status?: string
+  teamIds?: string[]
+}): Promise<ApiMember> {
+  return authFetch('/workspace/members', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  }) as Promise<ApiMember>
+}
+
+/** Current user's member record (by auth token). Returns null if not found. */
+export async function fetchMeMember(): Promise<ApiMember | null> {
+  try {
+    return (await authFetch('/me/member')) as ApiMember
+  } catch {
+    return null
+  }
+}
+
 export async function fetchProjects(): Promise<
   {
     id: string
@@ -156,7 +178,10 @@ export async function createProject(body: {
   }>
 }
 
-export async function fetchWorkspaceTeams(): Promise<
+export async function fetchWorkspaceTeams(
+  workspaceId: string,
+  memberId?: string
+): Promise<
   {
     id: string
     name: string
@@ -164,7 +189,9 @@ export async function fetchWorkspaceTeams(): Promise<
     project: { id: string; name: string } | null
   }[]
 > {
-  return authFetch('/workspace/teams') as Promise<
+  const params = new URLSearchParams({ workspaceId })
+  if (memberId != null && memberId !== '') params.set('memberId', memberId)
+  return authFetch(`/workspace/teams?${params.toString()}`) as Promise<
     {
       id: string
       name: string
@@ -172,6 +199,26 @@ export async function fetchWorkspaceTeams(): Promise<
       project: { id: string; name: string } | null
     }[]
   >
+}
+
+export async function createTeam(body: {
+  workspaceId: string
+  name: string
+}): Promise<{
+  id: string
+  name: string
+  memberCount: number
+  project: { id: string; name: string } | null
+}> {
+  return authFetch('/workspace/teams', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  }) as Promise<{
+    id: string
+    name: string
+    memberCount: number
+    project: { id: string; name: string } | null
+  }>
 }
 
 export async function fetchWorkspaceViews(): Promise<
@@ -214,48 +261,37 @@ export async function inviteMember(
 
 export type ActivityIcon = 'milestone' | 'project'
 
-export async function fetchTeamProject(teamId: string): Promise<{
-  team: { id: string; name: string }
-  project: {
-    id: string
-    statusUpdates: { nodes: ApiStatusUpdate[] }
-    properties: ApiProjectProperties
-    milestones: {
-      id: string
-      name: string
-      progress: number
-      total: number
-      targetDate: string
-    }[]
-    activity: {
-      id: string
-      message: string
-      date: string
-      icon: ActivityIcon
-    }[]
-  }
-}> {
-  return authFetch(`/teams/${teamId}/project`) as Promise<{
-    team: { id: string; name: string }
-    project: {
-      id: string
-      statusUpdates: { nodes: ApiStatusUpdate[] }
-      properties: ApiProjectProperties
-      milestones: {
+export type TeamProjectResponse =
+  | {
+      team: { id: string; name: string }
+      project: {
         id: string
-        name: string
-        progress: number
-        total: number
-        targetDate: string
-      }[]
-      activity: {
-        id: string
-        message: string
-        date: string
-        icon: ActivityIcon
-      }[]
+        statusUpdates: { nodes: ApiStatusUpdate[] }
+        properties: ApiProjectProperties
+        milestones: {
+          id: string
+          name: string
+          progress: number
+          total: number
+          targetDate: string
+        }[]
+        activity: {
+          id: string
+          message: string
+          date: string
+          icon: ActivityIcon
+        }[]
+      }
     }
-  }>
+  | {
+      team: { id: string; name: string }
+      project: null
+    }
+
+export async function fetchTeamProject(
+  teamId: string
+): Promise<TeamProjectResponse> {
+  return authFetch(`/teams/${teamId}/project`) as Promise<TeamProjectResponse>
 }
 
 export async function postStatusUpdate(
@@ -408,18 +444,23 @@ export async function fetchTeamIssues(
 
 export async function createIssue(
   teamId: string,
-  body: { title: string; status?: string; description?: string }
+  body: {
+    title: string
+    status?: string
+    description?: string
+    projectId?: string
+  }
 ): Promise<ApiIssueDetail> {
-  const { project } = await fetchTeamProject(teamId)
-  const projectId = project?.id
-  if (!projectId) throw new Error('Team has no project')
+  const payload: { title: string; description?: string; projectId?: string } = {
+    title: body.title,
+    description: body.description,
+  }
+  if (body.projectId != null && body.projectId !== '') {
+    payload.projectId = body.projectId
+  }
   return authFetch(`/teams/${teamId}/issues`, {
     method: 'POST',
-    body: JSON.stringify({
-      projectId,
-      title: body.title,
-      description: body.description,
-    }),
+    body: JSON.stringify(payload),
   }) as Promise<ApiIssueDetail>
 }
 
@@ -483,7 +524,13 @@ export async function fetchIssue(issueId: string): Promise<ApiIssueDetail> {
 
 export async function updateIssue(
   issueId: string,
-  body: { status?: string; assigneeId?: string; assigneeName?: string }
+  body: {
+    status?: string
+    assigneeId?: string
+    assigneeName?: string
+    projectId?: string | null
+    description?: string
+  }
 ): Promise<ApiIssueDetail> {
   return authFetch(`/issues/${issueId}`, {
     method: 'PATCH',

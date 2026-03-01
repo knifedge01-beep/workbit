@@ -1,7 +1,10 @@
+import { useNavigate, useParams } from 'react-router-dom'
 import { Container, Stack, Heading, Text, Button } from '@design-system'
 import { MembersTable } from '../components'
 import type { MemberRow } from '../components'
-import { noop } from '../utils/noop'
+import { fetchMembers } from '../api/client'
+import { useFetch } from '../hooks/useFetch'
+import { formatDateTime } from '../utils/format'
 import styled from 'styled-components'
 import { UserPlus } from 'lucide-react'
 
@@ -25,18 +28,21 @@ const HeaderContent = styled.div`
   gap: ${(p) => p.theme.spacing[2]}px;
 `
 
-const SAMPLE_MEMBERS: MemberRow[] = [
-  {
-    id: '1',
-    name: 'Manoj Bhat',
-    username: 'imanojbhat',
-    status: 'Admin',
-    joined: 'Feb 11',
-    teams: 'TES',
-  },
-]
-
 export function WorkspaceMemberScreen() {
+  const { workspaceId } = useParams<{ workspaceId: string }>()
+  const navigate = useNavigate()
+  const { data: members, loading, error } = useFetch(fetchMembers)
+
+  const memberRows: MemberRow[] = (members ?? []).map((m) => ({
+    id: m.id,
+    name: m.name,
+    username: m.username,
+    avatarSrc: m.avatarSrc,
+    status: m.status,
+    joined: formatDateTime(m.joined),
+    teams: m.teams ?? '—',
+  }))
+
   return (
     <Container maxWidth="1100px">
       <Stack gap={0}>
@@ -49,12 +55,24 @@ export function WorkspaceMemberScreen() {
               Workspace members and invitations.
             </Text>
           </HeaderContent>
-          <Button variant="primary" onClick={noop}>
-            <UserPlus size={16} />
-            Invite
-          </Button>
+          {workspaceId && (
+            <Button
+              variant="primary"
+              onClick={() =>
+                navigate(`/workspace/${workspaceId}/workspace/member/new`)
+              }
+            >
+              <UserPlus size={16} />
+              New Member
+            </Button>
+          )}
         </Header>
-        <MembersTable members={SAMPLE_MEMBERS} />
+        {error && (
+          <Text size="sm" muted>
+            Failed to load members: {error}
+          </Text>
+        )}
+        {!loading && <MembersTable members={memberRows} />}
       </Stack>
     </Container>
   )

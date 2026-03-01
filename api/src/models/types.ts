@@ -18,6 +18,7 @@ export interface Project {
 export interface Team {
   id: string
   name: string
+  workspaceId: string
   projectId?: string
   memberIds: string[]
 }

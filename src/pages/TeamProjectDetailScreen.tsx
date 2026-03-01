@@ -175,6 +175,13 @@ export function TeamProjectDetailScreen({ projectName, teamId }: Props) {
     setLoading(true)
     fetchTeamProject(teamId)
       .then((data) => {
+        if (!data.project) {
+          setUpdates([])
+          setMilestones([])
+          setActivity([])
+          setProperties({})
+          return
+        }
         setUpdates(data.project.statusUpdates.nodes.map(apiUpdateToCard))
         setMilestones(
           data.project.milestones.map((m) => ({

@@ -1,33 +1,15 @@
-import { useNavigate } from 'react-router-dom'
-import { useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import { Plus } from 'lucide-react'
-import {
-  PageHeader,
-  Stack,
-  Text,
-  Button,
-  Flex,
-  Modal,
-  Input,
-  Select,
-} from '@design-system'
+import { PageHeader, Stack, Text, Button, Flex } from '@design-system'
 import { ProjectsTable } from '../components'
 import type { ProjectTableRow } from '../components'
-import {
-  fetchProjects,
-  createProject,
-  fetchWorkspaceTeams,
-} from '../api/client'
+import { fetchProjects } from '../api/client'
 import { useFetch } from '../hooks/useFetch'
 
 export function WorkspaceProjectsScreen() {
   const navigate = useNavigate()
-  const { data, loading, error, reload } = useFetch(fetchProjects)
-  const { data: teams } = useFetch(fetchWorkspaceTeams)
-  const [creating, setCreating] = useState(false)
-  const [showModal, setShowModal] = useState(false)
-  const [projectName, setProjectName] = useState('')
-  const [selectedTeam, setSelectedTeam] = useState('')
+  const { workspaceId } = useParams<{ workspaceId: string }>()
+  const { data, loading, error } = useFetch(fetchProjects)
 
   const projects: ProjectTableRow[] = (data ?? []).map((p) => ({
     id: p.id,
@@ -38,28 +20,8 @@ export function WorkspaceProjectsScreen() {
 
   const handleRowClick = (row: ProjectTableRow) => {
     const teamId = data?.find((p) => p.id === row.id)?.team.id ?? row.team
-    navigate(`/team/${teamId}/projects/${row.id}`)
-  }
-
-  const handleCreateProject = async () => {
-    if (!projectName.trim() || !selectedTeam) return
-
-    setCreating(true)
-    try {
-      await createProject({
-        name: projectName,
-        teamId: selectedTeam,
-        status: 'Active',
-      })
-      await reload()
-      setShowModal(false)
-      setProjectName('')
-      setSelectedTeam('')
-    } catch (err) {
-      alert(`Failed to create project: ${err}`)
-    } finally {
-      setCreating(false)
-    }
+    if (workspaceId)
+      navigate(`/workspace/${workspaceId}/team/${teamId}/projects/${row.id}`)
   }
 
   return (
@@ -69,10 +31,17 @@ export function WorkspaceProjectsScreen() {
           title="Workspace projects"
           summary="All projects in your workspace."
         />
-        <Button variant="primary" onClick={() => setShowModal(true)}>
-          <Plus size={16} />
-          New Project
-        </Button>
+        {workspaceId && (
+          <Button
+            variant="primary"
+            onClick={() =>
+              navigate(`/workspace/${workspaceId}/workspace/projects/new`)
+            }
+          >
+            <Plus size={16} />
+            New Project
+          </Button>
+        )}
       </Flex>
       {error && (
         <Text size="sm" muted>
@@ -82,56 +51,6 @@ export function WorkspaceProjectsScreen() {
       {!loading && (
         <ProjectsTable projects={projects} onRowClick={handleRowClick} />
       )}
-
-      <Modal
-        open={showModal}
-        onClose={() => setShowModal(false)}
-        title="Create New Project"
-        primaryLabel="Create"
-        onPrimary={handleCreateProject}
-        secondaryLabel="Cancel"
-        onSecondary={() => setShowModal(false)}
-      >
-        <Stack gap={3}>
-          <div>
-            <Text
-              as="label"
-              size="sm"
-              weight="medium"
-              style={{ display: 'block', marginBottom: '8px' }}
-            >
-              Project Name
-            </Text>
-            <Input
-              value={projectName}
-              onChange={(e) => setProjectName(e.target.value)}
-              placeholder="Enter project name"
-              disabled={creating}
-            />
-          </div>
-          <div>
-            <Text
-              as="label"
-              size="sm"
-              weight="medium"
-              style={{ display: 'block', marginBottom: '8px' }}
-            >
-              Team
-            </Text>
-            <Select
-              value={selectedTeam}
-              onChange={setSelectedTeam}
-              options={[
-                { value: '', label: 'Select a team' },
-                ...(teams ?? []).map((team) => ({
-                  value: team.id,
-                  label: team.name,
-                })),
-              ]}
-            />
-          </div>
-        </Stack>
-      </Modal>
     </Stack>
   )
 }

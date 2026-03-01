@@ -1,8 +1,8 @@
 import { Bell, LogOut } from 'lucide-react'
 import { IconButton, Search, Avatar } from '@design-system'
-import { TeamDropdown } from './TeamDropdown'
+import { WorkspaceDropdown } from './WorkspaceDropdown'
 import { Link, useNavigate } from 'react-router-dom'
-import type { Team } from '../constants'
+import type { ApiWorkspace } from '../api/client'
 import { useAuth } from '../pages/auth/AuthContext'
 import styled from 'styled-components'
 
@@ -15,14 +15,23 @@ const NotificationWrapper = styled.div`
 `
 
 type Props = {
-  teams: Team[]
-  selectedTeam: Team
+  workspaces: ApiWorkspace[]
+  currentWorkspace: ApiWorkspace | null
+  onSelectWorkspace: (ws: ApiWorkspace) => void
 }
 
-export function NavbarLeft({ teams, selectedTeam }: Props) {
+export function NavbarLeft({
+  workspaces,
+  currentWorkspace,
+  onSelectWorkspace,
+}: Props) {
   return (
     <>
-      <TeamDropdown teams={teams} selectedTeam={selectedTeam} />
+      <WorkspaceDropdown
+        workspaces={workspaces}
+        selectedWorkspace={currentWorkspace}
+        onSelect={onSelectWorkspace}
+      />
       <Search
         variant="expandable"
         placeholder="Search issues, projects, members..."
@@ -32,7 +41,9 @@ export function NavbarLeft({ teams, selectedTeam }: Props) {
   )
 }
 
-export function NavbarRight() {
+type NavbarRightProps = { workspaceId: string }
+
+export function NavbarRight({ workspaceId }: NavbarRightProps) {
   const navigate = useNavigate()
   const { signOut } = useAuth()
   const hasNotifications = true // TODO: Replace with actual notification state
@@ -47,13 +58,13 @@ export function NavbarRight() {
       {hasNotifications && (
         <IconButton
           aria-label="Notifications"
-          onClick={() => navigate('/inbox')}
+          onClick={() => navigate(`/workspace/${workspaceId}/inbox`)}
         >
           <Bell size={18} />
         </IconButton>
       )}
       <Link
-        to="/profile"
+        to={`/workspace/${workspaceId}/profile`}
         aria-label="Go to profile"
         style={{ display: 'flex', cursor: 'pointer' }}
       >

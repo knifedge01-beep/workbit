@@ -51,40 +51,46 @@ const TeamHeaderItem = styled.div<{ $active?: boolean }>`
 `
 
 type Props = {
-  selectedTeam: Team
+  workspaceId: string
+  teams: Team[]
 }
 
-export function SidebarNav({ selectedTeam }: Props) {
+export function SidebarNav({ workspaceId, teams }: Props) {
   const location = useLocation()
-  const { teamId } = useParams<{ teamId: string }>()
+  const { teamId } = useParams<{ workspaceId: string; teamId: string }>()
+  const base = `/workspace/${workspaceId}`
 
-  const isTeamIssues = (path: string) =>
-    path === `/team/${teamId}` ||
-    path === `/team/${teamId}/` ||
-    (teamId != null && path.startsWith(`/team/${teamId}/issues`))
-  const isTeamProjects = (path: string) =>
-    teamId != null &&
-    (path === `/team/${teamId}/projects` ||
-      path.startsWith(`/team/${teamId}/projects/`))
-  const isTeamViews = (path: string) => path === `/team/${teamId}/views`
-  const isTeamLogs = (path: string) => path === `/team/${teamId}/logs`
-  const isOnTeam = location.pathname.startsWith(`/team/${selectedTeam.id}`)
+  const isTeamIssues = (tid: string) =>
+    location.pathname === `${base}/team/${tid}` ||
+    location.pathname === `${base}/team/${tid}/` ||
+    location.pathname.startsWith(`${base}/team/${tid}/issues`)
+  const isTeamProjects = (tid: string) =>
+    location.pathname === `${base}/team/${tid}/projects` ||
+    location.pathname.startsWith(`${base}/team/${tid}/projects/`)
+  const isTeamViews = (tid: string) =>
+    location.pathname === `${base}/team/${tid}/views`
+  const isTeamLogs = (tid: string) =>
+    location.pathname === `${base}/team/${tid}/logs`
+  const isOnTeam = (tid: string) =>
+    location.pathname.startsWith(`${base}/team/${tid}`)
+
+  const hasTeams = teams.length > 0
 
   return (
     <Stack gap={0}>
       <SidebarSection>
         <SidebarNavItem
           as={Link}
-          to="/inbox"
-          $active={location.pathname === '/inbox'}
+          to={`${base}/inbox`}
+          $active={location.pathname === `${base}/inbox`}
         >
           <Mail size={20} />
           <span>Inbox</span>
         </SidebarNavItem>
         <SidebarNavItem
           as={Link}
-          to="/my-issues"
-          $active={location.pathname === '/my-issues'}
+          to={`${base}/my-issues`}
+          $active={location.pathname === `${base}/my-issues`}
         >
           <FileText size={20} />
           <span>My issues</span>
@@ -94,95 +100,104 @@ export function SidebarNav({ selectedTeam }: Props) {
       <SidebarCollapsibleSection title="Workspace" defaultOpen>
         <SidebarNavItem
           as={Link}
-          to="/workspace/projects"
-          $active={location.pathname === '/workspace/projects'}
+          to={`${base}/workspace/projects`}
+          $active={location.pathname === `${base}/workspace/projects`}
         >
           <Folder size={20} />
           <span>All Projects</span>
         </SidebarNavItem>
         <SidebarNavItem
           as={Link}
-          to="/workspace/views"
-          $active={location.pathname === '/workspace/views'}
+          to={`${base}/workspace/views`}
+          $active={location.pathname === `${base}/workspace/views`}
         >
           <Eye size={20} />
           <span>All Views</span>
         </SidebarNavItem>
         <SidebarNavItem
           as={Link}
-          to="/workspace/member"
-          $active={location.pathname === '/workspace/member'}
+          to={`${base}/workspace/member`}
+          $active={location.pathname === `${base}/workspace/member`}
         >
           <Users size={20} />
           <span>Member</span>
         </SidebarNavItem>
         <SidebarNavItem
           as={Link}
-          to="/workspace/teams"
-          $active={location.pathname === '/workspace/teams'}
+          to={`${base}/workspace/teams`}
+          $active={location.pathname === `${base}/workspace/teams`}
         >
           <UsersRound size={20} />
           <span>Teams</span>
         </SidebarNavItem>
         <SidebarNavItem
           as={Link}
-          to="/workspace/roles"
-          $active={location.pathname === '/workspace/roles'}
+          to={`${base}/workspace/roles`}
+          $active={location.pathname === `${base}/workspace/roles`}
         >
           <Shield size={20} />
           <span>Roles</span>
         </SidebarNavItem>
       </SidebarCollapsibleSection>
 
-      <StyledDivider />
-
-      <SidebarCollapsibleSection
-        title={
-          <TeamHeaderItem $active={isOnTeam}>
-            <span aria-hidden>
-              <Avatar
-                name={selectedTeam.id.slice(0, 2).toUpperCase()}
-                size={18}
-              />
-            </span>
-            <span>{selectedTeam.name}</span>
-          </TeamHeaderItem>
-        }
-        defaultOpen
-      >
-        <SidebarNavItem
-          as={Link}
-          to={`/team/${selectedTeam.id}/issues/active`}
-          $active={isTeamIssues(location.pathname)}
-        >
-          <FileText size={20} />
-          <span>Issues</span>
-        </SidebarNavItem>
-        <SidebarNavItem
-          as={Link}
-          to={`/team/${selectedTeam.id}/projects`}
-          $active={isTeamProjects(location.pathname)}
-        >
-          <Folder size={20} />
-          <span>Projects</span>
-        </SidebarNavItem>
-        <SidebarNavItem
-          as={Link}
-          to={`/team/${selectedTeam.id}/views`}
-          $active={isTeamViews(location.pathname)}
-        >
-          <Eye size={20} />
-          <span>Views</span>
-        </SidebarNavItem>
-        <SidebarNavItem
-          as={Link}
-          to={`/team/${selectedTeam.id}/logs`}
-          $active={isTeamLogs(location.pathname)}
-        >
-          <ScrollText size={20} />
-          <span>Logs</span>
-        </SidebarNavItem>
-      </SidebarCollapsibleSection>
+      {hasTeams && (
+        <>
+          <StyledDivider />
+          {teams.map((team) => (
+            <SidebarCollapsibleSection
+              key={team.id}
+              title={
+                <TeamHeaderItem $active={isOnTeam(team.id)}>
+                  <span aria-hidden>
+                    <Avatar
+                      name={team.name.slice(0, 2).toUpperCase()}
+                      size={18}
+                    />
+                  </span>
+                  <span>{team.name}</span>
+                </TeamHeaderItem>
+              }
+              defaultOpen={
+                team.id === teamId ||
+                (teamId == null && teams[0]?.id === team.id)
+              }
+            >
+              <SidebarNavItem
+                as={Link}
+                to={`${base}/team/${team.id}/issues/active`}
+                $active={isTeamIssues(team.id)}
+              >
+                <FileText size={20} />
+                <span>Issues</span>
+              </SidebarNavItem>
+              <SidebarNavItem
+                as={Link}
+                to={`${base}/team/${team.id}/projects`}
+                $active={isTeamProjects(team.id)}
+              >
+                <Folder size={20} />
+                <span>Projects</span>
+              </SidebarNavItem>
+              <SidebarNavItem
+                as={Link}
+                to={`${base}/team/${team.id}/views`}
+                $active={isTeamViews(team.id)}
+              >
+                <Eye size={20} />
+                <span>Views</span>
+              </SidebarNavItem>
+              <SidebarNavItem
+                as={Link}
+                to={`${base}/team/${team.id}/logs`}
+                $active={isTeamLogs(team.id)}
+              >
+                <ScrollText size={20} />
+                <span>Logs</span>
+              </SidebarNavItem>
+            </SidebarCollapsibleSection>
+          ))}
+        </>
+      )}
     </Stack>
   )
 }

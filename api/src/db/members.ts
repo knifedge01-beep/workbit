@@ -28,6 +28,17 @@ export async function getMemberById(memberId: string): Promise<Member | null> {
   return rowToMember(data as DbRow)
 }
 
+export async function getMemberByUid(uid: string): Promise<Member | null> {
+  const { data, error } = await getClient()
+    .from('members')
+    .select('*')
+    .eq('supabase_user_id', uid)
+    .maybeSingle()
+  if (error) throw error
+  if (!data) return null
+  return rowToMember(data as DbRow)
+}
+
 export async function getMembers(): Promise<Member[]> {
   const { data, error } = await getClient()
     .from('members')

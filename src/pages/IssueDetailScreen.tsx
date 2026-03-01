@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import styled from 'styled-components'
 import {
   ChevronLeft,
@@ -10,7 +10,7 @@ import {
   Send,
   Plus,
 } from 'lucide-react'
-import { Avatar } from '@design-system'
+import { Avatar, Select, RichText } from '@design-system'
 import {
   StatusSelector,
   PrioritySelector,
@@ -18,6 +18,7 @@ import {
   ErrorState,
   EmptyState,
 } from '../components'
+import { useWorkspace } from '../contexts/WorkspaceContext'
 import { useFetch } from '../hooks/useFetch'
 import { fetchIssue, updateIssue } from '../api/client'
 import {
@@ -33,6 +34,7 @@ import {
 
 type Props = {
   issueId: string
+  teamId: string
   teamName: string
   projectName?: string
 }
@@ -94,30 +96,6 @@ const IssueMeta = styled.div`
   display: flex;
   align-items: center;
   gap: 12px;
-`
-
-const DescriptionBox = styled.div`
-  min-height: 120px;
-  padding: 16px;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  font-size: 14px;
-  line-height: 1.6;
-  color: #111827;
-  cursor: text;
-  transition: all 0.15s;
-  &:hover {
-    border-color: #e6e8eb;
-    background: #f9fafb;
-  }
-  &:focus-within {
-    border-color: #6366f1;
-    background: #ffffff;
-  }
-  &[data-empty='true'] {
-    color: #6b7280;
-    font-style: italic;
-  }
 `
 
 const ResourceList = styled.div`
@@ -311,8 +289,14 @@ const ActivitySummary = styled.div`
 
 // ===== MAIN COMPONENT =====
 
-export function IssueDetailScreen({ issueId, teamName, projectName }: Props) {
+export function IssueDetailScreen({
+  issueId,
+  teamId,
+  teamName,
+  projectName,
+}: Props) {
   const [comment, setComment] = useState('')
+  const { projects: workspaceProjects } = useWorkspace()
 
   // Fetch issue data from API
   const {
@@ -321,6 +305,14 @@ export function IssueDetailScreen({ issueId, teamName, projectName }: Props) {
     error,
     reload,
   } = useFetch(() => fetchIssue(issueId), [issueId])
+
+  const teamProjects = teamId
+    ? workspaceProjects.filter((p) => p.team.id === teamId)
+    : []
+  const projectOptions = [
+    { value: '', label: 'No project' },
+    ...teamProjects.map((p) => ({ value: p.id, label: p.name })),
+  ]
 
   // Handle status change
   const handleStatusChange = async (newStatus: string) => {
@@ -331,6 +323,32 @@ export function IssueDetailScreen({ issueId, teamName, projectName }: Props) {
       logError(e, 'Status update')
     }
   }
+
+  const handleProjectChange = async (value: string) => {
+    try {
+      await updateIssue(issueId, {
+        projectId: value === '' ? null : value,
+      })
+      reload()
+    } catch (e) {
+      logError(e, 'Project update')
+    }
+  }
+
+  const descriptionLatestRef = useRef('')
+  const descriptionDirtyRef = useRef(false)
+  const handleDescriptionChange = useCallback((html: string) => {
+    descriptionLatestRef.current = html
+    descriptionDirtyRef.current = true
+  }, [])
+  const handleDescriptionBlur = useCallback(() => {
+    if (!descriptionDirtyRef.current) return
+    descriptionDirtyRef.current = false
+    const html = descriptionLatestRef.current
+    updateIssue(issueId, { description: html })
+      .then(() => reload())
+      .catch((e) => logError(e, 'Description update'))
+  }, [issueId, reload])
 
   // Handle comment submission
   const handleSendComment = async () => {
@@ -360,19 +378,20 @@ export function IssueDetailScreen({ issueId, teamName, projectName }: Props) {
     )
   }
 
+  // Normalize description for RichText: plain text (no HTML) -> use <br> for newlines
+  const descriptionForEditor =
+    issueData.description == null || issueData.description === ''
+      ? ''
+      : issueData.description.includes('<')
+        ? issueData.description
+        : issueData.description.replace(/\n/g, '<br>')
+  descriptionLatestRef.current = descriptionForEditor
+
   // Use API data where available, mock for fields that don't exist yet
   const issue = {
     id: issueData.id,
     title: issueData.title,
-    description: `Description for ${issueData.title}
-
-## Details
-
-This issue is currently being worked on. More details coming soon.
-
-### Technical Notes
-
-Add implementation details here.`,
+    description: issueData.description ?? '',
     createdBy: issueData.assignee?.name || 'Unknown',
     createdAt: formatDateTime(issueData.date),
     status: issueData.status,
@@ -433,9 +452,13 @@ Add implementation details here.`,
         </IssueHeader>
 
         <Section>
-          <DescriptionBox>
-            <div style={{ whiteSpace: 'pre-wrap' }}>{issue.description}</div>
-          </DescriptionBox>
+          <RichText
+            value={descriptionForEditor}
+            onChange={handleDescriptionChange}
+            onBlur={handleDescriptionBlur}
+            placeholder="Add a description..."
+            minHeight={120}
+          />
         </Section>
 
         <Section>
@@ -551,7 +574,14 @@ Add implementation details here.`,
           </PropertyRow>
           <PropertyRow>
             <PropertyKey>Project</PropertyKey>
-            <PropertyValue>{issue.project}</PropertyValue>
+            <PropertyValue>
+              <Select
+                value={issueData?.project?.id ?? ''}
+                onChange={handleProjectChange}
+                options={projectOptions}
+                placeholder="Select project"
+              />
+            </PropertyValue>
           </PropertyRow>
           <PropertyRow>
             <PropertyKey>Due date</PropertyKey>

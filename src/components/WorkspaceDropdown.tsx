@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import styled from 'styled-components'
-import { ChevronDown } from 'lucide-react'
+import { ChevronDown, Plus } from 'lucide-react'
 import { Avatar, Text } from '@design-system'
 import type { ApiWorkspace } from '../api/client'
 
@@ -50,6 +50,17 @@ const Item = styled.button<{ $selected?: boolean }>`
   }
 `
 
+const Divider = styled.div`
+  height: 1px;
+  background: ${(p) => p.theme.colors.border};
+  margin: ${(p) => p.theme.spacing[1]}px 0;
+`
+
+const CreateItem = styled(Item)`
+  color: ${(p) => p.theme.colors.primary};
+  font-weight: 500;
+`
+
 const Wrap = styled.div`
   position: relative;
   display: inline-block;
@@ -57,7 +68,7 @@ const Wrap = styled.div`
 
 type Props = {
   workspaces: ApiWorkspace[]
-  selectedWorkspace: ApiWorkspace
+  selectedWorkspace: ApiWorkspace | null
   onSelect: (ws: ApiWorkspace) => void
 }
 
@@ -79,6 +90,19 @@ export function WorkspaceDropdown({
     return () => document.removeEventListener('mousedown', onDocClick)
   }, [open])
 
+  const handleSelect = (ws: ApiWorkspace) => {
+    onSelect(ws)
+    setOpen(false)
+    navigate(`/workspace/${ws.id}/inbox`)
+  }
+
+  const handleCreateNew = () => {
+    setOpen(false)
+    navigate('/workspaces')
+  }
+
+  const displayWorkspace = selectedWorkspace ?? workspaces[0]
+
   return (
     <Wrap ref={ref}>
       <Trigger
@@ -89,11 +113,11 @@ export function WorkspaceDropdown({
         aria-label="Select workspace"
       >
         <Avatar
-          name={selectedWorkspace.name.slice(0, 2).toUpperCase()}
+          name={(displayWorkspace?.name ?? 'WS').slice(0, 2).toUpperCase()}
           size={28}
         />
         <Text size="sm" as="span">
-          {selectedWorkspace.name}
+          {displayWorkspace?.name ?? 'Workspace'}
         </Text>
         <ChevronDown size={16} style={{ flexShrink: 0 }} />
       </Trigger>
@@ -103,17 +127,18 @@ export function WorkspaceDropdown({
             <Item
               key={ws.id}
               type="button"
-              $selected={ws.id === selectedWorkspace.id}
-              onClick={() => {
-                onSelect(ws)
-                setOpen(false)
-                navigate('/inbox')
-              }}
+              $selected={ws.id === displayWorkspace?.id}
+              onClick={() => handleSelect(ws)}
             >
               <Avatar name={ws.name.slice(0, 2).toUpperCase()} size={20} />
               <span>{ws.name}</span>
             </Item>
           ))}
+          {workspaces.length > 0 && <Divider />}
+          <CreateItem type="button" onClick={handleCreateNew} $selected={false}>
+            <Plus size={18} />
+            <span>Create new workspace</span>
+          </CreateItem>
         </Panel>
       )}
     </Wrap>

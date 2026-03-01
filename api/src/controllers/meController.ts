@@ -3,9 +3,44 @@ import * as meModel from '../models/me.js'
 import * as issuesModel from '../models/issues.js'
 import { getTeamById } from '../db/teams.js'
 import { getProjectById } from '../db/projects.js'
+import { getMemberByUid } from '../db/members.js'
+import { getTeams as dbGetTeams } from '../db/teams.js'
 import { getUserId } from '../middleware/auth.js'
 
 const DEFAULT_USER_ID = 'current-user'
+
+export async function getMember(req: Request, res: Response) {
+  try {
+    const userId = getUserId(req, '')
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized' })
+      return
+    }
+    const member = await getMemberByUid(userId)
+    if (!member) {
+      res.status(404).json({ error: 'Member not found' })
+      return
+    }
+    const teams = await dbGetTeams()
+    const teamsById = new Map(teams.map((t) => [t.id, t]))
+    const teamNames = member.teamIds
+      .map((tid) => teamsById.get(tid)?.name)
+      .filter(Boolean) as string[]
+    res.json({
+      id: member.id,
+      name: member.name,
+      username: member.username,
+      avatarSrc: member.avatarSrc,
+      status: member.status,
+      joined: member.joined,
+      provisioned: member.provisioned,
+      uid: member.uid ?? member.userAuthId ?? null,
+      teams: teamNames.length ? teamNames.join(', ') : '—',
+    })
+  } catch (e) {
+    res.status(500).json({ error: (e as Error).message })
+  }
+}
 
 export async function getTeams(_req: Request, res: Response) {
   try {

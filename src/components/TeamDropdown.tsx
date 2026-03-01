@@ -38,7 +38,8 @@ const Item = styled.button<{ $selected?: boolean }>`
   gap: ${(p) => p.theme.spacing[2]}px;
   width: 100%;
   padding: ${(p) => p.theme.spacing[2]}px ${(p) => p.theme.spacing[3]}px;
-  background: ${(p) => (p.$selected ? p.theme.colors.surfaceHover : 'transparent')};
+  background: ${(p) =>
+    p.$selected ? p.theme.colors.surfaceHover : 'transparent'};
   border: none;
   cursor: pointer;
   font-size: 0.875rem;
@@ -55,11 +56,12 @@ const Wrap = styled.div`
 `
 
 type Props = {
+  workspaceId: string
   teams: Team[]
   selectedTeam: Team
 }
 
-export function TeamDropdown({ teams, selectedTeam }: Props) {
+export function TeamDropdown({ workspaceId, teams, selectedTeam }: Props) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
@@ -83,7 +85,9 @@ export function TeamDropdown({ teams, selectedTeam }: Props) {
         aria-label="Select team"
       >
         <Avatar name={selectedTeam.id.slice(0, 2).toUpperCase()} size={28} />
-        <Text size="sm" as="span">{selectedTeam.name}</Text>
+        <Text size="sm" as="span">
+          {selectedTeam.name}
+        </Text>
         <ChevronDown size={16} style={{ flexShrink: 0 }} />
       </TeamTrigger>
       {open && (
@@ -94,7 +98,7 @@ export function TeamDropdown({ teams, selectedTeam }: Props) {
               type="button"
               $selected={team.id === selectedTeam.id}
               onClick={() => {
-                navigate(`/team/${team.id}`)
+                navigate(`/workspace/${workspaceId}/team/${team.id}`)
                 setOpen(false)
               }}
             >

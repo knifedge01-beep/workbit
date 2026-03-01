@@ -22,6 +22,12 @@ export async function getTeamById(teamId: string): Promise<Team | null> {
 export async function getTeamProject(teamId: string) {
   const team = await dbTeams.getTeamById(teamId)
   if (!team) return null
+  if (team.projectId == null || team.projectId === '') {
+    return {
+      team: { id: team.id, name: team.name },
+      project: null,
+    }
+  }
   const [updates, properties, milestones, activity] = await Promise.all([
     dbStatusUpdates.getStatusUpdatesByTeamId(teamId, 20),
     dbProjectProperties.getProjectPropertiesByTeamId(teamId),
@@ -34,7 +40,7 @@ export async function getTeamProject(teamId: string) {
   return {
     team: { id: team.id, name: team.name },
     project: {
-      id: team.projectId ?? teamId,
+      id: team.projectId,
       statusUpdates: { nodes: updates },
       properties,
       milestones,

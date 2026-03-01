@@ -10,6 +10,7 @@ import { teamsRoutes } from './routes/teams.js'
 import { issuesRoutes } from './routes/issues.js'
 import { meRoutes } from './routes/me.js'
 import { authRoutes } from './routes/auth.js'
+import { apiKeysRoutes } from './routes/apiKeys.js'
 import { seedIfEmpty } from './utils/seed.js'
 import { isSupabaseConfigured } from './utils/supabaseServer.js'
 
@@ -20,6 +21,7 @@ const app = express()
 app.use(cors())
 app.use(express.json())
 
+app.use('/graphql', optionalAuth)
 app.use(
   '/graphql',
   graphqlHTTP({
@@ -37,6 +39,7 @@ app.use(`${API_PREFIX}/workspace`, workspaceRoutes)
 app.use(`${API_PREFIX}/teams`, teamsRoutes)
 app.use(`${API_PREFIX}/issues`, issuesRoutes)
 app.use(`${API_PREFIX}/me`, meRoutes)
+app.use(`${API_PREFIX}/keys`, apiKeysRoutes)
 
 app.get('/health', (_req, res) => res.json({ ok: true }))
 

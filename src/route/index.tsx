@@ -20,6 +20,7 @@ import {
   TeamLogsScreenWrapper,
   IssueDetailScreenWrapper,
   ShowcaseComponents,
+  ProfilePage,
 } from '../pages'
 import { LandingPage } from '../landing'
 
@@ -54,6 +55,7 @@ export function AppRoutes() {
         <Route index element={<Navigate to="/landing" replace />} />
         <Route path="inbox" element={<InboxScreen />} />
         <Route path="my-issues" element={<MyIssuesScreen />} />
+        <Route path="profile" element={<ProfilePage />} />
         <Route
           path="workspace/projects"
           element={<WorkspaceProjectsScreen />}

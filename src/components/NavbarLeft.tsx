@@ -1,7 +1,7 @@
 import { Plus, Bell, FileText, FolderKanban } from 'lucide-react'
-import { IconButton, Search, Button, Menu, Popup } from '@design-system'
+import { IconButton, Search, Button, Menu, Popup, Avatar } from '@design-system'
 import { TeamDropdown } from './TeamDropdown'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import type { Team } from '../constants'
 import styled from 'styled-components'
 import { useState } from 'react'
@@ -12,16 +12,6 @@ const NavActions = styled.div`
   gap: ${(p) => p.theme.spacing[2]}px;
 `
 
-const NotificationBadge = styled.span`
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  width: 8px;
-  height: 8px;
-  background: ${(p) => p.theme.colors.error};
-  border-radius: 50%;
-  border: 2px solid ${(p) => p.theme.colors.surface};
-`
 
 const NotificationWrapper = styled.div`
   position: relative;
@@ -38,6 +28,7 @@ export function NavbarLeft({ teams, selectedTeam }: Props) {
 
   const createMenuItems = [
     {
+      id: 'new-issue',
       label: 'New Issue',
       icon: <FileText size={16} />,
       onClick: () => {
@@ -46,6 +37,7 @@ export function NavbarLeft({ teams, selectedTeam }: Props) {
       },
     },
     {
+      id: 'new-project',
       label: 'New Project',
       icon: <FolderKanban size={16} />,
       onClick: () => {
@@ -67,7 +59,8 @@ export function NavbarLeft({ teams, selectedTeam }: Props) {
         <Popup
           isOpen={createMenuOpen}
           onOpenChange={setCreateMenuOpen}
-          placement="bottom-end"
+          placement="bottom"
+          align="end"
           content={<Menu items={createMenuItems} />}
         >
           <Button size="sm" variant="primary">
@@ -86,10 +79,16 @@ export function NavbarRight() {
 
   return (
     <NotificationWrapper>
-      <IconButton aria-label="Notifications" onClick={() => navigate('/inbox')}>
+      {hasNotifications && <IconButton aria-label="Notifications" onClick={() => navigate('/inbox')}>
         <Bell size={18} />
-      </IconButton>
-      {hasNotifications && <NotificationBadge />}
+      </IconButton>}
+      <Link
+        to="/profile"
+        aria-label="Go to profile"
+        style={{ display: 'flex', cursor: 'pointer' }}
+      >
+        <Avatar name="User" size={24} />
+      </Link>
     </NotificationWrapper>
   )
 }

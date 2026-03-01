@@ -50,6 +50,7 @@ export async function getIssue(req: Request, res: Response) {
     res.json({
       id: issue.id,
       title: issue.title,
+      description: issue.description,
       assignee: assignee
         ? { id: assignee.id, name: assignee.name }
         : issue.assigneeName
@@ -63,6 +64,57 @@ export async function getIssue(req: Request, res: Response) {
     })
   } catch (e) {
     res.status(500).json({ error: (e as Error).message })
+  }
+}
+
+export async function createIssue(req: Request, res: Response) {
+  try {
+    const body = req.body as {
+      projectId?: string
+      title?: string
+      description?: string
+      body?: string
+    }
+    const projectId = body.projectId
+    const title = body.title
+    const description = body.description ?? body.body
+    if (!projectId || !title) {
+      res.status(400).json({ error: 'projectId and title are required' })
+      return
+    }
+    const issue = await issuesModel.createIssue({
+      projectId,
+      title,
+      description,
+    })
+    const store = await getStore()
+    const team = store.teams.find((t) => t.id === issue.teamId)
+    const project = store.projects.find((p) => p.id === issue.projectId)
+    const assignee = issue.assigneeId
+      ? store.members.find((m) => m.id === issue.assigneeId)
+      : null
+    res.status(201).json({
+      id: issue.id,
+      title: issue.title,
+      description: issue.description,
+      assignee: assignee
+        ? { id: assignee.id, name: assignee.name }
+        : issue.assigneeName
+          ? { id: '', name: issue.assigneeName }
+          : null,
+      date: issue.date,
+      status: issue.status,
+      teamId: issue.teamId,
+      team: team ? { id: team.id, name: team.name } : null,
+      project: project ? { id: project.id, name: project.name } : null,
+    })
+  } catch (e) {
+    const msg = (e as Error).message
+    if (msg.startsWith('Project not found:')) {
+      res.status(404).json({ error: msg })
+      return
+    }
+    res.status(500).json({ error: msg })
   }
 }
 

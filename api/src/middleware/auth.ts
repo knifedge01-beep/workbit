@@ -1,67 +1,96 @@
-import type { Request, Response, NextFunction } from 'express';
-import { supabaseAdmin, isSupabaseConfigured } from '../utils/supabaseServer.js';
+import type { Request, Response, NextFunction } from 'express'
+import { supabaseAdmin, isSupabaseConfigured } from '../utils/supabaseServer.js'
 
 export interface AuthUser {
-  id: string;
-  email: string | undefined;
+  id: string
+  email: string | undefined
 }
 
-declare global {
-  namespace Express {
-    interface Request {
-      user?: AuthUser;
-    }
+declare module 'express-serve-static-core' {
+  interface Request {
+    user?: AuthUser
   }
 }
 
-const BEARER_PREFIX = 'Bearer ';
+const BEARER_PREFIX = 'Bearer '
+const X_API_KEY = 'x-api-key'
 
 /**
- * Optional auth: if Supabase is configured and a valid Bearer token is sent,
- * sets req.user. Otherwise req.user stays undefined (callers can use a default user id).
+ * Optional auth: if Supabase is configured, tries in order:
+ * 1. Authorization Bearer token as Supabase JWT -> sets req.user
+ * 2. If no user, X-API-Key or Bearer as API key -> lookup api_keys, set req.user by user_id
+ * Otherwise req.user stays undefined.
  */
-export async function optionalAuth(req: Request, _res: Response, next: NextFunction): Promise<void> {
+export async function optionalAuth(
+  req: Request,
+  _res: Response,
+  next: NextFunction
+): Promise<void> {
   if (!isSupabaseConfigured() || !supabaseAdmin) {
-    next();
-    return;
+    next()
+    return
   }
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith(BEARER_PREFIX)) {
-    next();
-    return;
-  }
-  const token = authHeader.slice(BEARER_PREFIX.length);
-  try {
-    const {
-      data: { user },
-      error,
-    } = await supabaseAdmin.auth.getUser(token);
-    if (!error && user) {
-      req.user = { id: user.id, email: user.email };
+
+  const authHeader = req.headers.authorization
+  const apiKeyHeader = req.headers[X_API_KEY] as string | undefined
+  const token = authHeader?.startsWith(BEARER_PREFIX)
+    ? authHeader.slice(BEARER_PREFIX.length)
+    : undefined
+  const apiKeyRaw = apiKeyHeader ?? token
+
+  // 1. Try Bearer as Supabase JWT
+  if (token) {
+    try {
+      const {
+        data: { user },
+        error,
+      } = await supabaseAdmin.auth.getUser(token)
+      if (!error && user) {
+        req.user = { id: user.id, email: user.email }
+        next()
+        return
+      }
+    } catch {
+      // Not a valid JWT; fall through to API key
     }
-  } catch {
-    // Invalid token; leave req.user undefined
   }
-  next();
+
+  // 2. Try API key (X-API-Key header or Bearer if not a JWT)
+  if (apiKeyRaw) {
+    const { data: row } = await supabaseAdmin
+      .from('api_keys')
+      .select('user_id')
+      .eq('secret', apiKeyRaw)
+      .maybeSingle()
+    if (row?.user_id) {
+      req.user = { id: row.user_id, email: undefined }
+    }
+  }
+
+  next()
 }
 
 /**
  * Requires a valid Supabase session. Responds 401 if not configured or no valid token.
  */
-export function requireAuth(req: Request, res: Response, next: NextFunction): void {
+export function requireAuth(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
   if (!isSupabaseConfigured()) {
-    res.status(501).json({ error: 'Auth not configured' });
-    return;
+    res.status(501).json({ error: 'Auth not configured' })
+    return
   }
   if (!req.user) {
-    res.status(401).json({ error: 'Unauthorized' });
-    return;
+    res.status(401).json({ error: 'Unauthorized' })
+    return
   }
-  next();
+  next()
 }
 
 export function getUserId(req: Request, defaultId: string): string {
-  return req.user?.id ?? defaultId;
+  return req.user?.id ?? defaultId
 }
 
 /**
@@ -69,15 +98,19 @@ export function getUserId(req: Request, defaultId: string): string {
  * When not configured, pass through so existing x-user-id/default user still works.
  * Skips auth requirement for /auth/* routes (e.g. login).
  */
-export function requireAuthWhenConfigured(req: Request, res: Response, next: NextFunction): void {
+export function requireAuthWhenConfigured(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
   if (!isSupabaseConfigured()) {
-    next();
-    return;
+    next()
+    return
   }
-  const apiPrefix = process.env.API_PREFIX ?? '/api/v1';
+  const apiPrefix = process.env.API_PREFIX ?? '/api/v1'
   if (req.path.startsWith(`${apiPrefix}/auth`)) {
-    next();
-    return;
+    next()
+    return
   }
-  requireAuth(req, res, next);
+  requireAuth(req, res, next)
 }

@@ -8,17 +8,26 @@ import {
   GraphQLID,
   GraphQLBoolean,
   GraphQLEnumType,
-} from 'graphql';
-import * as workspaceModel from '../models/workspace.js';
-import * as teamsModel from '../models/teams.js';
-import * as issuesModel from '../models/issues.js';
-import * as meModel from '../models/me.js';
-import { getStore } from '../models/store.js';
+} from 'graphql'
+import * as workspaceModel from '../models/workspace.js'
+import * as teamsModel from '../models/teams.js'
+import * as issuesModel from '../models/issues.js'
+import * as meModel from '../models/me.js'
+import * as apiKeysModel from '../models/apiKeys.js'
+import { getStore } from '../models/store.js'
 
-const DEFAULT_USER_ID = 'current-user';
+const DEFAULT_USER_ID = 'current-user'
 
-function getUserId(context: { req?: { headers?: Record<string, string> } }): string {
-  return context.req?.headers?.['x-user-id'] ?? DEFAULT_USER_ID;
+type GraphQLContext = {
+  req?: { headers?: Record<string, string>; user?: { id: string } }
+}
+
+function getUserId(context: GraphQLContext): string {
+  return (
+    context.req?.user?.id ??
+    context.req?.headers?.['x-user-id'] ??
+    DEFAULT_USER_ID
+  )
 }
 
 // --- Shared types (id/name) ---
@@ -28,7 +37,7 @@ const idNameType = new GraphQLObjectType({
     id: { type: GraphQLNonNull(GraphQLID) },
     name: { type: GraphQLNonNull(GraphQLString) },
   },
-});
+})
 
 const idNameOptionalType = new GraphQLObjectType({
   name: 'IdNameOptional',
@@ -36,7 +45,7 @@ const idNameOptionalType = new GraphQLObjectType({
     id: { type: GraphQLID },
     name: { type: GraphQLString },
   },
-});
+})
 
 // --- Project (workspace + team) ---
 const projectType = new GraphQLObjectType({
@@ -47,7 +56,7 @@ const projectType = new GraphQLObjectType({
     team: { type: idNameType },
     status: { type: GraphQLNonNull(GraphQLString) },
   },
-});
+})
 
 // --- Team (workspace list + single team) ---
 const teamInListType = new GraphQLObjectType({
@@ -58,7 +67,7 @@ const teamInListType = new GraphQLObjectType({
     memberCount: { type: GraphQLNonNull(GraphQLInt) },
     project: { type: idNameOptionalType },
   },
-});
+})
 
 // --- Member ---
 const memberTeamRefType = new GraphQLObjectType({
@@ -67,7 +76,7 @@ const memberTeamRefType = new GraphQLObjectType({
     id: { type: GraphQLID },
     name: { type: GraphQLString },
   },
-});
+})
 
 const memberType = new GraphQLObjectType({
   name: 'Member',
@@ -80,12 +89,18 @@ const memberType = new GraphQLObjectType({
     joined: { type: GraphQLNonNull(GraphQLString) },
     teams: {
       type: GraphQLList(memberTeamRefType),
-      resolve: (parent: { teams?: { id: string; name: string }[] }, _args: unknown, _context: unknown) => {
-        return parent.teams ?? [];
+      /* eslint-disable @typescript-eslint/no-unused-vars -- GraphQL resolve signature requires (parent, args, context) */
+      resolve: (
+        parent: { teams?: { id: string; name: string }[] },
+        _args: unknown,
+        _context: unknown
+      ) => {
+        return parent.teams ?? []
       },
+      /* eslint-enable @typescript-eslint/no-unused-vars */
     },
   },
-});
+})
 
 // --- View ---
 const viewType = new GraphQLObjectType({
@@ -96,7 +111,7 @@ const viewType = new GraphQLObjectType({
     type: { type: GraphQLNonNull(GraphQLString) },
     owner: { type: idNameType },
   },
-});
+})
 
 // --- Role ---
 const roleType = new GraphQLObjectType({
@@ -107,7 +122,7 @@ const roleType = new GraphQLObjectType({
     memberCount: { type: GraphQLNonNull(GraphQLInt) },
     description: { type: GraphQLString },
   },
-});
+})
 
 // --- Workspace ---
 const workspaceType = new GraphQLObjectType({
@@ -116,45 +131,49 @@ const workspaceType = new GraphQLObjectType({
     projects: {
       type: GraphQLNonNull(GraphQLList(projectType)),
       resolve: async () => {
-        const projects = await workspaceModel.getProjects();
-        const store = await getStore();
+        const projects = await workspaceModel.getProjects()
+        const store = await getStore()
         return projects.map((p) => {
-          const team = store.teams.find((t) => t.id === p.teamId);
+          const team = store.teams.find((t) => t.id === p.teamId)
           return {
             id: p.id,
             name: p.name,
-            team: team ? { id: team.id, name: team.name } : { id: p.teamId, name: p.teamId },
+            team: team
+              ? { id: team.id, name: team.name }
+              : { id: p.teamId, name: p.teamId },
             status: p.status,
-          };
-        });
+          }
+        })
       },
     },
     teams: {
       type: GraphQLNonNull(GraphQLList(teamInListType)),
       resolve: async () => {
-        const teams = await workspaceModel.getTeams();
-        const store = await getStore();
+        const teams = await workspaceModel.getTeams()
+        const store = await getStore()
         return teams.map((t) => {
-          const project = t.projectId ? store.projects.find((p) => p.id === t.projectId) : undefined;
+          const project = t.projectId
+            ? store.projects.find((p) => p.id === t.projectId)
+            : undefined
           return {
             id: t.id,
             name: t.name,
             memberCount: t.memberIds.length,
             project: project ? { id: project.id, name: project.name } : null,
-          };
-        });
+          }
+        })
       },
     },
     members: {
       type: GraphQLNonNull(GraphQLList(memberType)),
       resolve: async () => {
-        const members = await workspaceModel.getMembers();
-        const store = await getStore();
+        const members = await workspaceModel.getMembers()
+        const store = await getStore()
         return members.map((m) => {
           const teams = m.teamIds
             .map((tid) => store.teams.find((t) => t.id === tid))
             .filter(Boolean)
-            .map((t) => ({ id: t!.id, name: t!.name }));
+            .map((t) => ({ id: t!.id, name: t!.name }))
           return {
             id: m.id,
             name: m.name,
@@ -164,35 +183,37 @@ const workspaceType = new GraphQLObjectType({
             joined: m.joined,
             teamIds: m.teamIds,
             teams,
-          };
-        });
+          }
+        })
       },
     },
     views: {
       type: GraphQLNonNull(GraphQLList(viewType)),
       resolve: async () => {
-        const views = await workspaceModel.getViews();
-        const store = await getStore();
+        const views = await workspaceModel.getViews()
+        const store = await getStore()
         return views.map((v) => {
-          const owner = store.members.find((m) => m.id === v.ownerId);
+          const owner = store.members.find((m) => m.id === v.ownerId)
           return {
             id: v.id,
             name: v.name,
             type: v.type,
-            owner: owner ? { id: owner.id, name: owner.name } : { id: v.ownerId, name: v.ownerId },
-          };
-        });
+            owner: owner
+              ? { id: owner.id, name: owner.name }
+              : { id: v.ownerId, name: v.ownerId },
+          }
+        })
       },
     },
     roles: {
       type: GraphQLNonNull(GraphQLList(roleType)),
       resolve: async () => {
-        const roles = await workspaceModel.getRoles();
-        return roles.map((r) => ({ ...r, memberCount: r.memberCount }));
+        const roles = await workspaceModel.getRoles()
+        return roles.map((r) => ({ ...r, memberCount: r.memberCount }))
       },
     },
   },
-});
+})
 
 // --- Issue (for team + me) ---
 const issueType = new GraphQLObjectType({
@@ -206,7 +227,7 @@ const issueType = new GraphQLObjectType({
     team: { type: idNameOptionalType },
     project: { type: idNameOptionalType },
   },
-});
+})
 
 // --- Status update & comments (team project) ---
 const statusUpdateAuthorType = new GraphQLObjectType({
@@ -216,7 +237,7 @@ const statusUpdateAuthorType = new GraphQLObjectType({
     name: { type: GraphQLString },
     avatarSrc: { type: GraphQLString },
   },
-});
+})
 
 const statusUpdateType = new GraphQLObjectType({
   name: 'StatusUpdate',
@@ -228,7 +249,7 @@ const statusUpdateType = new GraphQLObjectType({
     createdAt: { type: GraphQLNonNull(GraphQLString) },
     commentCount: { type: GraphQLInt },
   },
-});
+})
 
 const statusUpdateCommentType = new GraphQLObjectType({
   name: 'StatusUpdateComment',
@@ -239,7 +260,7 @@ const statusUpdateCommentType = new GraphQLObjectType({
     content: { type: GraphQLString },
     timestamp: { type: GraphQLString },
   },
-});
+})
 
 const projectPropertiesType = new GraphQLObjectType({
   name: 'ProjectProperties',
@@ -252,7 +273,7 @@ const projectPropertiesType = new GraphQLObjectType({
     teamIds: { type: GraphQLList(GraphQLString) },
     labelIds: { type: GraphQLList(GraphQLString) },
   },
-});
+})
 
 const milestoneType = new GraphQLObjectType({
   name: 'Milestone',
@@ -264,7 +285,7 @@ const milestoneType = new GraphQLObjectType({
     targetDate: { type: GraphQLString },
     description: { type: GraphQLString },
   },
-});
+})
 
 const activityItemType = new GraphQLObjectType({
   name: 'ActivityItem',
@@ -274,7 +295,7 @@ const activityItemType = new GraphQLObjectType({
     message: { type: GraphQLString },
     date: { type: GraphQLString },
   },
-});
+})
 
 const statusUpdatesConnectionType = new GraphQLObjectType({
   name: 'StatusUpdatesConnection',
@@ -283,7 +304,7 @@ const statusUpdatesConnectionType = new GraphQLObjectType({
       type: GraphQLNonNull(GraphQLList(statusUpdateType)),
     },
   },
-});
+})
 
 const teamProjectType = new GraphQLObjectType({
   name: 'TeamProject',
@@ -297,7 +318,7 @@ const teamProjectType = new GraphQLObjectType({
     milestones: { type: GraphQLList(milestoneType) },
     activity: { type: GraphQLList(activityItemType) },
   },
-});
+})
 
 // --- Team (single by id) ---
 const issueFilterEnum = new GraphQLEnumType({
@@ -307,7 +328,7 @@ const issueFilterEnum = new GraphQLEnumType({
     active: { value: 'active' },
     backlog: { value: 'backlog' },
   },
-});
+})
 
 const teamType = new GraphQLObjectType({
   name: 'Team',
@@ -317,23 +338,27 @@ const teamType = new GraphQLObjectType({
     project: {
       type: teamProjectType,
       resolve: async (parent: { id: string }) => {
-        const data = await teamsModel.getTeamProject(parent.id);
-        if (!data) return null;
+        const data = await teamsModel.getTeamProject(parent.id)
+        if (!data) return null
         const nodes = data.project.statusUpdates.nodes.map((u) => ({
           id: u.id,
           status: u.status,
           content: u.content,
-          author: { id: u.authorId, name: u.authorName, avatarSrc: u.authorAvatarSrc ?? null },
+          author: {
+            id: u.authorId,
+            name: u.authorName,
+            avatarSrc: u.authorAvatarSrc ?? null,
+          },
           createdAt: u.createdAt,
           commentCount: u.commentCount ?? 0,
-        }));
+        }))
         return {
           id: data.project.id,
           nodes,
           properties: data.project.properties,
           milestones: data.project.milestones,
           activity: data.project.activity,
-        };
+        }
       },
     },
     issues: {
@@ -341,65 +366,87 @@ const teamType = new GraphQLObjectType({
       args: {
         filter: { type: issueFilterEnum },
       },
-      resolve: async (parent: { id: string }, args: { filter?: 'all' | 'active' | 'backlog' }) => {
-        const issues = await issuesModel.getTeamIssues(parent.id, args.filter ?? 'all');
-        const store = await getStore();
+      resolve: async (
+        parent: { id: string },
+        args: { filter?: 'all' | 'active' | 'backlog' }
+      ) => {
+        const issues = await issuesModel.getTeamIssues(
+          parent.id,
+          args.filter ?? 'all'
+        )
+        const store = await getStore()
         return issues.map((i) => {
-          const assignee = i.assigneeId ? store.members.find((m) => m.id === i.assigneeId) : null;
-          const team = store.teams.find((t) => t.id === i.teamId);
-          const project = i.projectId ? store.projects.find((p) => p.id === i.projectId) : null;
+          const assignee = i.assigneeId
+            ? store.members.find((m) => m.id === i.assigneeId)
+            : null
+          const team = store.teams.find((t) => t.id === i.teamId)
+          const project = i.projectId
+            ? store.projects.find((p) => p.id === i.projectId)
+            : null
           return {
             id: i.id,
             title: i.title,
-            assignee: assignee ? { id: assignee.id, name: assignee.name } : (i.assigneeName ? { id: '', name: i.assigneeName } : null),
+            assignee: assignee
+              ? { id: assignee.id, name: assignee.name }
+              : i.assigneeName
+                ? { id: '', name: i.assigneeName }
+                : null,
             date: i.date,
             status: i.status,
             team: team ? { id: team.id, name: team.name } : null,
             project: project ? { id: project.id, name: project.name } : null,
-          };
-        });
+          }
+        })
       },
     },
     views: {
       type: GraphQLNonNull(GraphQLList(viewType)),
       resolve: async (parent: { id: string }) => {
-        const views = await teamsModel.getTeamViews(parent.id);
-        const store = await getStore();
+        const views = await teamsModel.getTeamViews(parent.id)
+        const store = await getStore()
         return views.map((v) => {
-          const owner = store.members.find((m) => m.id === v.ownerId);
+          const owner = store.members.find((m) => m.id === v.ownerId)
           return {
             id: v.id,
             name: v.name,
             type: v.type,
-            owner: owner ? { id: owner.id, name: owner.name } : { id: v.ownerId, name: v.ownerId },
-          };
-        });
+            owner: owner
+              ? { id: owner.id, name: owner.name }
+              : { id: v.ownerId, name: v.ownerId },
+          }
+        })
       },
     },
     logs: {
       type: new GraphQLObjectType({
         name: 'TeamLogsConnection',
         fields: {
-          nodes: { type: GraphQLNonNull(GraphQLList(new GraphQLObjectType({
-            name: 'LogEntry',
-            fields: {
-              id: { type: GraphQLID },
-              action: { type: GraphQLString },
-              actor: { type: idNameOptionalType },
-              timestamp: { type: GraphQLString },
-              details: { type: GraphQLString },
-            },
-          }))) },
+          nodes: {
+            type: GraphQLNonNull(
+              GraphQLList(
+                new GraphQLObjectType({
+                  name: 'LogEntry',
+                  fields: {
+                    id: { type: GraphQLID },
+                    action: { type: GraphQLString },
+                    actor: { type: idNameOptionalType },
+                    timestamp: { type: GraphQLString },
+                    details: { type: GraphQLString },
+                  },
+                })
+              )
+            ),
+          },
         },
       }),
       args: { first: { type: GraphQLInt } },
       resolve: async (parent: { id: string }, args: { first?: number }) => {
-        const data = await teamsModel.getTeamLogs(parent.id, args.first ?? 50);
-        return data;
+        const data = await teamsModel.getTeamLogs(parent.id, args.first ?? 50)
+        return data
       },
     },
   },
-});
+})
 
 // --- StatusUpdate (standalone for comments) ---
 const statusUpdateQueryType = new GraphQLObjectType({
@@ -409,18 +456,18 @@ const statusUpdateQueryType = new GraphQLObjectType({
     comments: {
       type: GraphQLNonNull(GraphQLList(statusUpdateCommentType)),
       resolve: async (parent: { id: string }) => {
-        const comments = await teamsModel.getStatusUpdateComments(parent.id);
+        const comments = await teamsModel.getStatusUpdateComments(parent.id)
         return comments.map((c) => ({
           id: c.id,
           authorName: c.authorName,
           authorAvatarSrc: c.authorAvatarSrc ?? null,
           content: c.content,
           timestamp: c.timestamp,
-        }));
+        }))
       },
     },
   },
-});
+})
 
 // --- Notification (inbox) ---
 const notificationActorType = new GraphQLObjectType({
@@ -429,7 +476,7 @@ const notificationActorType = new GraphQLObjectType({
     id: { type: GraphQLID },
     name: { type: GraphQLString },
   },
-});
+})
 
 const notificationType = new GraphQLObjectType({
   name: 'Notification',
@@ -443,32 +490,69 @@ const notificationType = new GraphQLObjectType({
     actor: { type: notificationActorType },
     targetUrl: { type: GraphQLString },
   },
-});
+})
 
 const notificationsConnectionType = new GraphQLObjectType({
   name: 'NotificationsConnection',
   fields: {
     nodes: { type: GraphQLNonNull(GraphQLList(notificationType)) },
   },
-});
+})
+
+// --- ApiKey (masked list for current user) ---
+type ApiKeySource = {
+  id: string
+  name: string | null
+  masked_key: string
+  created_at: string
+}
+const apiKeyType = new GraphQLObjectType({
+  name: 'ApiKey',
+  fields: {
+    id: { type: GraphQLNonNull(GraphQLID) },
+    name: { type: GraphQLString },
+    maskedKey: {
+      type: GraphQLNonNull(GraphQLString),
+      resolve: (parent: ApiKeySource) => parent.masked_key,
+    },
+    createdAt: {
+      type: GraphQLNonNull(GraphQLString),
+      resolve: (parent: ApiKeySource) => parent.created_at,
+    },
+  },
+})
 
 // --- Me ---
 const meType = new GraphQLObjectType({
   name: 'Me',
   fields: {
+    apiKeys: {
+      type: GraphQLNonNull(GraphQLList(apiKeyType)),
+      resolve: async (
+        _parent: unknown,
+        _args: unknown,
+        context: GraphQLContext
+      ) => {
+        return apiKeysModel.listKeysForUser(getUserId(context))
+      },
+    },
     teams: {
       type: GraphQLNonNull(GraphQLList(idNameType)),
       resolve: async () => {
-        const teams = await meModel.getNavTeams();
-        return teams.map((t) => ({ id: t.id, name: t.name }));
+        const teams = await meModel.getNavTeams()
+        return teams.map((t) => ({ id: t.id, name: t.name }))
       },
     },
     notifications: {
       type: notificationsConnectionType,
       args: { first: { type: GraphQLInt } },
-      resolve: async (_parent: unknown, args: { first?: number }, context: { req?: { headers?: Record<string, string> } }) => {
-        const userId = getUserId(context);
-        const list = await meModel.getNotifications(userId, args.first ?? 50);
+      resolve: async (
+        _parent: unknown,
+        args: { first?: number },
+        context: GraphQLContext
+      ) => {
+        const userId = getUserId(context)
+        const list = await meModel.getNotifications(userId, args.first ?? 50)
         return {
           nodes: list.map((n) => ({
             id: n.id,
@@ -480,34 +564,41 @@ const meType = new GraphQLObjectType({
             actor: { id: n.actorId, name: n.actorName },
             targetUrl: n.targetUrl ?? null,
           })),
-        };
+        }
       },
     },
     assignedIssues: {
       type: GraphQLNonNull(GraphQLList(issueType)),
-      resolve: async (_parent: unknown, _args: unknown, context: { req?: { headers?: Record<string, string> } }) => {
-        const userId = getUserId(context);
-        const issues = await issuesModel.getMyIssues(userId);
-        const store = await getStore();
+      resolve: async (
+        _parent: unknown,
+        _args: unknown,
+        context: GraphQLContext
+      ) => {
+        const userId = getUserId(context)
+        const issues = await issuesModel.getMyIssues(userId)
+        const store = await getStore()
         return issues.map((i) => ({
           id: i.id,
           title: i.title,
-          assignee: i.assigneeName ? { id: i.assigneeId ?? '', name: i.assigneeName } : null,
+          assignee: i.assigneeName
+            ? { id: i.assigneeId ?? '', name: i.assigneeName }
+            : null,
           date: i.date,
           status: i.status,
           team: (() => {
-            const t = store.teams.find((x) => x.id === i.teamId);
-            return t ? { id: t.id, name: t.name } : null;
+            const t = store.teams.find((x) => x.id === i.teamId)
+            return t ? { id: t.id, name: t.name } : null
           })(),
           project: (() => {
-            const p = i.projectId && store.projects.find((x) => x.id === i.projectId);
-            return p ? { id: p.id, name: p.name } : null;
+            const p =
+              i.projectId && store.projects.find((x) => x.id === i.projectId)
+            return p ? { id: p.id, name: p.name } : null
           })(),
-        }));
+        }))
       },
     },
   },
-});
+})
 
 // --- Query ---
 const queryType = new GraphQLObjectType({
@@ -521,9 +612,9 @@ const queryType = new GraphQLObjectType({
       type: teamType,
       args: { id: { type: GraphQLNonNull(GraphQLID) } },
       resolve: async (_parent: unknown, args: Record<string, unknown>) => {
-        const id = args.id as string;
-        const team = await teamsModel.getTeamById(id);
-        return team ? { id: team.id, name: team.name } : null;
+        const id = args.id as string
+        const team = await teamsModel.getTeamById(id)
+        return team ? { id: team.id, name: team.name } : null
       },
     },
     me: {
@@ -534,13 +625,13 @@ const queryType = new GraphQLObjectType({
       type: statusUpdateQueryType,
       args: { id: { type: GraphQLNonNull(GraphQLID) } },
       resolve: async (_parent: unknown, args: Record<string, unknown>) => {
-        const id = args.id as string;
-        const store = await getStore();
-        const update = store.statusUpdates.find((u) => u.id === id);
-        return update ? { id: update.id } : null;
+        const id = args.id as string
+        const store = await getStore()
+        const update = store.statusUpdates.find((u) => u.id === id)
+        return update ? { id: update.id } : null
       },
     },
   },
-});
+})
 
-export const schema = new GraphQLSchema({ query: queryType });
+export const schema = new GraphQLSchema({ query: queryType })

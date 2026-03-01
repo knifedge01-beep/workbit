@@ -165,6 +165,7 @@ export function rowToIssue(r: DbRow): Issue {
     status: r.status as string,
     teamId: r.team_id as string,
     projectId: r.project_id as string | undefined,
+    description: r.description as string | undefined,
   }
 }
 
@@ -289,6 +290,7 @@ export function storeToRows(store: Store) {
       status: i.status,
       team_id: i.teamId,
       project_id: i.projectId ?? null,
+      description: i.description ?? null,
     })),
     notifications: store.notifications.map((n) => ({
       id: n.id,

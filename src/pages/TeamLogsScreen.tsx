@@ -2,10 +2,16 @@ import { useParams } from 'react-router-dom'
 import styled from 'styled-components'
 import { PageHeader, Stack, Text } from '@design-system'
 import { Diamond, Box } from 'lucide-react'
-import { fetchTeamLogs } from '../api/client'
+import {
+  fetchTeamLogs,
+  type ApiTeamLog,
+  type ApiTeamLogsResponse,
+} from '../api/client'
 import { useFetch } from '../hooks/useFetch'
 
 type Props = { teamName: string }
+
+const EMPTY_LOGS: ApiTeamLogsResponse = { nodes: [] }
 
 const Timeline = styled.div`
   display: flex;
@@ -49,22 +55,10 @@ const Dot = styled.div`
   }
 `
 
-export interface ApiTeamLog {
-  id: string
-  action: string
-  actor: { id: string; name: string }
-  timestamp: string
-  details: string
-}
-
-export interface ApiTeamLogsResponse {
-  nodes: ApiTeamLog[]
-}
-
 export function TeamLogsScreen({ teamName }: Props) {
   const { teamId } = useParams<{ teamId: string }>()
   const { data, loading, error } = useFetch(
-    () => (teamId ? fetchTeamLogs(teamId) : Promise.resolve({ nodes: [] })),
+    () => (teamId ? fetchTeamLogs(teamId) : Promise.resolve(EMPTY_LOGS)),
     [teamId]
   )
   const logs = data?.nodes ?? []
@@ -82,7 +76,7 @@ export function TeamLogsScreen({ teamName }: Props) {
       )}
       {!loading && (
         <Timeline>
-          {logs.map((item) => (
+          {logs.map((item: ApiTeamLog) => (
             <TimelineItem key={item.id}>
               <Dot>
                 {item.action === 'milestone' ? (

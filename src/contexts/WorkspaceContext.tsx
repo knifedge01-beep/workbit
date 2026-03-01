@@ -99,7 +99,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         if (cancelled) return
         const member = members.find((m) => m.uid && m.uid === userId)
         if (!member) {
-          setWorkspaces([])
+          if (!cancelled) setWorkspaces([])
           return
         }
         const list = await fetchWorkspaces(member.id)
@@ -151,6 +151,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- hook is the public API for this context
 export function useWorkspace(): WorkspaceContextValue {
   const ctx = useContext(WorkspaceContext)
   if (!ctx)

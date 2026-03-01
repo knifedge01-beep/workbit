@@ -132,6 +132,7 @@ export interface Issue {
   status: string
   teamId: string
   projectId?: string
+  description?: string
 }
 
 // Notifications

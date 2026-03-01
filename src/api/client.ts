@@ -1,46 +1,49 @@
 import { getAccessToken } from '../pages/auth/supabaseClient'
 
-const _apiUrl =
-  typeof import.meta.env.VITE_API_URL === 'string' &&
-  import.meta.env.VITE_API_URL
-    ? import.meta.env.VITE_API_URL
-    : 'http://localhost:3001'
-const API_BASE = _apiUrl.replace(/\/api\/v1\/?$/, '') + '/api/v1'
-
-async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
-  const token = await getAccessToken()
-  const authHeader: Record<string, string> = token
-    ? { Authorization: `Bearer ${token}` }
-    : {}
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...authHeader,
-      ...(options?.headers as Record<string, string> | undefined),
-    },
-  })
-  if (!res.ok) {
-    const body = await res.text().catch(() => '')
-    throw new Error(body || `${res.status} ${res.statusText}`)
+function getApiBase(): string {
+  const graphqlUrl = import.meta.env.VITE_GRAPHQL_URL
+  if (typeof graphqlUrl === 'string' && graphqlUrl) {
+    return `${new URL(graphqlUrl).origin}/api/v1`
   }
-  return res.json() as Promise<T>
+  const apiUrl = import.meta.env.VITE_API_URL
+  if (typeof apiUrl === 'string' && apiUrl) {
+    const base = apiUrl.replace(/\/$/, '')
+    return `${base}/api/v1`
+  }
+  return '/api/v1'
 }
 
-// ---- API response types ----
+const API_BASE = getApiBase()
 
-export interface ApiProject {
-  id: string
-  name: string
-  team: { id: string; name: string }
-  status: string
+/**
+ * Authenticated fetch for REST API. Uses session token when available.
+ */
+export async function authFetch(
+  path: string,
+  options: RequestInit = {}
+): Promise<unknown> {
+  const token = await getAccessToken()
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+    ...(token && { Authorization: `Bearer ${token}` }),
+    ...options.headers,
+  }
+  const res = await fetch(`${API_BASE}${path}`, { ...options, headers })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error((err as { error?: string }).error || res.statusText)
+  }
+  if (res.status === 204) return null
+  return res.json()
 }
 
-export interface ApiTeam {
+// --- Types (used by components) ---
+
+export interface ApiWorkspace {
   id: string
   name: string
-  memberCount: number
-  project: { id: string; name: string } | null
+  slug: string
+  region: string
 }
 
 export interface ApiMember {
@@ -55,282 +58,399 @@ export interface ApiMember {
   teams: string
 }
 
-export interface ApiView {
-  id: string
-  name: string
-  type: string
-  owner: { id: string; name: string }
-  teamId?: string
-}
-
-export interface ApiRole {
-  id: string
-  role: string
-  memberCount: number
-  description: string
-}
-
-export interface ApiIssue {
+export interface ApiIssueDetail {
   id: string
   title: string
-  assignee: { id: string; name: string } | null
+  description?: string
+  assignee?: { id: string; name: string } | null
   date: string
   status: string
+  teamId: string
+  team?: { id: string; name: string } | null
+  project?: { id: string; name: string } | null
 }
 
-export interface ApiIssueDetail extends ApiIssue {
-  teamId: string
-  team: { id: string; name: string } | null
-  project: { id: string; name: string } | null
-}
+export type ProjectStatus = 'on-track' | 'at-risk' | 'off-track'
 
 export interface ApiStatusUpdate {
   id: string
-  status: 'on-track' | 'at-risk' | 'off-track'
+  status: ProjectStatus
   content: string
   author: { id: string; name: string; avatarSrc?: string }
   createdAt: string
   commentCount: number
 }
 
-export interface ApiComment {
-  id: string
-  authorName: string
-  authorAvatarSrc?: string
-  content: string
-  timestamp: string
-}
-
-export interface ApiMilestone {
-  id: string
-  teamId: string
-  name: string
-  progress: number
-  total: number
-  targetDate: string
-}
-
-export interface ApiActivityItem {
-  id: string
-  teamId: string
-  icon: 'milestone' | 'project'
-  message: string
-  date: string
-}
-
 export interface ApiProjectProperties {
-  status: string
-  priority: string
-  leadId?: string
+  status?: string
+  priority?: string
   startDate?: string
   endDate?: string
-  teamIds: string[]
-  labelIds: string[]
+  [key: string]: unknown
 }
 
-export interface ApiTeamProject {
+// --- Workspaces ---
+
+export async function fetchWorkspaces(
+  memberId: string
+): Promise<ApiWorkspace[]> {
+  return authFetch(
+    `/workspaces?memberId=${encodeURIComponent(memberId)}`
+  ) as Promise<ApiWorkspace[]>
+}
+
+export async function createWorkspace(body: {
+  name: string
+  slug: string
+  region: string
+  memberId: string
+}): Promise<ApiWorkspace> {
+  return authFetch('/workspaces', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  }) as Promise<ApiWorkspace>
+}
+
+// --- Workspace (singular: current workspace scope) ---
+
+export async function fetchMembers(): Promise<ApiMember[]> {
+  return authFetch('/workspace/members') as Promise<ApiMember[]>
+}
+
+export async function fetchProjects(): Promise<
+  {
+    id: string
+    name: string
+    team: { id: string; name: string }
+    status: string
+  }[]
+> {
+  return authFetch('/workspace/projects') as Promise<
+    {
+      id: string
+      name: string
+      team: { id: string; name: string }
+      status: string
+    }[]
+  >
+}
+
+export async function fetchWorkspaceTeams(): Promise<
+  {
+    id: string
+    name: string
+    memberCount: number
+    project: { id: string; name: string } | null
+  }[]
+> {
+  return authFetch('/workspace/teams') as Promise<
+    {
+      id: string
+      name: string
+      memberCount: number
+      project: { id: string; name: string } | null
+    }[]
+  >
+}
+
+export async function fetchWorkspaceViews(): Promise<
+  {
+    id: string
+    name: string
+    type: string
+    owner?: { id: string; name: string }
+  }[]
+> {
+  return authFetch('/workspace/views') as Promise<
+    {
+      id: string
+      name: string
+      type: string
+      owner?: { id: string; name: string }
+    }[]
+  >
+}
+
+export async function fetchRoles(): Promise<
+  { id: string; role: string; memberCount: number; description: string }[]
+> {
+  return authFetch('/workspace/roles') as Promise<
+    { id: string; role: string; memberCount: number; description: string }[]
+  >
+}
+
+export async function inviteMember(
+  email: string,
+  roleId?: string
+): Promise<unknown> {
+  return authFetch('/workspace/members/invite', {
+    method: 'POST',
+    body: JSON.stringify({ email, roleId }),
+  })
+}
+
+// --- Teams ---
+
+export type ActivityIcon = 'milestone' | 'project'
+
+export async function fetchTeamProject(teamId: string): Promise<{
   team: { id: string; name: string }
   project: {
     id: string
     statusUpdates: { nodes: ApiStatusUpdate[] }
     properties: ApiProjectProperties
-    milestones: ApiMilestone[]
-    activity: ApiActivityItem[]
+    milestones: {
+      id: string
+      name: string
+      progress: number
+      total: number
+      targetDate: string
+    }[]
+    activity: {
+      id: string
+      message: string
+      date: string
+      icon: ActivityIcon
+    }[]
+  }
+}> {
+  return authFetch(`/teams/${teamId}/project`) as Promise<{
+    team: { id: string; name: string }
+    project: {
+      id: string
+      statusUpdates: { nodes: ApiStatusUpdate[] }
+      properties: ApiProjectProperties
+      milestones: {
+        id: string
+        name: string
+        progress: number
+        total: number
+        targetDate: string
+      }[]
+      activity: {
+        id: string
+        message: string
+        date: string
+        icon: ActivityIcon
+      }[]
+    }
+  }>
+}
+
+export async function postStatusUpdate(
+  teamId: string,
+  content: string,
+  status: ProjectStatus
+): Promise<ApiStatusUpdate> {
+  const raw = (await authFetch(`/teams/${teamId}/project/updates`, {
+    method: 'POST',
+    body: JSON.stringify({ content, status }),
+  })) as {
+    id: string
+    status: string
+    content: string
+    authorId: string
+    authorName: string
+    authorAvatarSrc?: string
+    createdAt: string
+    commentCount: number
+  }
+  return {
+    id: raw.id,
+    status: raw.status as ProjectStatus,
+    content: raw.content,
+    createdAt: raw.createdAt,
+    commentCount: raw.commentCount,
+    author: {
+      id: raw.authorId,
+      name: raw.authorName,
+      avatarSrc: raw.authorAvatarSrc,
+    },
   }
 }
 
-export interface ApiNotification {
-  id: string
-  type: string
-  title: string
-  body: string
-  read: boolean
-  createdAt: string
-  actor: { id: string; name: string }
-  targetUrl?: string
-}
-
-export interface ApiWorkspace {
-  id: string
-  name: string
-  slug: string
-  region: string
-}
-
-export interface ApiMyIssue extends ApiIssue {
-  team: { id: string; name: string } | null
-  project: { id: string; name: string } | null
-}
-
-// ---- Workspace ----
-
-export const fetchProjects = () => apiFetch<ApiProject[]>('/workspace/projects')
-export const fetchWorkspaceTeams = () => apiFetch<ApiTeam[]>('/workspace/teams')
-export const fetchMembers = () => apiFetch<ApiMember[]>('/workspace/members')
-
-export const createMember = (body: {
-  name: string
-  username: string
-  status?: string
-  teamIds?: string[]
-}) =>
-  apiFetch<ApiMember>('/workspace/members', {
-    method: 'POST',
-    body: JSON.stringify(body),
-  })
-
-export const provisionMember = (memberId: string, email: string) =>
-  apiFetch<ApiMember>(`/workspace/members/${memberId}/provision`, {
-    method: 'POST',
-    body: JSON.stringify({ email }),
-  })
-export const inviteMember = (email: string, roleId?: string) =>
-  apiFetch<{ id: string }>('/workspace/members/invite', {
-    method: 'POST',
-    body: JSON.stringify({ email, roleId }),
-  })
-export const fetchWorkspaceViews = () => apiFetch<ApiView[]>('/workspace/views')
-export const fetchRoles = () => apiFetch<ApiRole[]>('/workspace/roles')
-
-// ---- Teams ----
-
-export const fetchTeamIssues = (
-  teamId: string,
-  filter: 'all' | 'active' | 'backlog' = 'all'
-) => apiFetch<ApiIssue[]>(`/teams/${teamId}/issues?filter=${filter}`)
-
-export const fetchTeamProject = (teamId: string) =>
-  apiFetch<ApiTeamProject>(`/teams/${teamId}/project`)
-
-export const postStatusUpdate = (
-  teamId: string,
-  content: string,
-  status: string
-) =>
-  apiFetch<ApiStatusUpdate>(`/teams/${teamId}/project/updates`, {
-    method: 'POST',
-    body: JSON.stringify({ content, status }),
-  })
-
-export const postComment = (
+export async function postComment(
   teamId: string,
   updateId: string,
   content: string
-) =>
-  apiFetch<ApiComment>(
-    `/teams/${teamId}/project/updates/${updateId}/comments`,
-    {
-      method: 'POST',
-      body: JSON.stringify({ content }),
-    }
-  )
+): Promise<{
+  id: string
+  authorName: string
+  timestamp: string
+  content: string
+}> {
+  return authFetch(`/teams/${teamId}/project/updates/${updateId}/comments`, {
+    method: 'POST',
+    body: JSON.stringify({ content }),
+  }) as Promise<{
+    id: string
+    authorName: string
+    timestamp: string
+    content: string
+  }>
+}
 
-export const createMilestone = (
+export async function createMilestone(
   teamId: string,
-  body: { name: string; targetDate?: string; total?: number }
-) =>
-  apiFetch<ApiMilestone>(`/teams/${teamId}/project/milestones`, {
+  body: { name: string; targetDate?: string; description?: string }
+): Promise<{
+  id: string
+  name: string
+  progress: number
+  total: number
+  targetDate: string
+}> {
+  return authFetch(`/teams/${teamId}/project/milestones`, {
     method: 'POST',
     body: JSON.stringify(body),
-  })
+  }) as Promise<{
+    id: string
+    name: string
+    progress: number
+    total: number
+    targetDate: string
+  }>
+}
 
-export const patchMilestone = (
+export async function patchProject(
   teamId: string,
-  milestoneId: string,
-  body: Partial<ApiMilestone>
-) =>
-  apiFetch<ApiMilestone>(`/teams/${teamId}/project/milestones/${milestoneId}`, {
+  body: { status?: string; priority?: string; [key: string]: unknown }
+): Promise<ApiProjectProperties> {
+  return authFetch(`/teams/${teamId}/project`, {
     method: 'PATCH',
     body: JSON.stringify(body),
-  })
+  }) as Promise<ApiProjectProperties>
+}
 
-export const patchProject = (
-  teamId: string,
-  body: Partial<ApiProjectProperties>
-) =>
-  apiFetch<ApiProjectProperties>(`/teams/${teamId}/project`, {
-    method: 'PATCH',
-    body: JSON.stringify(body),
-  })
-
-export const fetchTeamViews = (teamId: string) =>
-  apiFetch<ApiView[]>(`/teams/${teamId}/views`)
-
-export const fetchTeamLogs = (teamId: string) =>
-  apiFetch<{
-    nodes: Array<{
+export async function fetchTeamViews(
+  teamId: string
+): Promise<
+  {
+    id: string
+    name: string
+    type: string
+    owner?: { id: string; name: string }
+  }[]
+> {
+  return authFetch(`/teams/${teamId}/views`) as Promise<
+    {
       id: string
-      action: string
+      name: string
+      type: string
+      owner?: { id: string; name: string }
+    }[]
+  >
+}
+
+export interface ApiTeamLog {
+  id: string
+  action: string
+  actor: { id: string; name: string }
+  timestamp: string
+  details: string
+}
+
+export interface ApiTeamLogsResponse {
+  nodes: ApiTeamLog[]
+}
+
+export async function fetchTeamLogs(
+  teamId: string,
+  first?: number
+): Promise<ApiTeamLogsResponse> {
+  const q = first != null ? `?first=${first}` : ''
+  return authFetch(`/teams/${teamId}/logs${q}`) as Promise<ApiTeamLogsResponse>
+}
+
+// --- Team issues ---
+
+export async function fetchTeamIssues(
+  teamId: string,
+  filter: 'all' | 'active' | 'backlog' = 'all'
+): Promise<
+  {
+    id: string
+    title: string
+    assignee: { id: string; name: string } | null
+    date: string
+    status: string
+  }[]
+> {
+  return authFetch(`/teams/${teamId}/issues?filter=${filter}`) as Promise<
+    {
+      id: string
+      title: string
+      assignee: { id: string; name: string } | null
+      date: string
+      status: string
+    }[]
+  >
+}
+
+// --- Me ---
+
+export async function fetchMyIssues(): Promise<
+  {
+    id: string
+    title: string
+    assignee: { id: string; name: string } | null
+    date: string
+    status: string
+    team: { id: string; name: string } | null
+    project: { id: string; name: string } | null
+  }[]
+> {
+  return authFetch('/me/issues') as Promise<
+    {
+      id: string
+      title: string
+      assignee: { id: string; name: string } | null
+      date: string
+      status: string
+      team: { id: string; name: string } | null
+      project: { id: string; name: string } | null
+    }[]
+  >
+}
+
+export async function fetchNotifications(): Promise<
+  {
+    id: string
+    type: string
+    title: string
+    body: string
+    read: boolean
+    createdAt: string
+    actor: { id: string; name: string }
+    targetUrl?: string
+  }[]
+> {
+  return authFetch('/me/notifications') as Promise<
+    {
+      id: string
+      type: string
+      title: string
+      body: string
+      read: boolean
+      createdAt: string
       actor: { id: string; name: string }
-      timestamp: string
-      details: string
-    }>
-  }>(`/teams/${teamId}/logs`)
+      targetUrl?: string
+    }[]
+  >
+}
 
-// ---- Issues ----
+// --- Issues ---
 
-export const fetchIssue = (issueId: string) =>
-  apiFetch<ApiIssueDetail>(`/issues/${issueId}`)
+export async function fetchIssue(issueId: string): Promise<ApiIssueDetail> {
+  return authFetch(`/issues/${issueId}`) as Promise<ApiIssueDetail>
+}
 
-export const updateIssue = (
+export async function updateIssue(
   issueId: string,
   body: { status?: string; assigneeId?: string; assigneeName?: string }
-) =>
-  apiFetch(`/issues/${issueId}`, {
+): Promise<ApiIssueDetail> {
+  return authFetch(`/issues/${issueId}`, {
     method: 'PATCH',
     body: JSON.stringify(body),
-  })
-
-// ---- Me ----
-
-export const fetchMyIssues = () => apiFetch<ApiMyIssue[]>('/me/issues')
-export const fetchNotifications = (first = 50) =>
-  apiFetch<ApiNotification[]>(`/me/notifications?first=${first}`)
-export const fetchMyTeams = () =>
-  apiFetch<{ id: string; name: string }[]>('/me/teams')
-
-// ---- Workspaces ----
-
-export const fetchWorkspaces = (memberId: string) =>
-  apiFetch<ApiWorkspace[]>(
-    `/workspaces?memberId=${encodeURIComponent(memberId)}`
-  )
-
-export const createWorkspace = (body: {
-  name: string
-  slug: string
-  region?: string
-  memberId: string
-}) =>
-  apiFetch<ApiWorkspace>('/workspaces', {
-    method: 'POST',
-    body: JSON.stringify(body),
-  })
-
-// ---- Create Project ----
-
-export const createProject = (body: {
-  name: string
-  teamId: string
-  status?: string
-}) =>
-  apiFetch<ApiProject>('/workspace/projects', {
-    method: 'POST',
-    body: JSON.stringify(body),
-  })
-
-// ---- Create Issue ----
-
-export const createIssue = (
-  teamId: string,
-  body: {
-    title: string
-    projectId?: string
-    assigneeId?: string
-    status?: string
-  }
-) =>
-  apiFetch<ApiIssue>(`/teams/${teamId}/issues`, {
-    method: 'POST',
-    body: JSON.stringify(body),
-  })
+  }) as Promise<ApiIssueDetail>
+}

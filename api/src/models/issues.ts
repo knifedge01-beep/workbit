@@ -1,4 +1,4 @@
-import { getStore, saveStore } from './store.js'
+import { getStore, saveStore, generateId } from './store.js'
 import type { Issue } from './types.js'
 
 export async function getTeamIssues(
@@ -43,6 +43,7 @@ export async function createIssue(input: {
   projectId?: string
   assigneeId?: string
   status?: string
+  description?: string
 }): Promise<Issue> {
   const s = await getStore()
   const team = s.teams.find((t) => t.id === input.teamId)
@@ -58,6 +59,7 @@ export async function createIssue(input: {
     assigneeId: input.assigneeId,
     status: input.status ?? 'todo',
     date: new Date().toISOString(),
+    description: input.description,
   }
 
   s.issues.push(issue)

@@ -30,3 +30,4 @@ export {
   IssueDetailScreenWrapper,
 } from './TeamRouteWrappers'
 export { ShowcaseComponents } from './ShowcaseComponents'
+export { ProfilePage } from './ProfilePage'

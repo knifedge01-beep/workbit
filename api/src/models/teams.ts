@@ -1,38 +1,36 @@
-import { getStore, saveStore, generateId } from './store.js';
+import { generateId } from './store.js'
 import type {
   Team,
   StatusUpdate,
   StatusUpdateComment,
   ProjectProperties,
   Milestone,
-  ActivityItem,
   View,
-  Store,
-} from './types.js';
+} from './types.js'
+import * as dbTeams from '../db/teams.js'
+import * as dbStatusUpdates from '../db/statusUpdates.js'
+import * as dbStatusUpdateComments from '../db/statusUpdateComments.js'
+import * as dbProjectProperties from '../db/projectProperties.js'
+import * as dbMilestones from '../db/milestones.js'
+import * as dbActivity from '../db/activity.js'
+import * as dbViews from '../db/views.js'
 
 export async function getTeamById(teamId: string): Promise<Team | null> {
-  const s = await getStore();
-  return s.teams.find((t) => t.id === teamId) ?? null;
+  return dbTeams.getTeamById(teamId)
 }
 
 export async function getTeamProject(teamId: string) {
-  const s = await getStore();
-  const team = s.teams.find((t) => t.id === teamId);
-  if (!team) return null;
-  const updates = s.statusUpdates
-    .filter((u) => u.teamId === teamId)
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, 20);
-  const properties = s.projectPropertiesByTeam[teamId] ?? {
-    status: 'planned',
-    priority: 'high',
-    teamIds: [],
-    labelIds: [],
-  };
-  const milestones = s.milestones.filter((m) => m.teamId === teamId);
-  const activity = s.activity
-    .filter((a) => a.teamId === teamId)
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const team = await dbTeams.getTeamById(teamId)
+  if (!team) return null
+  const [updates, properties, milestones, activity] = await Promise.all([
+    dbStatusUpdates.getStatusUpdatesByTeamId(teamId, 20),
+    dbProjectProperties.getProjectPropertiesByTeamId(teamId),
+    dbMilestones.getMilestonesByTeamId(teamId),
+    dbActivity.getActivityByTeamId(teamId),
+  ])
+  const sortedActivity = [...activity].sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+  )
   return {
     team: { id: team.id, name: team.name },
     project: {
@@ -40,14 +38,15 @@ export async function getTeamProject(teamId: string) {
       statusUpdates: { nodes: updates },
       properties,
       milestones,
-      activity,
+      activity: sortedActivity,
     },
-  };
+  }
 }
 
-export async function getStatusUpdateComments(updateId: string): Promise<StatusUpdateComment[]> {
-  const s = await getStore();
-  return s.statusUpdateComments.filter((c) => c.updateId === updateId);
+export async function getStatusUpdateComments(
+  updateId: string
+): Promise<StatusUpdateComment[]> {
+  return dbStatusUpdateComments.getStatusUpdateCommentsByUpdateId(updateId)
 }
 
 export async function addStatusUpdate(
@@ -56,7 +55,6 @@ export async function addStatusUpdate(
   status: 'on-track' | 'at-risk' | 'off-track',
   author: { id: string; name: string; avatarSrc?: string }
 ): Promise<StatusUpdate> {
-  const s = await getStore();
   const update: StatusUpdate = {
     id: generateId(),
     teamId,
@@ -67,10 +65,9 @@ export async function addStatusUpdate(
     authorAvatarSrc: author.avatarSrc,
     createdAt: new Date().toISOString(),
     commentCount: 0,
-  };
-  s.statusUpdates.unshift(update);
-  await saveStore(s);
-  return update;
+  }
+  await dbStatusUpdates.insertStatusUpdate(update)
+  return update
 }
 
 export async function addStatusUpdateComment(
@@ -80,9 +77,8 @@ export async function addStatusUpdateComment(
   authorName: string,
   authorAvatarSrc?: string
 ): Promise<StatusUpdateComment> {
-  const s = await getStore();
-  const update = s.statusUpdates.find((u) => u.id === updateId && u.teamId === teamId);
-  if (!update) throw new Error('Update not found');
+  const update = await dbStatusUpdates.getStatusUpdateById(updateId)
+  if (!update || update.teamId !== teamId) throw new Error('Update not found')
   const comment: StatusUpdateComment = {
     id: generateId(),
     updateId,
@@ -90,34 +86,29 @@ export async function addStatusUpdateComment(
     authorAvatarSrc,
     content,
     timestamp: new Date().toISOString(),
-  };
-  s.statusUpdateComments.push(comment);
-  update.commentCount = (update.commentCount ?? 0) + 1;
-  await saveStore(s);
-  return comment;
+  }
+  await dbStatusUpdateComments.insertStatusUpdateComment(comment)
+  await dbStatusUpdates.updateStatusUpdateCommentCount(
+    updateId,
+    (update.commentCount ?? 0) + 1
+  )
+  return comment
 }
 
 export async function updateProjectProperties(
   teamId: string,
   patch: Partial<ProjectProperties>
 ): Promise<ProjectProperties> {
-  const s = await getStore();
-  const current = s.projectPropertiesByTeam[teamId] ?? {
-    status: 'planned',
-    priority: 'high',
-    teamIds: [],
-    labelIds: [],
-  };
-  s.projectPropertiesByTeam[teamId] = { ...current, ...patch };
-  await saveStore(s);
-  return s.projectPropertiesByTeam[teamId];
+  const current = await dbProjectProperties.getProjectPropertiesByTeamId(teamId)
+  const merged = { ...current, ...patch }
+  await dbProjectProperties.upsertProjectProperties(teamId, merged)
+  return merged
 }
 
 export async function addMilestone(
   teamId: string,
   body: { name: string; targetDate?: string; description?: string }
 ): Promise<Milestone> {
-  const s = await getStore();
   const milestone: Milestone = {
     id: generateId(),
     teamId,
@@ -126,42 +117,41 @@ export async function addMilestone(
     total: 0,
     targetDate: body.targetDate ?? '',
     description: body.description,
-  };
-  s.milestones.push(milestone);
-  await saveStore(s);
-  return milestone;
+  }
+  await dbMilestones.insertMilestone(milestone)
+  return milestone
 }
 
 export async function updateMilestone(
   teamId: string,
   milestoneId: string,
-  patch: Partial<Pick<Milestone, 'name' | 'targetDate' | 'description' | 'progress' | 'total'>>
+  patch: Partial<
+    Pick<
+      Milestone,
+      'name' | 'targetDate' | 'description' | 'progress' | 'total'
+    >
+  >
 ): Promise<Milestone | null> {
-  const s = await getStore();
-  const m = s.milestones.find((x) => x.id === milestoneId && x.teamId === teamId);
-  if (!m) return null;
-  Object.assign(m, patch);
-  await saveStore(s);
-  return m;
+  const list = await dbMilestones.getMilestonesByTeamId(teamId)
+  const m = list.find((x) => x.id === milestoneId)
+  if (!m) return null
+  await dbMilestones.updateMilestone(milestoneId, patch)
+  return { ...m, ...patch }
 }
 
 export async function getTeamViews(teamId: string): Promise<View[]> {
-  const s = await getStore();
-  return s.views.filter((v) => v.teamId === teamId);
+  return dbViews.getViewsByTeamId(teamId)
 }
 
 export async function getTeamLogs(teamId: string, first = 50) {
-  const s = await getStore();
-  const activity = s.activity
-    .filter((a) => a.teamId === teamId)
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, first)
-    .map((a) => ({
+  const activity = await dbActivity.getActivityByTeamId(teamId, first)
+  return {
+    nodes: activity.map((a) => ({
       id: a.id,
       action: a.icon,
       actor: { id: '1', name: a.message.split(' ')[0] ?? 'System' },
       timestamp: a.date,
       details: a.message,
-    }));
-  return { nodes: activity };
+    })),
+  }
 }

@@ -135,6 +135,27 @@ export async function fetchProjects(): Promise<
   >
 }
 
+export async function createProject(body: {
+  name: string
+  teamId: string
+  status?: string
+}): Promise<{
+  id: string
+  name: string
+  team: { id: string; name: string }
+  status: string
+}> {
+  return authFetch('/workspace/projects', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  }) as Promise<{
+    id: string
+    name: string
+    team: { id: string; name: string }
+    status: string
+  }>
+}
+
 export async function fetchWorkspaceTeams(): Promise<
   {
     id: string
@@ -322,9 +343,7 @@ export async function patchProject(
   }) as Promise<ApiProjectProperties>
 }
 
-export async function fetchTeamViews(
-  teamId: string
-): Promise<
+export async function fetchTeamViews(teamId: string): Promise<
   {
     id: string
     name: string
@@ -385,6 +404,23 @@ export async function fetchTeamIssues(
       status: string
     }[]
   >
+}
+
+export async function createIssue(
+  teamId: string,
+  body: { title: string; status?: string; description?: string }
+): Promise<ApiIssueDetail> {
+  const { project } = await fetchTeamProject(teamId)
+  const projectId = project?.id
+  if (!projectId) throw new Error('Team has no project')
+  return authFetch(`/teams/${teamId}/issues`, {
+    method: 'POST',
+    body: JSON.stringify({
+      projectId,
+      title: body.title,
+      description: body.description,
+    }),
+  }) as Promise<ApiIssueDetail>
 }
 
 // --- Me ---

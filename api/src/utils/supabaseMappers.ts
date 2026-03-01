@@ -169,6 +169,164 @@ export function rowToIssue(r: DbRow): Issue {
   }
 }
 
+export function issueToRow(i: Issue): Record<string, unknown> {
+  return {
+    id: i.id,
+    title: i.title,
+    assignee_id: i.assigneeId ?? null,
+    assignee_name: i.assigneeName ?? null,
+    date: i.date,
+    status: i.status,
+    team_id: i.teamId,
+    project_id: i.projectId ?? null,
+    description: i.description ?? null,
+  }
+}
+
+function workspaceToRow(w: Workspace): Record<string, unknown> {
+  return {
+    id: w.id,
+    name: w.name,
+    slug: w.slug,
+    region: w.region,
+    member_ids: w.memberIds ?? [],
+  }
+}
+
+function projectToRow(p: Project): Record<string, unknown> {
+  return { id: p.id, name: p.name, team_id: p.teamId, status: p.status }
+}
+
+function teamToRow(t: Team): Record<string, unknown> {
+  return {
+    id: t.id,
+    name: t.name,
+    project_id: t.projectId ?? null,
+    member_ids: t.memberIds ?? [],
+  }
+}
+
+function memberToRow(m: Member): Record<string, unknown> {
+  return {
+    id: m.id,
+    name: m.name,
+    username: m.username,
+    avatar_src: m.avatarSrc ?? null,
+    status: m.status,
+    joined: m.joined,
+    team_ids: m.teamIds ?? [],
+    provisioned: m.provisioned ?? false,
+    supabase_user_id: m.uid ?? m.userAuthId ?? null,
+  }
+}
+
+function viewToRow(v: View): Record<string, unknown> {
+  return {
+    id: v.id,
+    name: v.name,
+    type: v.type,
+    owner_id: v.ownerId,
+    team_id: v.teamId ?? null,
+  }
+}
+
+function roleToRow(r: Role): Record<string, unknown> {
+  return {
+    id: r.id,
+    role: r.role,
+    member_count: r.memberCount,
+    description: r.description,
+  }
+}
+
+function invitationToRow(i: Invitation): Record<string, unknown> {
+  return {
+    id: i.id,
+    email: i.email,
+    role_id: i.roleId ?? null,
+    created_at: i.createdAt,
+  }
+}
+
+function statusUpdateToRow(u: StatusUpdate): Record<string, unknown> {
+  return {
+    id: u.id,
+    team_id: u.teamId,
+    status: u.status,
+    content: u.content,
+    author_id: u.authorId,
+    author_name: u.authorName,
+    author_avatar_src: u.authorAvatarSrc ?? null,
+    created_at: u.createdAt,
+    comment_count: u.commentCount ?? 0,
+  }
+}
+
+function statusUpdateCommentToRow(
+  c: StatusUpdateComment
+): Record<string, unknown> {
+  return {
+    id: c.id,
+    update_id: c.updateId,
+    author_name: c.authorName,
+    author_avatar_src: c.authorAvatarSrc ?? null,
+    content: c.content,
+    timestamp: c.timestamp,
+  }
+}
+
+function projectPropertiesToRow(
+  teamId: string,
+  p: ProjectProperties
+): Record<string, unknown> {
+  return {
+    team_id: teamId,
+    status: p.status,
+    priority: p.priority,
+    lead_id: p.leadId ?? null,
+    start_date: p.startDate ?? null,
+    end_date: p.endDate ?? null,
+    team_ids: p.teamIds ?? [],
+    label_ids: p.labelIds ?? [],
+  }
+}
+
+function milestoneToRow(m: Milestone): Record<string, unknown> {
+  return {
+    id: m.id,
+    team_id: m.teamId,
+    name: m.name,
+    progress: m.progress ?? 0,
+    total: m.total ?? 0,
+    target_date: m.targetDate ?? '',
+    description: m.description ?? null,
+  }
+}
+
+function activityToRow(a: ActivityItem): Record<string, unknown> {
+  return {
+    id: a.id,
+    team_id: a.teamId,
+    icon: a.icon,
+    message: a.message,
+    date: a.date,
+  }
+}
+
+function notificationToRow(n: Notification): Record<string, unknown> {
+  return {
+    id: n.id,
+    type: n.type,
+    title: n.title,
+    body: n.body,
+    read: n.read,
+    created_at: n.createdAt,
+    actor_id: n.actorId,
+    actor_name: n.actorName,
+    target_url: n.targetUrl ?? null,
+  }
+}
+
 export function rowToNotification(r: DbRow): Notification {
   return {
     id: r.id as string,
@@ -185,123 +343,23 @@ export function rowToNotification(r: DbRow): Notification {
 
 export function storeToRows(store: Store) {
   return {
-    workspaces: store.workspaces.map((w) => ({
-      id: w.id,
-      name: w.name,
-      slug: w.slug,
-      region: w.region,
-      member_ids: w.memberIds ?? [],
-    })),
-    projects: store.projects.map((p) => ({
-      id: p.id,
-      name: p.name,
-      team_id: p.teamId,
-      status: p.status,
-    })),
-    teams: store.teams.map((t) => ({
-      id: t.id,
-      name: t.name,
-      project_id: t.projectId ?? null,
-      member_ids: t.memberIds ?? [],
-    })),
-    members: store.members.map((m) => ({
-      id: m.id,
-      name: m.name,
-      username: m.username,
-      avatar_src: m.avatarSrc ?? null,
-      status: m.status,
-      joined: m.joined,
-      team_ids: m.teamIds ?? [],
-      provisioned: m.provisioned ?? false,
-      supabase_user_id: m.uid ?? m.userAuthId ?? null,
-    })),
-    views: store.views.map((v) => ({
-      id: v.id,
-      name: v.name,
-      type: v.type,
-      owner_id: v.ownerId,
-      team_id: v.teamId ?? null,
-    })),
-    roles: store.roles.map((r) => ({
-      id: r.id,
-      role: r.role,
-      member_count: r.memberCount,
-      description: r.description,
-    })),
-    invitations: store.invitations.map((i) => ({
-      id: i.id,
-      email: i.email,
-      role_id: i.roleId ?? null,
-      created_at: i.createdAt,
-    })),
-    status_updates: store.statusUpdates.map((u) => ({
-      id: u.id,
-      team_id: u.teamId,
-      status: u.status,
-      content: u.content,
-      author_id: u.authorId,
-      author_name: u.authorName,
-      author_avatar_src: u.authorAvatarSrc ?? null,
-      created_at: u.createdAt,
-      comment_count: u.commentCount ?? 0,
-    })),
-    status_update_comments: store.statusUpdateComments.map((c) => ({
-      id: c.id,
-      update_id: c.updateId,
-      author_name: c.authorName,
-      author_avatar_src: c.authorAvatarSrc ?? null,
-      content: c.content,
-      timestamp: c.timestamp,
-    })),
-    project_properties: Object.entries(store.projectPropertiesByTeam ?? {}).map(
-      ([team_id, p]) => ({
-        team_id,
-        status: p.status,
-        priority: p.priority,
-        lead_id: p.leadId ?? null,
-        start_date: p.startDate ?? null,
-        end_date: p.endDate ?? null,
-        team_ids: p.teamIds ?? [],
-        label_ids: p.labelIds ?? [],
-      })
+    workspaces: store.workspaces.map((w) => workspaceToRow(w)),
+    projects: store.projects.map((p) => projectToRow(p)),
+    teams: store.teams.map((t) => teamToRow(t)),
+    members: store.members.map((m) => memberToRow(m)),
+    views: store.views.map((v) => viewToRow(v)),
+    roles: store.roles.map((r) => roleToRow(r)),
+    invitations: store.invitations.map((i) => invitationToRow(i)),
+    status_updates: store.statusUpdates.map((u) => statusUpdateToRow(u)),
+    status_update_comments: store.statusUpdateComments.map((c) =>
+      statusUpdateCommentToRow(c)
     ),
-    milestones: store.milestones.map((m) => ({
-      id: m.id,
-      team_id: m.teamId,
-      name: m.name,
-      progress: m.progress ?? 0,
-      total: m.total ?? 0,
-      target_date: m.targetDate ?? '',
-      description: m.description ?? null,
-    })),
-    activity: store.activity.map((a) => ({
-      id: a.id,
-      team_id: a.teamId,
-      icon: a.icon,
-      message: a.message,
-      date: a.date,
-    })),
-    issues: store.issues.map((i) => ({
-      id: i.id,
-      title: i.title,
-      assignee_id: i.assigneeId ?? null,
-      assignee_name: i.assigneeName ?? null,
-      date: i.date,
-      status: i.status,
-      team_id: i.teamId,
-      project_id: i.projectId ?? null,
-      description: i.description ?? null,
-    })),
-    notifications: store.notifications.map((n) => ({
-      id: n.id,
-      type: n.type,
-      title: n.title,
-      body: n.body,
-      read: n.read,
-      created_at: n.createdAt,
-      actor_id: n.actorId,
-      actor_name: n.actorName,
-      target_url: n.targetUrl ?? null,
-    })),
+    project_properties: Object.entries(store.projectPropertiesByTeam ?? {}).map(
+      ([teamId, p]) => projectPropertiesToRow(teamId, p)
+    ),
+    milestones: store.milestones.map((m) => milestoneToRow(m)),
+    activity: store.activity.map((a) => activityToRow(a)),
+    issues: store.issues.map((i) => issueToRow(i)),
+    notifications: store.notifications.map((n) => notificationToRow(n)),
   }
 }

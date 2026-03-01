@@ -1,44 +1,43 @@
-import { getStore, saveStore, generateId } from './store.js'
+import { generateId } from './store.js'
 import type { Project, Team, Member, View, Role, Invitation } from './types.js'
+import * as dbProjects from '../db/projects.js'
+import * as dbTeams from '../db/teams.js'
+import * as dbMembers from '../db/members.js'
+import * as dbViews from '../db/views.js'
+import * as dbRoles from '../db/roles.js'
+import * as dbInvitations from '../db/invitations.js'
 
 export async function getProjects(): Promise<Project[]> {
-  const s = await getStore()
-  return s.projects
+  return dbProjects.getProjects()
 }
 
 export async function getTeams(): Promise<Team[]> {
-  const s = await getStore()
-  return s.teams
+  return dbTeams.getTeams()
 }
 
 export async function getMembers(): Promise<Member[]> {
-  const s = await getStore()
-  return s.members
+  return dbMembers.getMembers()
 }
 
 export async function getViews(): Promise<View[]> {
-  const s = await getStore()
-  return s.views.filter((v) => !v.teamId)
+  return dbViews.getViewsWithoutTeamId()
 }
 
 export async function getRoles(): Promise<Role[]> {
-  const s = await getStore()
-  return s.roles
+  return dbRoles.getRoles()
 }
 
 export async function inviteMember(
   email: string,
   roleId?: string
 ): Promise<Invitation> {
-  const s = await getStore()
   const inv: Invitation = {
     id: generateId(),
     email,
     roleId,
     createdAt: new Date().toISOString(),
   }
-  s.invitations.push(inv)
-  await saveStore(s)
+  await dbInvitations.insertInvitation(inv)
   return inv
 }
 
@@ -46,28 +45,14 @@ export interface CreateMemberInput {
   name: string
   username: string
   status: string
-  /**
-   * Optional email used for provisioning into Supabase auth.
-   * This is not yet part of the Member model, but can be
-   * captured via invitations or a future extension.
-   */
   email?: string
-  /**
-   * Teams this member should belong to on creation.
-   */
   teamIds?: string[]
-  /**
-   * Optional Supabase auth user id to link on creation.
-   * If provided, the member will be marked provisioned.
-   */
   uid?: string | null
   userAuthId?: string | null
   provisioned?: boolean
 }
 
 export async function createMember(input: CreateMemberInput): Promise<Member> {
-  const s = await getStore()
-
   const authId = input.uid ?? input.userAuthId ?? null
   const isProvisioned = input.provisioned ?? Boolean(authId)
 
@@ -84,19 +69,21 @@ export async function createMember(input: CreateMemberInput): Promise<Member> {
     userAuthId: authId,
   }
 
-  s.members.push(member)
+  await dbMembers.insertMember(member)
 
   if (member.teamIds.length > 0) {
-    const teamsById = new Map(s.teams.map((t) => [t.id, t]))
+    const teams = await dbTeams.getTeams()
+    const teamsById = new Map(teams.map((t) => [t.id, t]))
     for (const teamId of member.teamIds) {
       const team = teamsById.get(teamId)
       if (team && !team.memberIds.includes(member.id)) {
-        team.memberIds.push(member.id)
+        await dbTeams.updateTeam(teamId, {
+          memberIds: [...team.memberIds, member.id],
+        })
       }
     }
   }
 
-  await saveStore(s)
   return member
 }
 
@@ -104,8 +91,7 @@ export async function provisionMember(
   memberId: string,
   userAuthId: string
 ): Promise<Member> {
-  const s = await getStore()
-  const member = s.members.find((m) => m.id === memberId)
+  const member = await dbMembers.getMemberById(memberId)
   if (!member) {
     throw new Error('Member not found')
   }
@@ -114,12 +100,12 @@ export async function provisionMember(
     return member
   }
 
-  member.provisioned = true
-  member.uid = userAuthId
-  member.userAuthId = userAuthId
-
-  await saveStore(s)
-  return member
+  await dbMembers.updateMember(memberId, {
+    provisioned: true,
+    uid: userAuthId,
+    userAuthId,
+  })
+  return { ...member, provisioned: true, uid: userAuthId, userAuthId }
 }
 
 export async function createProject(input: {
@@ -127,8 +113,7 @@ export async function createProject(input: {
   teamId: string
   status?: string
 }): Promise<Project> {
-  const s = await getStore()
-  const team = s.teams.find((t) => t.id === input.teamId)
+  const team = await dbTeams.getTeamById(input.teamId)
   if (!team) {
     throw new Error('Team not found')
   }
@@ -140,9 +125,8 @@ export async function createProject(input: {
     status: input.status ?? 'Active',
   }
 
-  s.projects.push(project)
-  team.projectId = project.id
-  await saveStore(s)
+  await dbProjects.insertProject(project)
+  await dbTeams.updateTeam(input.teamId, { projectId: project.id })
 
   return project
 }

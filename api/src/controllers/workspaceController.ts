@@ -1,22 +1,39 @@
 import type { Request, Response } from 'express'
 import * as workspaceModel from '../models/workspace.js'
-import { getStore } from '../models/store.js'
+import { getProjects as dbGetProjects } from '../db/projects.js'
+import { getTeams as dbGetTeams } from '../db/teams.js'
+import { getMembers as dbGetMembers } from '../db/members.js'
+import { getViewsWithoutTeamId } from '../db/views.js'
+import { getMemberById } from '../db/members.js'
+import { getTeamById } from '../db/teams.js'
 import {
   findSupabaseUserByEmail,
   createSupabaseUserForMember,
 } from '../utils/supabaseUsers.js'
 
+function toErrorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message
+  if (
+    typeof err === 'object' &&
+    err !== null &&
+    'message' in err &&
+    typeof (err as { message: unknown }).message === 'string'
+  )
+    return (err as { message: string }).message
+  if (typeof err === 'string') return err
+  return JSON.stringify(err)
+}
+
 function sendError(res: Response, err: unknown, status = 500) {
-  res
-    .status(status)
-    .json({ error: err instanceof Error ? err.message : String(err) })
+  res.status(status).json({ error: toErrorMessage(err) })
 }
 
 export async function getProjects(_req: Request, res: Response) {
   try {
-    const store = await getStore()
-    const list = store.projects.map((p) => {
-      const team = store.teams.find((t) => t.id === p.teamId)
+    const [projects, teams] = await Promise.all([dbGetProjects(), dbGetTeams()])
+    const teamsById = new Map(teams.map((t) => [t.id, t]))
+    const list = projects.map((p) => {
+      const team = teamsById.get(p.teamId)
       return {
         id: p.id,
         name: p.name,
@@ -34,11 +51,10 @@ export async function getProjects(_req: Request, res: Response) {
 
 export async function getTeams(_req: Request, res: Response) {
   try {
-    const store = await getStore()
-    const list = store.teams.map((t) => {
-      const project = t.projectId
-        ? store.projects.find((p) => p.id === t.projectId)
-        : undefined
+    const [teams, projects] = await Promise.all([dbGetTeams(), dbGetProjects()])
+    const projectsById = new Map(projects.map((p) => [p.id, p]))
+    const list = teams.map((t) => {
+      const project = t.projectId ? projectsById.get(t.projectId) : undefined
       return {
         id: t.id,
         name: t.name,
@@ -54,27 +70,30 @@ export async function getTeams(_req: Request, res: Response) {
 
 export async function getMembers(_req: Request, res: Response) {
   try {
-    const store = await getStore()
-    const list = store.members.map((m) => {
-      const uid = m.uid ?? m.userAuthId ?? null
-      console.log(
-        `[Members] member id=${m.id} name=${m.name} uid=${uid ?? 'null'} userAuthId=${m.userAuthId ?? 'null'}`
-      )
-      const teamNames = m.teamIds
-        .map((tid) => store.teams.find((t) => t.id === tid)?.name)
-        .filter(Boolean) as string[]
-      return {
-        id: m.id,
-        name: m.name,
-        username: m.username,
-        avatarSrc: m.avatarSrc,
-        status: m.status,
-        joined: m.joined,
-        provisioned: m.provisioned,
-        uid,
-        teams: teamNames.length ? teamNames.join(', ') : '—',
-      }
-    })
+    const [members, teams] = await Promise.all([dbGetMembers(), dbGetTeams()])
+    const teamsById = new Map(teams.map((t) => [t.id, t]))
+    const list = await Promise.all(
+      members.map(async (m) => {
+        const uid = m.uid ?? m.userAuthId ?? null
+        console.log(
+          `[Members] member id=${m.id} name=${m.name} uid=${uid ?? 'null'} userAuthId=${m.userAuthId ?? 'null'}`
+        )
+        const teamNames = m.teamIds
+          .map((tid) => teamsById.get(tid)?.name)
+          .filter(Boolean) as string[]
+        return {
+          id: m.id,
+          name: m.name,
+          username: m.username,
+          avatarSrc: m.avatarSrc,
+          status: m.status,
+          joined: m.joined,
+          provisioned: m.provisioned,
+          uid,
+          teams: teamNames.length ? teamNames.join(', ') : '—',
+        }
+      })
+    )
     res.json(list)
   } catch (e) {
     sendError(res, e)
@@ -182,19 +201,20 @@ export async function provisionMember(req: Request, res: Response) {
 
 export async function getViews(_req: Request, res: Response) {
   try {
-    const store = await getStore()
-    const workspaceViews = store.views.filter((v) => !v.teamId)
-    const list = workspaceViews.map((v) => {
-      const owner = store.members.find((m) => m.id === v.ownerId)
-      return {
-        id: v.id,
-        name: v.name,
-        type: v.type,
-        owner: owner
-          ? { id: owner.id, name: owner.name }
-          : { id: v.ownerId, name: v.ownerId },
-      }
-    })
+    const workspaceViews = await getViewsWithoutTeamId()
+    const list = await Promise.all(
+      workspaceViews.map(async (v) => {
+        const owner = await getMemberById(v.ownerId)
+        return {
+          id: v.id,
+          name: v.name,
+          type: v.type,
+          owner: owner
+            ? { id: owner.id, name: owner.name }
+            : { id: v.ownerId, name: v.ownerId },
+        }
+      })
+    )
     res.json(list)
   } catch (e) {
     sendError(res, e)
@@ -203,8 +223,8 @@ export async function getViews(_req: Request, res: Response) {
 
 export async function getRoles(_req: Request, res: Response) {
   try {
-    const store = await getStore()
-    res.json(store.roles.map((r) => ({ ...r, memberCount: r.memberCount })))
+    const roles = await workspaceModel.getRoles()
+    res.json(roles.map((r) => ({ ...r, memberCount: r.memberCount })))
   } catch (e) {
     sendError(res, e)
   }
@@ -228,8 +248,7 @@ export async function createProject(req: Request, res: Response) {
       return
     }
 
-    const store = await getStore()
-    const team = store.teams.find((t) => t.id === teamId)
+    const team = await getTeamById(teamId)
     if (!team) {
       sendError(res, 'Team not found', 404)
       return

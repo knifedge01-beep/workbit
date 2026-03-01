@@ -14,7 +14,10 @@ import * as teamsModel from '../models/teams.js'
 import * as issuesModel from '../models/issues.js'
 import * as meModel from '../models/me.js'
 import * as apiKeysModel from '../models/apiKeys.js'
-import { getStore } from '../models/store.js'
+import * as dbTeams from '../db/teams.js'
+import * as dbProjects from '../db/projects.js'
+import * as dbMembers from '../db/members.js'
+import * as dbStatusUpdates from '../db/statusUpdates.js'
 
 const DEFAULT_USER_ID = 'current-user'
 
@@ -131,10 +134,13 @@ const workspaceType = new GraphQLObjectType({
     projects: {
       type: GraphQLNonNull(GraphQLList(projectType)),
       resolve: async () => {
-        const projects = await workspaceModel.getProjects()
-        const store = await getStore()
+        const [projects, teams] = await Promise.all([
+          workspaceModel.getProjects(),
+          dbTeams.getTeams(),
+        ])
+        const teamsById = new Map(teams.map((t) => [t.id, t]))
         return projects.map((p) => {
-          const team = store.teams.find((t) => t.id === p.teamId)
+          const team = teamsById.get(p.teamId)
           return {
             id: p.id,
             name: p.name,
@@ -149,11 +155,14 @@ const workspaceType = new GraphQLObjectType({
     teams: {
       type: GraphQLNonNull(GraphQLList(teamInListType)),
       resolve: async () => {
-        const teams = await workspaceModel.getTeams()
-        const store = await getStore()
+        const [teams, projects] = await Promise.all([
+          workspaceModel.getTeams(),
+          dbProjects.getProjects(),
+        ])
+        const projectsById = new Map(projects.map((p) => [p.id, p]))
         return teams.map((t) => {
           const project = t.projectId
-            ? store.projects.find((p) => p.id === t.projectId)
+            ? projectsById.get(t.projectId)
             : undefined
           return {
             id: t.id,
@@ -167,11 +176,14 @@ const workspaceType = new GraphQLObjectType({
     members: {
       type: GraphQLNonNull(GraphQLList(memberType)),
       resolve: async () => {
-        const members = await workspaceModel.getMembers()
-        const store = await getStore()
+        const [members, teams] = await Promise.all([
+          workspaceModel.getMembers(),
+          dbTeams.getTeams(),
+        ])
+        const teamsById = new Map(teams.map((t) => [t.id, t]))
         return members.map((m) => {
-          const teams = m.teamIds
-            .map((tid) => store.teams.find((t) => t.id === tid))
+          const teamRefs = m.teamIds
+            .map((tid) => teamsById.get(tid))
             .filter(Boolean)
             .map((t) => ({ id: t!.id, name: t!.name }))
           return {
@@ -182,7 +194,7 @@ const workspaceType = new GraphQLObjectType({
             status: m.status,
             joined: m.joined,
             teamIds: m.teamIds,
-            teams,
+            teams: teamRefs,
           }
         })
       },
@@ -191,18 +203,20 @@ const workspaceType = new GraphQLObjectType({
       type: GraphQLNonNull(GraphQLList(viewType)),
       resolve: async () => {
         const views = await workspaceModel.getViews()
-        const store = await getStore()
-        return views.map((v) => {
-          const owner = store.members.find((m) => m.id === v.ownerId)
-          return {
-            id: v.id,
-            name: v.name,
-            type: v.type,
-            owner: owner
-              ? { id: owner.id, name: owner.name }
-              : { id: v.ownerId, name: v.ownerId },
-          }
-        })
+        const list = await Promise.all(
+          views.map(async (v) => {
+            const owner = await dbMembers.getMemberById(v.ownerId)
+            return {
+              id: v.id,
+              name: v.name,
+              type: v.type,
+              owner: owner
+                ? { id: owner.id, name: owner.name }
+                : { id: v.ownerId, name: v.ownerId },
+            }
+          })
+        )
+        return list
       },
     },
     roles: {
@@ -374,47 +388,47 @@ const teamType = new GraphQLObjectType({
           parent.id,
           args.filter ?? 'all'
         )
-        const store = await getStore()
-        return issues.map((i) => {
-          const assignee = i.assigneeId
-            ? store.members.find((m) => m.id === i.assigneeId)
-            : null
-          const team = store.teams.find((t) => t.id === i.teamId)
-          const project = i.projectId
-            ? store.projects.find((p) => p.id === i.projectId)
-            : null
-          return {
-            id: i.id,
-            title: i.title,
-            assignee: assignee
-              ? { id: assignee.id, name: assignee.name }
-              : i.assigneeName
-                ? { id: '', name: i.assigneeName }
-                : null,
-            date: i.date,
-            status: i.status,
-            team: team ? { id: team.id, name: team.name } : null,
-            project: project ? { id: project.id, name: project.name } : null,
-          }
-        })
+        return Promise.all(
+          issues.map(async (i) => {
+            const [assignee, team, project] = await Promise.all([
+              i.assigneeId ? dbMembers.getMemberById(i.assigneeId) : null,
+              dbTeams.getTeamById(i.teamId),
+              i.projectId ? dbProjects.getProjectById(i.projectId) : null,
+            ])
+            return {
+              id: i.id,
+              title: i.title,
+              assignee: assignee
+                ? { id: assignee.id, name: assignee.name }
+                : i.assigneeName
+                  ? { id: '', name: i.assigneeName }
+                  : null,
+              date: i.date,
+              status: i.status,
+              team: team ? { id: team.id, name: team.name } : null,
+              project: project ? { id: project.id, name: project.name } : null,
+            }
+          })
+        )
       },
     },
     views: {
       type: GraphQLNonNull(GraphQLList(viewType)),
       resolve: async (parent: { id: string }) => {
         const views = await teamsModel.getTeamViews(parent.id)
-        const store = await getStore()
-        return views.map((v) => {
-          const owner = store.members.find((m) => m.id === v.ownerId)
-          return {
-            id: v.id,
-            name: v.name,
-            type: v.type,
-            owner: owner
-              ? { id: owner.id, name: owner.name }
-              : { id: v.ownerId, name: v.ownerId },
-          }
-        })
+        return Promise.all(
+          views.map(async (v) => {
+            const owner = await dbMembers.getMemberById(v.ownerId)
+            return {
+              id: v.id,
+              name: v.name,
+              type: v.type,
+              owner: owner
+                ? { id: owner.id, name: owner.name }
+                : { id: v.ownerId, name: v.ownerId },
+            }
+          })
+        )
       },
     },
     logs: {
@@ -576,25 +590,25 @@ const meType = new GraphQLObjectType({
       ) => {
         const userId = getUserId(context)
         const issues = await issuesModel.getMyIssues(userId)
-        const store = await getStore()
-        return issues.map((i) => ({
-          id: i.id,
-          title: i.title,
-          assignee: i.assigneeName
-            ? { id: i.assigneeId ?? '', name: i.assigneeName }
-            : null,
-          date: i.date,
-          status: i.status,
-          team: (() => {
-            const t = store.teams.find((x) => x.id === i.teamId)
-            return t ? { id: t.id, name: t.name } : null
-          })(),
-          project: (() => {
-            const p =
-              i.projectId && store.projects.find((x) => x.id === i.projectId)
-            return p ? { id: p.id, name: p.name } : null
-          })(),
-        }))
+        return Promise.all(
+          issues.map(async (i) => {
+            const [team, project] = await Promise.all([
+              dbTeams.getTeamById(i.teamId),
+              i.projectId ? dbProjects.getProjectById(i.projectId) : null,
+            ])
+            return {
+              id: i.id,
+              title: i.title,
+              assignee: i.assigneeName
+                ? { id: i.assigneeId ?? '', name: i.assigneeName }
+                : null,
+              date: i.date,
+              status: i.status,
+              team: team ? { id: team.id, name: team.name } : null,
+              project: project ? { id: project.id, name: project.name } : null,
+            }
+          })
+        )
       },
     },
   },
@@ -626,8 +640,7 @@ const queryType = new GraphQLObjectType({
       args: { id: { type: GraphQLNonNull(GraphQLID) } },
       resolve: async (_parent: unknown, args: Record<string, unknown>) => {
         const id = args.id as string
-        const store = await getStore()
-        const update = store.statusUpdates.find((u) => u.id === id)
+        const update = await dbStatusUpdates.getStatusUpdateById(id)
         return update ? { id: update.id } : null
       },
     },

@@ -1,40 +1,27 @@
-import { getStore, saveStore, generateId } from './store.js'
 import type { Issue } from './types.js'
+import * as db from '../db/issues.js'
+import { getTeamById } from '../db/teams.js'
 
 export async function getTeamIssues(
   teamId: string,
   filter?: 'all' | 'active' | 'backlog'
 ): Promise<Issue[]> {
-  const s = await getStore()
-  let list = s.issues.filter((i) => i.teamId === teamId)
-  if (filter === 'active') {
-    list = list.filter((i) => i.status !== 'backlog' && i.status !== 'done')
-  } else if (filter === 'backlog') {
-    list = list.filter((i) => i.status === 'backlog')
-  }
-  return list
+  return db.getIssuesByTeamId(teamId, filter)
 }
 
 export async function getMyIssues(assigneeId: string): Promise<Issue[]> {
-  const s = await getStore()
-  return s.issues.filter((i) => i.assigneeId === assigneeId)
+  return db.getIssuesByAssigneeId(assigneeId)
 }
 
 export async function updateIssue(
   issueId: string,
   patch: Partial<Pick<Issue, 'status' | 'assigneeId' | 'assigneeName'>>
 ): Promise<Issue | null> {
-  const s = await getStore()
-  const issue = s.issues.find((i) => i.id === issueId)
-  if (!issue) return null
-  Object.assign(issue, patch)
-  await saveStore(s)
-  return issue
+  return db.updateIssue(issueId, patch)
 }
 
 export async function getIssueById(issueId: string): Promise<Issue | null> {
-  const s = await getStore()
-  return s.issues.find((i) => i.id === issueId) ?? null
+  return db.getIssueById(issueId)
 }
 
 export async function createIssue(input: {
@@ -45,8 +32,7 @@ export async function createIssue(input: {
   status?: string
   description?: string
 }): Promise<Issue> {
-  const s = await getStore()
-  const team = s.teams.find((t) => t.id === input.teamId)
+  const team = await getTeamById(input.teamId)
   if (!team) {
     throw new Error('Team not found')
   }
@@ -62,7 +48,6 @@ export async function createIssue(input: {
     description: input.description,
   }
 
-  s.issues.push(issue)
-  await saveStore(s)
+  await db.insertIssue(issue)
   return issue
 }

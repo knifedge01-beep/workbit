@@ -1,5 +1,6 @@
-import { getStore, saveStore, isSupabaseConfigured } from '../models/store.js'
+import { isSupabaseConfigured } from '../utils/supabaseServer.js'
 import { writeStoreSupabase } from './supabaseStore.js'
+import { readStore, writeStore } from './fileStore.js'
 import type { Store } from '../models/types.js'
 
 /**
@@ -369,10 +370,22 @@ export function getDummyStore(): Store {
 
 /** Seed only when store is empty (e.g. on first run). */
 export async function seedIfEmpty(): Promise<boolean> {
-  const store = await getStore()
-  const isEmpty = store.projects.length === 0 && store.teams.length === 0
+  if (isSupabaseConfigured()) {
+    const { supabaseAdmin } = await import('./supabaseServer.js')
+    const { count } = await supabaseAdmin!
+      .from('projects')
+      .select('*', { count: 'exact', head: true })
+    if (count === 0) {
+      await writeStoreSupabase(getDummyStore())
+      return true
+    }
+    return false
+  }
+  const store = await readStore<Store>()
+  const isEmpty =
+    (store.projects?.length ?? 0) === 0 && (store.teams?.length ?? 0) === 0
   if (isEmpty) {
-    await saveStore(getDummyStore())
+    await writeStore(getDummyStore())
     return true
   }
   return false
@@ -390,6 +403,6 @@ export async function seedDummy(): Promise<void> {
   if (isSupabaseConfigured()) {
     await writeStoreSupabase(store)
   } else {
-    await saveStore(store)
+    await writeStore(store)
   }
 }

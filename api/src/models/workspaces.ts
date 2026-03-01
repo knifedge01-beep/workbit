@@ -1,11 +1,11 @@
-import { getStore, saveStore, generateId } from './store.js'
+import { generateId } from './store.js'
 import type { Workspace } from './types.js'
+import * as dbWorkspaces from '../db/workspaces.js'
 
 export async function getWorkspacesByMemberId(
   memberId: string
 ): Promise<Workspace[]> {
-  const store = await getStore()
-  return store.workspaces.filter((w) => w.memberIds.includes(memberId))
+  return dbWorkspaces.getWorkspacesByMemberId(memberId)
 }
 
 export async function createWorkspace(input: {
@@ -14,14 +14,9 @@ export async function createWorkspace(input: {
   region?: string
   memberId: string
 }): Promise<Workspace> {
-  const store = await getStore()
-
-  const existing = store.workspaces.find(
-    (w) => w.slug.toLowerCase() === input.slug.toLowerCase()
-  )
+  const existing = await dbWorkspaces.getWorkspaceBySlug(input.slug)
   if (existing) {
     const error = new Error('Workspace URL is already reserved')
-    // Attach a flag so controllers can choose a specific HTTP status.
     ;(error as Error & { code?: string }).code = 'WORKSPACE_SLUG_TAKEN'
     throw error
   }
@@ -34,8 +29,6 @@ export async function createWorkspace(input: {
     memberIds: [input.memberId],
   }
 
-  store.workspaces.push(workspace)
-  await saveStore(store)
-
+  await dbWorkspaces.insertWorkspace(workspace)
   return workspace
 }

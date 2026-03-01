@@ -1,10 +1,21 @@
 import type { Request, Response } from 'express'
 import * as workspacesModel from '../models/workspaces.js'
 
+function toErrorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message
+  if (
+    typeof err === 'object' &&
+    err !== null &&
+    'message' in err &&
+    typeof (err as { message: unknown }).message === 'string'
+  )
+    return (err as { message: string }).message
+  if (typeof err === 'string') return err
+  return JSON.stringify(err)
+}
+
 function sendError(res: Response, err: unknown, status = 500) {
-  res
-    .status(status)
-    .json({ error: err instanceof Error ? err.message : String(err) })
+  res.status(status).json({ error: toErrorMessage(err) })
 }
 
 export async function getWorkspaces(req: Request, res: Response) {

@@ -1,18 +1,28 @@
-import { PageHeader, Stack } from '@design-system'
+import { PageHeader, Stack, Text } from '@design-system'
 import { RolesTable } from '../components'
 import type { RoleTableRow } from '../components'
-
-const SAMPLE_ROLES: RoleTableRow[] = [
-  { id: '1', role: 'Admin', members: '1', description: 'Full workspace access' },
-  { id: '2', role: 'Member', members: '0', description: 'Standard member permissions' },
-  { id: '3', role: 'Guest', members: '0', description: 'Limited access for external collaborators' },
-]
+import { fetchRoles } from '../api/client'
+import { useFetch } from '../hooks/useFetch'
 
 export function WorkspaceRolesScreen() {
+  const { data, loading, error } = useFetch(fetchRoles)
+
+  const roles: RoleTableRow[] = (data ?? []).map((r) => ({
+    id: r.id,
+    role: r.role,
+    members: String(r.memberCount),
+    description: r.description,
+  }))
+
   return (
     <Stack gap={4}>
       <PageHeader title="Roles" summary="Workspace roles and permissions." />
-      <RolesTable roles={SAMPLE_ROLES} />
+      {error && (
+        <Text size="sm" muted>
+          Failed to load roles: {error}
+        </Text>
+      )}
+      {!loading && <RolesTable roles={roles} />}
     </Stack>
   )
 }

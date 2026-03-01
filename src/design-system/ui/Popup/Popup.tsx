@@ -46,9 +46,7 @@ const Wrapper = styled.div`
   display: inline-flex;
 `
 
-type Props = {
-  trigger: React.ReactNode
-  children: React.ReactNode
+type BaseProps = {
   placement?: PopupPlacement
   /** Alignment along the secondary axis (e.g. placement "right" + align "start" = popup top aligns with trigger top). */
   align?: PopupAlign
@@ -57,18 +55,44 @@ type Props = {
   className?: string
 }
 
-export function Popup({
-  trigger,
-  children,
-  placement = 'right',
-  align = 'center',
-  openOnHover = false,
-  openOnClick = true,
-  className,
-}: Props) {
-  const [open, setOpen] = useState(false)
+type UncontrolledProps = BaseProps & {
+  trigger: React.ReactNode
+  children: React.ReactNode
+  isOpen?: never
+  onOpenChange?: never
+  content?: never
+}
+
+type ControlledProps = BaseProps & {
+  isOpen: boolean
+  onOpenChange: (open: boolean) => void
+  content: React.ReactNode
+  children: React.ReactNode
+  trigger?: never
+}
+
+export type Props = UncontrolledProps | ControlledProps
+
+function isControlled(props: Props): props is ControlledProps {
+  return props.isOpen !== undefined && props.onOpenChange !== undefined
+}
+
+export function Popup(props: Props) {
+  const {
+    placement = 'right',
+    align = 'center',
+    openOnHover = false,
+    openOnClick = true,
+    className,
+  } = props
+
+  const uncontrolledOpen = useState(false)
   const [openedByClick, setOpenedByClick] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+
+  const isControlledMode = isControlled(props)
+  const open = isControlledMode ? props.isOpen : uncontrolledOpen[0]
+  const setOpen = isControlledMode ? props.onOpenChange : uncontrolledOpen[1]
 
   const openPopup = (byClick: boolean) => {
     setOpen(true)
@@ -125,7 +149,7 @@ export function Popup({
         }}
         style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
       >
-        {trigger}
+        {isControlledMode ? props.children : props.trigger}
       </div>
       <AnimatePresence>
         {open && (
@@ -138,7 +162,7 @@ export function Popup({
             exit={{ opacity: 0, scale: 0.96 }}
             transition={{ duration: 0.15 }}
           >
-            {children}
+            {isControlledMode ? props.content : props.children}
           </PopupPanel>
         )}
       </AnimatePresence>

@@ -1,6 +1,5 @@
 import styled from 'styled-components'
-import { UserPlus, Plus } from 'lucide-react'
-import { Table, Avatar, Badge, Button, Text } from '@design-system'
+import { Table, Avatar, Tags, Text } from '@design-system'
 import type { ColumnDef } from '@design-system'
 
 export type MemberRow = {
@@ -13,64 +12,52 @@ export type MemberRow = {
   teams: string
 }
 
-const SectionHeader = styled.header`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: ${(p) => p.theme.spacing[3]}px;
-  padding-bottom: ${(p) => p.theme.spacing[2]}px;
-  margin-bottom: 0;
-  border-bottom: 1px solid ${(p) => p.theme.colors.border};
-`
-
-const TitleBlock = styled.div`
-  display: flex;
-  align-items: baseline;
-  gap: ${(p) => p.theme.spacing[2]}px;
-`
-
-const Title = styled.h2`
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 600;
-  color: ${(p) => p.theme.colors.text};
-`
-
-const Count = styled.span`
-  font-size: 0.875rem;
-  font-weight: 400;
-  color: ${(p) => p.theme.colors.textMuted};
+const TableContainer = styled.div`
+  background: ${(p) => p.theme.colors.surface};\n  border: 1px solid ${(p) => p.theme.colors.border};
+  border-radius: ${(p) => p.theme.radii?.lg ?? 8}px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 `
 
 const NameCell = styled.div`
   display: flex;
   align-items: center;
-  gap: ${(p) => p.theme.spacing[2]}px;
+  gap: ${(p) => p.theme.spacing[3]}px;
   min-width: 0;
+
+  @media (max-width: 640px) {
+    gap: ${(p) => p.theme.spacing[2]}px;
+  }
 `
 
 const NameBlock = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: ${(p) => p.theme.spacing[1]}px;
   min-width: 0;
+  overflow: hidden;
 `
 
 const MemberName = styled.span`
   font-size: 0.875rem;
   font-weight: 500;
   color: ${(p) => p.theme.colors.text};
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 `
 
-const TeamsCell = styled.div`
-  display: flex;
+const StatusBadge = styled.span`
+  display: inline-flex;
   align-items: center;
-  gap: ${(p) => p.theme.spacing[1]}px;
-  color: ${(p) => p.theme.colors.text};
-  svg {
-    color: ${(p) => p.theme.colors.textMuted};
-    flex-shrink: 0;
-  }
+  padding: ${(p) => p.theme.spacing[1]}px ${(p) => p.theme.spacing[2]}px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: ${(p) => p.theme.colors.surfaceSecondary};
+  color: ${(p) => p.theme.colors.textMuted};
+  border-radius: ${(p) => p.theme.radii?.sm ?? 4}px;
+  border: 1px solid ${(p) => p.theme.colors.border};
 `
 
 function createColumns(): ColumnDef<MemberRow, unknown>[] {
@@ -80,16 +67,16 @@ function createColumns(): ColumnDef<MemberRow, unknown>[] {
       accessorKey: 'name',
       header: 'Name',
       enableSorting: true,
-      meta: { flex: 1.5 },
+      meta: { flex: 2 },
       cell: ({ row }) => {
         const { name, username, avatarSrc } = row.original
         return (
           <NameCell>
-            <Avatar name={name} src={avatarSrc} size={40} />
+            <Avatar name={name} src={avatarSrc} size={36} />
             <NameBlock>
               <MemberName>{name}</MemberName>
-              <Text size="sm" muted as="span">
-                {username}
+              <Text size="xs" muted as="span">
+                @{username}
               </Text>
             </NameBlock>
           </NameCell>
@@ -100,20 +87,16 @@ function createColumns(): ColumnDef<MemberRow, unknown>[] {
       id: 'status',
       accessorKey: 'status',
       header: 'Status',
-      meta: { flex: 0.8 },
-      cell: ({ row }) => (
-        <Badge variant="solid" color="blue" size="small">
-          {row.original.status}
-        </Badge>
-      ),
+      meta: { flex: 1 },
+      cell: ({ row }) => <StatusBadge>{row.original.status}</StatusBadge>,
     },
     {
       id: 'joined',
       accessorKey: 'joined',
       header: 'Joined',
-      meta: { flex: 0.8 },
+      meta: { flex: 1 },
       cell: ({ row }) => (
-        <Text size="sm" as="span">
+        <Text size="sm" muted as="span">
           {row.original.joined}
         </Text>
       ),
@@ -122,15 +105,8 @@ function createColumns(): ColumnDef<MemberRow, unknown>[] {
       id: 'teams',
       accessorKey: 'teams',
       header: 'Teams',
-      meta: { flex: 1 },
-      cell: ({ row }) => (
-        <TeamsCell>
-          <UserPlus size={14} />
-          <Text size="sm" as="span">
-            {row.original.teams}
-          </Text>
-        </TeamsCell>
-      ),
+      meta: { flex: 1.2 },
+      cell: ({ row }) => <Tags label={row.original.teams} size="small" />,
     },
   ]
 }
@@ -139,31 +115,18 @@ const columns = createColumns()
 
 type Props = {
   members: MemberRow[]
-  onInvite?: () => void
   className?: string
 }
 
-export function MembersTable({ members, onInvite, className }: Props) {
+export function MembersTable({ members, className }: Props) {
   return (
-    <section className={className}>
-      <SectionHeader>
-        <TitleBlock>
-          <Title>Members</Title>
-          <Count>{members.length}</Count>
-        </TitleBlock>
-        {onInvite && (
-          <Button variant="ghost" size="sm" onClick={onInvite}>
-            <Plus size={16} />
-            Invite
-          </Button>
-        )}
-      </SectionHeader>
+    <TableContainer className={className}>
       <Table<MemberRow>
         columns={columns}
         data={members}
         enableSorting
         initialState={{ sorting: [{ id: 'name', desc: false }] }}
       />
-    </section>
+    </TableContainer>
   )
 }

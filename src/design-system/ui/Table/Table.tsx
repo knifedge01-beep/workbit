@@ -4,14 +4,18 @@ import {
   getSortedRowModel,
   flexRender,
 } from '@tanstack/react-table'
-import type { ColumnDef, SortingState, Table as TanStackTableType } from '@tanstack/react-table'
+import type {
+  ColumnDef,
+  SortingState,
+  Table as TanStackTableType,
+} from '@tanstack/react-table'
 import { useState } from 'react'
 import styled from 'styled-components'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 
 const TableWrapper = styled.div`
   width: 100%;
-  border: 1px solid ${(p) => p.theme.colors.border};
+  border: none;
   border-radius: ${(p) => p.theme.radii?.md ?? 6}px;
   overflow: hidden;
   background: ${(p) => p.theme.colors.surface};
@@ -21,11 +25,13 @@ const HeaderRow = styled.div`
   display: flex;
   align-items: center;
   gap: ${(p) => p.theme.spacing[4]}px;
-  padding: ${(p) => p.theme.spacing[2]}px ${(p) => p.theme.spacing[3]}px;
-  font-size: 0.875rem;
-  font-weight: 500;
+  padding: ${(p) => p.theme.spacing[3]}px ${(p) => p.theme.spacing[4]}px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   color: ${(p) => p.theme.colors.textMuted};
-  background: ${(p) => p.theme.colors.backgroundSubtle ?? p.theme.colors.background};
+  background: transparent;
   border-bottom: 1px solid ${(p) => p.theme.colors.border};
 `
 
@@ -49,6 +55,7 @@ const SortButton = styled.button`
   color: inherit;
   cursor: pointer;
   text-align: left;
+  transition: color 0.15s;
   &:hover {
     color: ${(p) => p.theme.colors.text};
   }
@@ -58,11 +65,12 @@ const BodyRow = styled.div<{ $clickable?: boolean }>`
   display: flex;
   align-items: center;
   gap: ${(p) => p.theme.spacing[4]}px;
-  padding: ${(p) => p.theme.spacing[2]}px ${(p) => p.theme.spacing[3]}px;
+  padding: ${(p) => p.theme.spacing[4]}px;
   font-size: 0.875rem;
   color: ${(p) => p.theme.colors.text};
   border-bottom: 1px solid ${(p) => p.theme.colors.border};
-  min-height: 56px;
+  min-height: 64px;
+  transition: background 0.15s;
   ${(p) => p.$clickable && 'cursor: pointer;'}
   &:last-child {
     border-bottom: none;
@@ -71,7 +79,7 @@ const BodyRow = styled.div<{ $clickable?: boolean }>`
     p.$clickable &&
     `
   &:hover {
-    background: ${p.theme.colors.backgroundSubtle ?? p.theme.colors.background};
+    background: ${p.theme.colors.surfaceHover};
   }
   `}
 `
@@ -112,7 +120,9 @@ export function Table<T>({
   onRowClick,
   className,
 }: TableProps<T>) {
-  const [sorting, setSorting] = useState<SortingState>(initialState?.sorting ?? [])
+  const [sorting, setSorting] = useState<SortingState>(
+    initialState?.sorting ?? []
+  )
 
   const table = useReactTable({
     data,
@@ -135,7 +145,10 @@ export function Table<T>({
             const flex = meta?.flex ?? 1
             const canSort = enableSorting && header.column.getCanSort()
             const isSorted = header.column.getIsSorted()
-            const content = flexRender(header.column.columnDef.header, header.getContext())
+            const content = flexRender(
+              header.column.columnDef.header,
+              header.getContext()
+            )
 
             return (
               <HeaderCell key={header.id} $flex={flex} role="columnheader">
@@ -153,7 +166,9 @@ export function Table<T>({
                   >
                     {content}
                     {isSorted === 'asc' && <ChevronUp size={14} aria-hidden />}
-                    {isSorted === 'desc' && <ChevronDown size={14} aria-hidden />}
+                    {isSorted === 'desc' && (
+                      <ChevronDown size={14} aria-hidden />
+                    )}
                   </SortButton>
                 ) : (
                   content

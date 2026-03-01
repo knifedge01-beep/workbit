@@ -3,6 +3,7 @@ import styled from 'styled-components'
 const StyledDivider = styled.hr<{ $vertical?: boolean }>`
   border: none;
   background: ${(p) => p.theme.colors.border};
+  margin: 0;
   ${(p) =>
     p.$vertical
       ? `width: 1px; height: 100%; min-height: 16px;`

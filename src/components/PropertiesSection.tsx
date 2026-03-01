@@ -1,12 +1,6 @@
 import { useState } from 'react'
 import styled from 'styled-components'
-import {
-  Text,
-  IconButton,
-  Stack,
-  Flex,
-  DateRange,
-} from '@design-system'
+import { Text, IconButton, Stack, Flex, DateRange } from '@design-system'
 import {
   ChevronDown,
   Plus,
@@ -25,9 +19,33 @@ import { SectionHeader, CollapsibleContent } from './CollapsibleSection'
 
 const projectStatusOptions: StatusOption[] = [
   { id: 'planned', label: 'Planned', icon: <Circle size={16} /> },
-  { id: 'in_progress', label: 'In Progress', icon: <CircleDot size={16} style={{ color: 'var(--status-in-progress, #F59E0B)' }} /> },
-  { id: 'completed', label: 'Completed', icon: <CheckCircle2 size={16} style={{ color: 'var(--status-done, #8B5CF6)' }} /> },
-  { id: 'on_hold', label: 'On hold', icon: <PauseCircle size={16} style={{ color: 'var(--text-muted, #64748b)' }} /> },
+  {
+    id: 'in_progress',
+    label: 'In Progress',
+    icon: (
+      <CircleDot
+        size={16}
+        style={{ color: 'var(--status-in-progress, #F59E0B)' }}
+      />
+    ),
+  },
+  {
+    id: 'completed',
+    label: 'Completed',
+    icon: (
+      <CheckCircle2
+        size={16}
+        style={{ color: 'var(--status-done, #8B5CF6)' }}
+      />
+    ),
+  },
+  {
+    id: 'on_hold',
+    label: 'On hold',
+    icon: (
+      <PauseCircle size={16} style={{ color: 'var(--text-muted, #64748b)' }} />
+    ),
+  },
 ]
 
 const Row = styled.div<{ $alignTop?: boolean }>`
@@ -63,14 +81,38 @@ type Props = {
   defaultOpen?: boolean
   /** When true, render only the content (no header). Use when embedding in Tree. */
   contentOnly?: boolean
+  defaultStatus?: string
+  defaultPriority?: string
+  defaultStartDate?: Date
+  defaultEndDate?: Date
+  onStatusChange?: (status: string) => void
+  onPriorityChange?: (priority: string) => void
 }
 
-export function PropertiesSection({ defaultOpen = true, contentOnly = false }: Props) {
+export function PropertiesSection({
+  defaultOpen = true,
+  contentOnly = false,
+  defaultStatus = 'planned',
+  defaultPriority = 'high',
+  defaultStartDate,
+  defaultEndDate,
+  onStatusChange,
+  onPriorityChange,
+}: Props) {
   const [open, setOpen] = useState(defaultOpen)
-  const [status, setStatus] = useState('planned')
-  const [priority, setPriority] = useState('high')
-  const [startDate, setStartDate] = useState<Date | undefined>(undefined)
-  const [endDate, setEndDate] = useState<Date | undefined>(undefined)
+  const [status, setStatus] = useState(defaultStatus)
+  const [priority, setPriority] = useState(defaultPriority)
+  const [startDate, setStartDate] = useState<Date | undefined>(defaultStartDate)
+  const [endDate, setEndDate] = useState<Date | undefined>(defaultEndDate)
+
+  const handleStatusChange = (s: string) => {
+    setStatus(s)
+    onStatusChange?.(s)
+  }
+  const handlePriorityChange = (p: string) => {
+    setPriority(p)
+    onPriorityChange?.(p)
+  }
 
   const content = (
     <>
@@ -79,7 +121,7 @@ export function PropertiesSection({ defaultOpen = true, contentOnly = false }: P
         <span className="row-value">
           <StatusSelector
             value={status}
-            onChange={setStatus}
+            onChange={handleStatusChange}
             placeholder="Status"
             options={projectStatusOptions}
           />
@@ -90,7 +132,7 @@ export function PropertiesSection({ defaultOpen = true, contentOnly = false }: P
         <span className="row-value">
           <PrioritySelector
             value={priority}
-            onChange={setPriority}
+            onChange={handlePriorityChange}
             placeholder="Priority"
           />
         </span>
@@ -99,14 +141,18 @@ export function PropertiesSection({ defaultOpen = true, contentOnly = false }: P
         <span className="row-label">Lead</span>
         <span className="row-value">
           <UserPlus size={14} className="row-icon" />
-          <Text size="sm" muted>Add lead</Text>
+          <Text size="sm" muted>
+            Add lead
+          </Text>
         </span>
       </Row>
       <Row>
         <span className="row-label">Members</span>
         <span className="row-value">
           <Users size={14} className="row-icon" />
-          <Text size="sm" muted>Add members</Text>
+          <Text size="sm" muted>
+            Add members
+          </Text>
         </span>
       </Row>
       <Row $alignTop>
@@ -126,14 +172,18 @@ export function PropertiesSection({ defaultOpen = true, contentOnly = false }: P
         <span className="row-label">Teams</span>
         <span className="row-value">
           <Building2 size={14} className="row-icon" />
-          <Text size="sm" muted>Add team</Text>
+          <Text size="sm" muted>
+            Add team
+          </Text>
         </span>
       </Row>
       <Row>
         <span className="row-label">Labels</span>
         <span className="row-value">
           <Tag size={14} className="row-icon" />
-          <Text size="sm" muted>Add label</Text>
+          <Text size="sm" muted>
+            Add label
+          </Text>
         </span>
       </Row>
     </>

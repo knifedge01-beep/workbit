@@ -88,7 +88,8 @@ function isDivider(entry: MenuEntry): entry is MenuDivider {
 }
 
 type Props = {
-  trigger: React.ReactNode
+  /** When omitted, only the panel is rendered (e.g. when used as Popup content). */
+  trigger?: React.ReactNode
   items: MenuEntry[]
   /** Where the panel opens relative to the trigger. Default 'bottom'. */
   placement?: 'bottom' | 'right'
@@ -98,19 +99,50 @@ type Props = {
 export function Menu({ trigger, items, placement = 'bottom', className }: Props) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const panelOnly = trigger === undefined
 
   useEffect(() => {
-    if (!open) return
+    if (!open || panelOnly) return
     const onDocClick = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
     }
     document.addEventListener('mousedown', onDocClick)
     return () => document.removeEventListener('mousedown', onDocClick)
-  }, [open])
+  }, [open, panelOnly])
 
   const handleItemClick = (onClick?: () => void) => {
     onClick?.()
     setOpen(false)
+  }
+
+  const panelContent = items.map((entry, i) =>
+    isDivider(entry) ? (
+      <div key={`divider-${i}`} style={{ margin: '6px 0' }}>
+        <Divider />
+      </div>
+    ) : (
+      <MenuItemButton
+        key={entry.id}
+        type="button"
+        onClick={() => handleItemClick(entry.onClick)}
+      >
+        {entry.icon != null ? (
+          <span className="menu-item-icon">{entry.icon}</span>
+        ) : null}
+        <span className="menu-item-label">{entry.label}</span>
+        {entry.right != null && (
+          <span className="menu-item-right">{entry.right}</span>
+        )}
+      </MenuItemButton>
+    )
+  )
+
+  if (panelOnly) {
+    return (
+      <Wrapper ref={ref} className={className}>
+        <MenuPanel $placement={placement}>{panelContent}</MenuPanel>
+      </Wrapper>
+    )
   }
 
   return (
@@ -138,27 +170,7 @@ export function Menu({ trigger, items, placement = 'bottom', className }: Props)
             exit={{ opacity: 0, scale: 0.96 }}
             transition={{ duration: 0.15 }}
           >
-            {items.map((entry, i) =>
-              isDivider(entry) ? (
-                <div key={`divider-${i}`} style={{ margin: '6px 0' }}>
-                  <Divider />
-                </div>
-              ) : (
-                <MenuItemButton
-                  key={entry.id}
-                  type="button"
-                  onClick={() => handleItemClick(entry.onClick)}
-                >
-                  {entry.icon != null ? (
-                    <span className="menu-item-icon">{entry.icon}</span>
-                  ) : null}
-                  <span className="menu-item-label">{entry.label}</span>
-                  {entry.right != null && (
-                    <span className="menu-item-right">{entry.right}</span>
-                  )}
-                </MenuItemButton>
-              )
-            )}
+            {panelContent}
           </MenuPanel>
         )}
       </AnimatePresence>

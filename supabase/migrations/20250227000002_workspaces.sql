@@ -1,0 +1,7 @@
+-- Workspaces table migration moved.
+-- The public.workspaces table and its RLS policy are now defined in:
+--   supabase/migrations/20250222000001_separate_tables.sql
+--
+-- This migration is intentionally left as a no-op so that existing
+-- environments which have already applied it continue to succeed,
+-- and new environments rely on the main schema migration instead.

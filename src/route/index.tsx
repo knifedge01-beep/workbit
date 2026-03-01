@@ -12,12 +12,15 @@ import {
   WorkspaceMemberScreen,
   WorkspaceTeamsScreen,
   WorkspaceRolesScreen,
+  WorkspacesScreen,
   TeamIssuesScreenWrapper,
   TeamProjectsScreenWrapper,
   TeamProjectDetailScreenWrapper,
   TeamViewsScreenWrapper,
   TeamLogsScreenWrapper,
+  IssueDetailScreenWrapper,
   ShowcaseComponents,
+  ProfilePage,
 } from '../pages'
 import { LandingPage } from '../landing'
 
@@ -34,6 +37,14 @@ export function AppRoutes() {
       <Route path="/login" element={<LoginScreen />} />
       <Route path="/signup" element={<SignupScreen />} />
       <Route
+        path="/workspaces"
+        element={
+          <AuthGate>
+            <WorkspacesScreen />
+          </AuthGate>
+        }
+      />
+      <Route
         path="/"
         element={
           <AuthGate>
@@ -41,19 +52,36 @@ export function AppRoutes() {
           </AuthGate>
         }
       >
-        <Route index element={<Navigate to="/team/Test94" replace />} />
+        <Route index element={<Navigate to="/landing" replace />} />
         <Route path="inbox" element={<InboxScreen />} />
         <Route path="my-issues" element={<MyIssuesScreen />} />
-        <Route path="workspace/projects" element={<WorkspaceProjectsScreen />} />
+        <Route path="profile" element={<ProfilePage />} />
+        <Route
+          path="workspace/projects"
+          element={<WorkspaceProjectsScreen />}
+        />
         <Route path="workspace/views" element={<WorkspaceViewsScreen />} />
         <Route path="workspace/more" element={<WorkspaceMoreScreen />} />
         <Route path="workspace/member" element={<WorkspaceMemberScreen />} />
         <Route path="workspace/teams" element={<WorkspaceTeamsScreen />} />
         <Route path="workspace/roles" element={<WorkspaceRolesScreen />} />
         <Route path="team/:teamId" element={<RedirectToTeamIssues />} />
-        <Route path="team/:teamId/issues/:tab" element={<TeamIssuesScreenWrapper />} />
-        <Route path="team/:teamId/projects" element={<TeamProjectsScreenWrapper />} />
-        <Route path="team/:teamId/projects/:projectId" element={<TeamProjectDetailScreenWrapper />} />
+        <Route
+          path="team/:teamId/issues/:tab"
+          element={<TeamIssuesScreenWrapper />}
+        />
+        <Route
+          path="team/:teamId/issue/:issueId"
+          element={<IssueDetailScreenWrapper />}
+        />
+        <Route
+          path="team/:teamId/projects"
+          element={<TeamProjectsScreenWrapper />}
+        />
+        <Route
+          path="team/:teamId/projects/:projectId"
+          element={<TeamProjectDetailScreenWrapper />}
+        />
         <Route path="team/:teamId/views" element={<TeamViewsScreenWrapper />} />
         <Route path="team/:teamId/logs" element={<TeamLogsScreenWrapper />} />
       </Route>

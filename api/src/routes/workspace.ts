@@ -1,11 +1,14 @@
-import { Router } from 'express';
-import * as ctrl from '../controllers/workspaceController.js';
+import { Router } from 'express'
+import * as ctrl from '../controllers/workspaceController.js'
 
-export const workspaceRoutes = Router();
+export const workspaceRoutes = Router()
 
-workspaceRoutes.get('/projects', ctrl.getProjects);
-workspaceRoutes.get('/teams', ctrl.getTeams);
-workspaceRoutes.get('/members', ctrl.getMembers);
-workspaceRoutes.post('/members/invite', ctrl.inviteMember);
-workspaceRoutes.get('/views', ctrl.getViews);
-workspaceRoutes.get('/roles', ctrl.getRoles);
+workspaceRoutes.get('/projects', ctrl.getProjects)
+workspaceRoutes.post('/projects', ctrl.createProject)
+workspaceRoutes.get('/teams', ctrl.getTeams)
+workspaceRoutes.get('/members', ctrl.getMembers)
+workspaceRoutes.post('/members', ctrl.createMember)
+workspaceRoutes.post('/members/invite', ctrl.inviteMember)
+workspaceRoutes.post('/members/:memberId/provision', ctrl.provisionMember)
+workspaceRoutes.get('/views', ctrl.getViews)
+workspaceRoutes.get('/roles', ctrl.getRoles)

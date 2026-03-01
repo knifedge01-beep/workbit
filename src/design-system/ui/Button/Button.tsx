@@ -6,19 +6,30 @@ const variants = {
     background: ${colors.primary};
     color: white;
     border: none;
-    &:hover { background: ${colors.primaryHover}; }
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    &:hover {
+      background: ${colors.primaryHover};
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
   `,
   secondary: (colors: { secondary: string; secondaryHover: string }) => `
     background: ${colors.secondary};
     color: white;
     border: none;
-    &:hover { background: ${colors.secondaryHover}; }
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    &:hover {
+      background: ${colors.secondaryHover};
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
   `,
-  outline: (colors: { border: string; text: string }) => `
+  outline: (colors: { border: string; text: string; surfaceHover: string }) => `
     background: transparent;
     color: ${colors.text};
     border: 1px solid ${colors.border};
-    &:hover { background: ${colors.border}; }
+    &:hover {
+      background: ${colors.surfaceHover};
+      border-color: ${colors.text};
+    }
   `,
   ghost: (colors: { text: string; surfaceHover: string }) => `
     background: transparent;
@@ -35,14 +46,22 @@ const StyledButton = styled(motion.button)<{
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: ${(p) => p.theme.spacing[1]}px;
+  gap: ${(p) => p.theme.spacing[2]}px;
   font-size: ${(p) => (p.$size === 'sm' ? '0.8125rem' : '0.875rem')};
   font-weight: 500;
-  padding: ${(p) => (p.$size === 'sm' ? `${p.theme.spacing[1]}px ${p.theme.spacing[2]}px` : `${p.theme.spacing[2]}px ${p.theme.spacing[3]}px`)};
-  border-radius: 4px;
+  padding: ${(p) =>
+    p.$size === 'sm'
+      ? `${p.theme.spacing[1]}px ${p.theme.spacing[3]}px`
+      : `${p.theme.spacing[2]}px ${p.theme.spacing[4]}px`};
+  border-radius: 6px;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: all 0.15s ease;
   ${(p) => variants[p.$variant](p.theme.colors)}
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 `
 
 type Props = {

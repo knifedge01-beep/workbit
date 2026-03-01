@@ -4,11 +4,12 @@ const StyledNavbar = styled.nav<{ $variant: 'light' | 'dark' }>`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 48px;
-  padding: 0 ${(p) => p.theme.spacing[3]}px;
+  height: 56px;
+  padding: 0 ${(p) => p.theme.spacing[4]}px;
   background: ${(p) =>
     p.$variant === 'dark' ? p.theme.colors.navDarkBg : p.theme.colors.surface};
   border-bottom: 1px solid ${(p) => p.theme.colors.border};
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 `
 
 const Left = styled.div<{ $variant: 'light' | 'dark' }>`
@@ -16,7 +17,9 @@ const Left = styled.div<{ $variant: 'light' | 'dark' }>`
   align-items: center;
   gap: ${(p) => p.theme.spacing[3]}px;
   color: ${(p) => (p.$variant === 'dark' ? '#FFFFFF' : 'inherit')};
-  a { color: inherit; }
+  a {
+    color: inherit;
+  }
 `
 
 const Right = styled.div<{ $variant: 'light' | 'dark' }>`
@@ -44,7 +47,9 @@ export function Navbar({
 }: Props) {
   return (
     <StyledNavbar className={className} $variant={variant}>
-      {(left ?? children) != null && <Left $variant={variant}>{left ?? children}</Left>}
+      {(left ?? children) != null && (
+        <Left $variant={variant}>{left ?? children}</Left>
+      )}
       {right != null && <Right $variant={variant}>{right}</Right>}
     </StyledNavbar>
   )

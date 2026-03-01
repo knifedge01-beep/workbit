@@ -4,6 +4,7 @@
  */
 import type {
   Store,
+  Workspace,
   Project,
   Team,
   Member,
@@ -19,9 +20,19 @@ import type {
   Notification,
   ProjectStatus,
   ActivityIcon,
-} from '../models/types.js';
+} from '../models/types.js'
 
-export type DbRow = Record<string, unknown>;
+export type DbRow = Record<string, unknown>
+
+export function rowToWorkspace(r: DbRow): Workspace {
+  return {
+    id: r.id as string,
+    name: r.name as string,
+    slug: r.slug as string,
+    region: (r.region as string) ?? 'us',
+    memberIds: (r.member_ids as string[]) ?? [],
+  }
+}
 
 export function rowToProject(r: DbRow): Project {
   return {
@@ -29,7 +40,7 @@ export function rowToProject(r: DbRow): Project {
     name: r.name as string,
     teamId: r.team_id as string,
     status: r.status as string,
-  };
+  }
 }
 
 export function rowToTeam(r: DbRow): Team {
@@ -38,10 +49,11 @@ export function rowToTeam(r: DbRow): Team {
     name: r.name as string,
     projectId: r.project_id as string | undefined,
     memberIds: (r.member_ids as string[]) ?? [],
-  };
+  }
 }
 
 export function rowToMember(r: DbRow): Member {
+  const authId = (r.supabase_user_id as string | null | undefined) ?? null
   return {
     id: r.id as string,
     name: r.name as string,
@@ -50,7 +62,10 @@ export function rowToMember(r: DbRow): Member {
     status: r.status as string,
     joined: r.joined as string,
     teamIds: (r.team_ids as string[]) ?? [],
-  };
+    provisioned: (r.provisioned as boolean) ?? false,
+    uid: authId,
+    userAuthId: authId,
+  }
 }
 
 export function rowToView(r: DbRow): View {
@@ -60,7 +75,7 @@ export function rowToView(r: DbRow): View {
     type: r.type as string,
     ownerId: r.owner_id as string,
     teamId: r.team_id as string | undefined,
-  };
+  }
 }
 
 export function rowToRole(r: DbRow): Role {
@@ -69,7 +84,7 @@ export function rowToRole(r: DbRow): Role {
     role: r.role as string,
     memberCount: (r.member_count as number) ?? 0,
     description: (r.description as string) ?? '',
-  };
+  }
 }
 
 export function rowToInvitation(r: DbRow): Invitation {
@@ -78,7 +93,7 @@ export function rowToInvitation(r: DbRow): Invitation {
     email: r.email as string,
     roleId: r.role_id as string | undefined,
     createdAt: r.created_at as string,
-  };
+  }
 }
 
 export function rowToStatusUpdate(r: DbRow): StatusUpdate {
@@ -92,7 +107,7 @@ export function rowToStatusUpdate(r: DbRow): StatusUpdate {
     authorAvatarSrc: r.author_avatar_src as string | undefined,
     createdAt: r.created_at as string,
     commentCount: (r.comment_count as number) ?? 0,
-  };
+  }
 }
 
 export function rowToStatusUpdateComment(r: DbRow): StatusUpdateComment {
@@ -103,7 +118,7 @@ export function rowToStatusUpdateComment(r: DbRow): StatusUpdateComment {
     authorAvatarSrc: r.author_avatar_src as string | undefined,
     content: r.content as string,
     timestamp: r.timestamp as string,
-  };
+  }
 }
 
 export function rowToProjectProperties(r: DbRow): ProjectProperties {
@@ -115,7 +130,7 @@ export function rowToProjectProperties(r: DbRow): ProjectProperties {
     endDate: r.end_date as string | undefined,
     teamIds: (r.team_ids as string[]) ?? [],
     labelIds: (r.label_ids as string[]) ?? [],
-  };
+  }
 }
 
 export function rowToMilestone(r: DbRow): Milestone {
@@ -127,7 +142,7 @@ export function rowToMilestone(r: DbRow): Milestone {
     total: (r.total as number) ?? 0,
     targetDate: (r.target_date as string) ?? '',
     description: r.description as string | undefined,
-  };
+  }
 }
 
 export function rowToActivity(r: DbRow): ActivityItem {
@@ -137,7 +152,7 @@ export function rowToActivity(r: DbRow): ActivityItem {
     icon: r.icon as ActivityIcon,
     message: r.message as string,
     date: r.date as string,
-  };
+  }
 }
 
 export function rowToIssue(r: DbRow): Issue {
@@ -150,7 +165,8 @@ export function rowToIssue(r: DbRow): Issue {
     status: r.status as string,
     teamId: r.team_id as string,
     projectId: r.project_id as string | undefined,
-  };
+    description: r.description as string | undefined,
+  }
 }
 
 export function rowToNotification(r: DbRow): Notification {
@@ -164,11 +180,18 @@ export function rowToNotification(r: DbRow): Notification {
     actorId: r.actor_id as string,
     actorName: r.actor_name as string,
     targetUrl: r.target_url as string | undefined,
-  };
+  }
 }
 
 export function storeToRows(store: Store) {
   return {
+    workspaces: store.workspaces.map((w) => ({
+      id: w.id,
+      name: w.name,
+      slug: w.slug,
+      region: w.region,
+      member_ids: w.memberIds ?? [],
+    })),
     projects: store.projects.map((p) => ({
       id: p.id,
       name: p.name,
@@ -189,6 +212,8 @@ export function storeToRows(store: Store) {
       status: m.status,
       joined: m.joined,
       team_ids: m.teamIds ?? [],
+      provisioned: m.provisioned ?? false,
+      supabase_user_id: m.uid ?? m.userAuthId ?? null,
     })),
     views: store.views.map((v) => ({
       id: v.id,
@@ -228,16 +253,18 @@ export function storeToRows(store: Store) {
       content: c.content,
       timestamp: c.timestamp,
     })),
-    project_properties: Object.entries(store.projectPropertiesByTeam ?? {}).map(([team_id, p]) => ({
-      team_id,
-      status: p.status,
-      priority: p.priority,
-      lead_id: p.leadId ?? null,
-      start_date: p.startDate ?? null,
-      end_date: p.endDate ?? null,
-      team_ids: p.teamIds ?? [],
-      label_ids: p.labelIds ?? [],
-    })),
+    project_properties: Object.entries(store.projectPropertiesByTeam ?? {}).map(
+      ([team_id, p]) => ({
+        team_id,
+        status: p.status,
+        priority: p.priority,
+        lead_id: p.leadId ?? null,
+        start_date: p.startDate ?? null,
+        end_date: p.endDate ?? null,
+        team_ids: p.teamIds ?? [],
+        label_ids: p.labelIds ?? [],
+      })
+    ),
     milestones: store.milestones.map((m) => ({
       id: m.id,
       team_id: m.teamId,
@@ -263,6 +290,7 @@ export function storeToRows(store: Store) {
       status: i.status,
       team_id: i.teamId,
       project_id: i.projectId ?? null,
+      description: i.description ?? null,
     })),
     notifications: store.notifications.map((n) => ({
       id: n.id,
@@ -275,5 +303,5 @@ export function storeToRows(store: Store) {
       actor_name: n.actorName,
       target_url: n.targetUrl ?? null,
     })),
-  };
+  }
 }

@@ -5,6 +5,7 @@ import { TeamProjectsScreen } from './TeamProjectsScreen'
 import { TeamProjectDetailScreen } from './TeamProjectDetailScreen'
 import { TeamViewsScreen } from './TeamViewsScreen'
 import { TeamLogsScreen } from './TeamLogsScreen'
+import { IssueDetailScreen } from './IssueDetailScreen'
 
 const MOCK_PROJECT_NAMES: Record<string, Record<string, string>> = {
   Test94: { tes: 'TES', onboarding: 'Onboarding' },
@@ -25,12 +26,17 @@ export function TeamProjectsScreenWrapper() {
 }
 
 export function TeamProjectDetailScreenWrapper() {
-  const { teamId, projectId } = useParams<{ teamId: string; projectId: string }>()
-  const team = DEMO_TEAMS.find((t) => t.id === teamId)
-  const teamName = team?.name ?? teamId ?? 'Team'
+  const { teamId, projectId } = useParams<{
+    teamId: string
+    projectId: string
+  }>()
   const projectName =
-    (teamId && projectId && MOCK_PROJECT_NAMES[teamId]?.[projectId]) ?? projectId ?? 'Project'
-  return <TeamProjectDetailScreen teamName={teamName} projectName={projectName} />
+    (teamId && projectId && MOCK_PROJECT_NAMES[teamId]?.[projectId]) ??
+    projectId ??
+    'Project'
+  return (
+    <TeamProjectDetailScreen projectName={projectName} teamId={teamId ?? ''} />
+  )
 }
 
 export function TeamViewsScreenWrapper() {
@@ -43,4 +49,15 @@ export function TeamLogsScreenWrapper() {
   const { teamId } = useParams<{ teamId: string }>()
   const team = DEMO_TEAMS.find((t) => t.id === teamId)
   return <TeamLogsScreen teamName={team?.name ?? teamId ?? 'Team'} />
+}
+
+export function IssueDetailScreenWrapper() {
+  const { teamId, issueId } = useParams<{ teamId: string; issueId: string }>()
+  const team = DEMO_TEAMS.find((t) => t.id === teamId)
+  return (
+    <IssueDetailScreen
+      issueId={issueId ?? 'ISSUE-1'}
+      teamName={team?.name ?? teamId ?? 'Team'}
+    />
+  )
 }

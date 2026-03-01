@@ -1,6 +1,6 @@
 import styled from 'styled-components'
 
-const sizeMap = { xs: '0.75rem', sm: '0.8125rem', md: '0.875rem', lg: '1rem' } as const
+const sizeMap = { xs: '12px', sm: '13px', md: '14px', lg: '16px' } as const
 
 const StyledText = styled.p<{ $size: keyof typeof sizeMap; $muted?: boolean }>`
   margin: 0;

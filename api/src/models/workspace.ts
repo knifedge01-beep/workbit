@@ -24,6 +24,119 @@ export async function getViews(): Promise<View[]> {
   return dbViews.getViewsWithoutTeamId()
 }
 
+export type ProjectListItemApi = {
+  id: string
+  name: string
+  team: { id: string; name: string }
+  status: string
+}
+
+export async function getProjectsForApi(): Promise<ProjectListItemApi[]> {
+  const [projects, teams] = await Promise.all([
+    dbProjects.getProjects(),
+    dbTeams.getTeams(),
+  ])
+  const teamsById = new Map(teams.map((t) => [t.id, t]))
+  return projects.map((p) => {
+    const team = teamsById.get(p.teamId)
+    return {
+      id: p.id,
+      name: p.name,
+      team: team
+        ? { id: team.id, name: team.name }
+        : { id: p.teamId, name: p.teamId },
+      status: p.status,
+    }
+  })
+}
+
+export type TeamListItemApi = {
+  id: string
+  name: string
+  memberCount: number
+  project: { id: string; name: string } | null
+}
+
+export async function getTeamsForApi(
+  workspaceId: string,
+  memberId?: string
+): Promise<TeamListItemApi[]> {
+  const [teams, projects] = await Promise.all([
+    dbTeams.getTeamsByWorkspace(workspaceId, memberId),
+    dbProjects.getProjects(),
+  ])
+  const projectsById = new Map(projects.map((p) => [p.id, p]))
+  return teams.map((t) => {
+    const project = t.projectId ? projectsById.get(t.projectId) : undefined
+    return {
+      id: t.id,
+      name: t.name,
+      memberCount: t.memberIds?.length ?? 0,
+      project: project ? { id: project.id, name: project.name } : null,
+    }
+  })
+}
+
+export type MemberListItemApi = {
+  id: string
+  name: string
+  username: string
+  avatarSrc?: string
+  status: string
+  joined: string
+  provisioned: boolean
+  uid: string | null
+  teams: string
+}
+
+export async function getMembersForApi(): Promise<MemberListItemApi[]> {
+  const [members, teams] = await Promise.all([
+    dbMembers.getMembers(),
+    dbTeams.getTeams(),
+  ])
+  const teamsById = new Map(teams.map((t) => [t.id, t.name]))
+  return members.map((m) => {
+    const teamNames = m.teamIds
+      .map((tid) => teamsById.get(tid))
+      .filter(Boolean) as string[]
+    return {
+      id: m.id,
+      name: m.name,
+      username: m.username,
+      avatarSrc: m.avatarSrc,
+      status: m.status,
+      joined: m.joined,
+      provisioned: m.provisioned ?? false,
+      uid: m.uid ?? m.userAuthId ?? null,
+      teams: teamNames.length ? teamNames.join(', ') : '—',
+    }
+  })
+}
+
+export type ViewListItemApi = {
+  id: string
+  name: string
+  type: string
+  owner: { id: string; name: string }
+}
+
+export async function getViewsForApi(): Promise<ViewListItemApi[]> {
+  const views = await dbViews.getViewsWithoutTeamId()
+  return Promise.all(
+    views.map(async (v) => {
+      const owner = await dbMembers.getMemberById(v.ownerId)
+      return {
+        id: v.id,
+        name: v.name,
+        type: v.type,
+        owner: owner
+          ? { id: owner.id, name: owner.name }
+          : { id: v.ownerId, name: v.ownerId },
+      }
+    })
+  )
+}
+
 export async function getRoles(): Promise<Role[]> {
   return dbRoles.getRoles()
 }
@@ -117,7 +230,6 @@ export async function createTeam(input: {
     id: generateId(),
     name: input.name,
     workspaceId: input.workspaceId,
-    projectId: null,
     memberIds: [],
   }
   await insertTeam(team)
@@ -128,7 +240,7 @@ export async function createProject(input: {
   name: string
   teamId: string
   status?: string
-}): Promise<Project> {
+}): Promise<{ project: Project; team: Team }> {
   const team = await dbTeams.getTeamById(input.teamId)
   if (!team) {
     throw new Error('Team not found')
@@ -144,5 +256,5 @@ export async function createProject(input: {
   await dbProjects.insertProject(project)
   await dbTeams.updateTeam(input.teamId, { projectId: project.id })
 
-  return project
+  return { project, team }
 }

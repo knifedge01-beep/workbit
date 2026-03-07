@@ -3,17 +3,20 @@ import { motion } from 'framer-motion'
 const features = [
   {
     title: 'Projects & cycles',
-    description: 'Organize work into projects and time-boxed cycles. See progress at a glance and ship on schedule.',
+    description:
+      'Organize work into projects and time-boxed cycles. See progress at a glance and ship on schedule.',
     icon: '◉',
   },
   {
     title: 'Issues that move',
-    description: 'Create, triage, and assign issues with statuses that match your workflow. No more lost tasks.',
+    description:
+      'Create, triage, and assign issues with statuses that match your workflow. No more lost tasks.',
     icon: '◇',
   },
   {
     title: 'Built for teams',
-    description: 'Workspaces, teams, and roles. Keep everyone aligned without the overhead of enterprise bloat.',
+    description:
+      'Workspaces, teams, and roles. Keep everyone aligned without the overhead of enterprise bloat.',
     icon: '▣',
   },
 ]

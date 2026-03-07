@@ -13,7 +13,11 @@ const Tag = styled(motion.span)<{ $size: 'large' | 'medium' | 'small' }>`
         ? `${p.theme.spacing[1]}px ${p.theme.spacing[2]}px`
         : `${p.theme.spacing[1]}px ${p.theme.spacing[2]}px`};
   font-size: ${(p) =>
-    p.$size === 'large' ? '0.875rem' : p.$size === 'medium' ? '0.8125rem' : '0.75rem'};
+    p.$size === 'large'
+      ? '0.875rem'
+      : p.$size === 'medium'
+        ? '0.8125rem'
+        : '0.75rem'};
   background: ${(p) => p.theme.colors.surfaceHover};
   color: ${(p) => p.theme.colors.text};
   border-radius: 9999px;
@@ -44,12 +48,7 @@ type Props = {
   className?: string
 }
 
-export function Tags({
-  label,
-  onDismiss,
-  size = 'medium',
-  className,
-}: Props) {
+export function Tags({ label, onDismiss, size = 'medium', className }: Props) {
   return (
     <Tag
       $size={size}

@@ -23,7 +23,6 @@ import {
   TeamViewsScreenWrapper,
   TeamLogsScreenWrapper,
   IssueDetailScreenWrapper,
-  ShowcaseComponents,
   ProfilePage,
 } from '../pages'
 import { LandingPage } from '../landing'
@@ -45,7 +44,6 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route path="/landing" element={<LandingPage />} />
-      <Route path="/showcase" element={<ShowcaseComponents />} />
       <Route path="/login" element={<LoginScreen />} />
       <Route path="/signup" element={<SignupScreen />} />
       <Route

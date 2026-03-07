@@ -6,7 +6,8 @@ export function CTASection() {
     <section
       style={{
         padding: '100px 0 120px',
-        background: 'linear-gradient(180deg, var(--workbit-bg) 0%, var(--workbit-bg-elevated) 100%)',
+        background:
+          'linear-gradient(180deg, var(--workbit-bg) 0%, var(--workbit-bg-elevated) 100%)',
       }}
     >
       <motion.div
@@ -25,17 +26,15 @@ export function CTASection() {
           margin: '0 auto',
         }}
       >
-        <h2
-          className="landing__heading-lg"
-          style={{ marginBottom: 16 }}
-        >
+        <h2 className="landing__heading-lg" style={{ marginBottom: 16 }}>
           Ready to ship with clarity?
         </h2>
         <p
           className="landing__text-muted"
           style={{ margin: '0 auto 32px', fontSize: '1rem' }}
         >
-          Join teams that use Workbit to plan, track, and ship—without the chaos.
+          Join teams that use Workbit to plan, track, and ship—without the
+          chaos.
         </p>
         <Link to="/signup">
           <motion.span

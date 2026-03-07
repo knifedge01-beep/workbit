@@ -31,7 +31,7 @@ export function getSupabase(): SupabaseClient | null {
 }
 
 /**
- * Returns the current session's access token for API/GraphQL requests.
+ * Returns the current session's access token for API requests.
  * Resolves to null when Supabase is not configured or user is not signed in.
  */
 export async function getAccessToken(): Promise<string | null> {

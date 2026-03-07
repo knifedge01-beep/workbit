@@ -2,15 +2,12 @@ import { init as initLogbit } from '@thedatablitz/logbit-sdk'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
-import { RelayEnvironmentProvider } from 'react-relay'
 import { ThemeProvider } from '@design-system'
 import { AuthProvider } from './pages/auth/AuthContext'
 import { WorkspaceProvider } from './contexts/WorkspaceContext'
-import { relayEnvironment } from './relay/Environment'
 import App from './App'
 import '@design-system/styles/global.css'
 
-console.log('LOGBIT_API_BASE_URL', import.meta.env)
 initLogbit({
   service: 'workbit-web',
   env: import.meta.env.MODE ?? 'development',
@@ -32,9 +29,7 @@ createRoot(document.getElementById('root')!).render(
       <BrowserRouter>
         <AuthProvider>
           <WorkspaceProvider>
-            <RelayEnvironmentProvider environment={relayEnvironment}>
-              <App />
-            </RelayEnvironmentProvider>
+            <App />
           </WorkspaceProvider>
         </AuthProvider>
       </BrowserRouter>

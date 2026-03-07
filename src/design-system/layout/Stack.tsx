@@ -6,7 +6,10 @@ const StyledStack = styled.div<{
 }>`
   display: flex;
   flex-direction: ${(p) => (p.$direction === 'horizontal' ? 'row' : 'column')};
-  gap: ${(p) => (p.$gap != null ? p.theme.spacing[p.$gap] ?? p.$gap : p.theme.spacing[2])}px;
+  gap: ${(p) =>
+    p.$gap != null
+      ? (p.theme.spacing[p.$gap] ?? p.$gap)
+      : p.theme.spacing[2]}px;
 `
 
 type Props = {

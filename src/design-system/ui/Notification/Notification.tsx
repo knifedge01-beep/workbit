@@ -4,7 +4,10 @@ import { X } from 'lucide-react'
 
 type NotificationType = 'primary' | 'success' | 'error' | 'alert' | 'neutral'
 
-const Bar = styled.div<{ $variant: 'solid' | 'light'; $type: NotificationType }>`
+const Bar = styled.div<{
+  $variant: 'solid' | 'light'
+  $type: NotificationType
+}>`
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -27,19 +30,17 @@ const Bar = styled.div<{ $variant: 'solid' | 'light'; $type: NotificationType }>
       const c = colors[p.$type]
       return `background: ${c.bg}; color: ${c.text};`
     }
-    const lightColors: Record<
-      NotificationType,
-      { bg: string; text: string }
-    > = {
-      primary: { bg: p.theme.colors.infoBg, text: p.theme.colors.primary },
-      success: { bg: p.theme.colors.successBg, text: p.theme.colors.success },
-      error: { bg: p.theme.colors.errorBg, text: p.theme.colors.error },
-      alert: { bg: p.theme.colors.warningBg, text: p.theme.colors.warning },
-      neutral: {
-        bg: p.theme.colors.notificationNeutralBg ?? '#F3F4F6',
-        text: p.theme.colors.text,
-      },
-    }
+    const lightColors: Record<NotificationType, { bg: string; text: string }> =
+      {
+        primary: { bg: p.theme.colors.infoBg, text: p.theme.colors.primary },
+        success: { bg: p.theme.colors.successBg, text: p.theme.colors.success },
+        error: { bg: p.theme.colors.errorBg, text: p.theme.colors.error },
+        alert: { bg: p.theme.colors.warningBg, text: p.theme.colors.warning },
+        neutral: {
+          bg: p.theme.colors.notificationNeutralBg ?? '#F3F4F6',
+          text: p.theme.colors.text,
+        },
+      }
     const c = lightColors[p.$type]
     return `background: ${c.bg}; color: ${c.text};`
   }};

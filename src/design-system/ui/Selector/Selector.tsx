@@ -22,10 +22,18 @@ const Segment = styled.button<{
         ? `${p.theme.spacing[2]}px ${p.theme.spacing[3]}px`
         : `${p.theme.spacing[1]}px ${p.theme.spacing[2]}px`};
   font-size: ${(p) =>
-    p.$size === 'large' ? '1rem' : p.$size === 'medium' ? '0.875rem' : '0.8125rem'};
+    p.$size === 'large'
+      ? '1rem'
+      : p.$size === 'medium'
+        ? '0.875rem'
+        : '0.8125rem'};
   font-weight: 500;
   color: ${(p) =>
-    p.$selected ? '#FFFFFF' : p.$disabled ? p.theme.colors.textMuted : p.theme.colors.text};
+    p.$selected
+      ? '#FFFFFF'
+      : p.$disabled
+        ? p.theme.colors.textMuted
+        : p.theme.colors.text};
   background: ${(p) =>
     p.$selected
       ? p.theme.colors.primary
@@ -40,7 +48,9 @@ const Segment = styled.button<{
   }
   &:hover:not(:disabled) {
     background: ${(p) =>
-      p.$selected ? p.theme.colors.primaryHover : p.theme.colors.infoBg ?? '#E0F2FE'};
+      p.$selected
+        ? p.theme.colors.primaryHover
+        : (p.theme.colors.infoBg ?? '#E0F2FE')};
     color: ${(p) => (p.$selected ? '#FFFFFF' : p.theme.colors.primary)};
   }
   &:disabled {

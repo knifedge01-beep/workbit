@@ -3,7 +3,7 @@ import styled from 'styled-components'
 import { motion } from 'framer-motion'
 import { Text, IconButton, Flex, Menu } from '@design-system'
 import { ChevronDown, Plus, MoreHorizontal } from 'lucide-react'
-import { MILESTONE_MENU_ITEMS } from './milestoneMenuItems'
+import { MILESTONE_MENU_ITEMS } from './MilestoneMenuItems'
 import { SectionHeader, CollapsibleContent } from './CollapsibleSection'
 
 const MilestoneList = styled.div`

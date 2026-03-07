@@ -1,28 +1,34 @@
-import type { Request, Response } from 'express';
-import { supabaseAuth, isSupabaseAuthConfigured } from '../utils/supabaseServer.js';
+import type { Request, Response } from 'express'
+import {
+  supabaseAuth,
+  isSupabaseAuthConfigured,
+} from '../utils/supabaseServer.js'
 
 export async function login(req: Request, res: Response) {
   if (!isSupabaseAuthConfigured() || !supabaseAuth) {
-    res.status(501).json({ error: 'Auth not configured' });
-    return;
+    res.status(501).json({ error: 'Auth not configured' })
+    return
   }
 
-  const { email, password } = req.body as { email?: string; password?: string };
+  const { email, password } = req.body as { email?: string; password?: string }
   if (!email || !password) {
-    res.status(400).json({ error: 'Email and password are required' });
-    return;
+    res.status(400).json({ error: 'Email and password are required' })
+    return
   }
 
-  const { data, error } = await supabaseAuth.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabaseAuth.auth.signInWithPassword({
+    email,
+    password,
+  })
 
   if (error) {
-    res.status(401).json({ error: error.message });
-    return;
+    res.status(401).json({ error: error.message })
+    return
   }
 
   if (!data.session || !data.user) {
-    res.status(401).json({ error: 'Invalid credentials' });
-    return;
+    res.status(401).json({ error: 'Invalid credentials' })
+    return
   }
 
   res.json({
@@ -33,5 +39,5 @@ export async function login(req: Request, res: Response) {
       id: data.user.id,
       email: data.user.email,
     },
-  });
+  })
 }

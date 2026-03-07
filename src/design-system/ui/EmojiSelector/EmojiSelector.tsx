@@ -24,7 +24,10 @@ const ShortcutHint = styled.div`
 
 function isMac(): boolean {
   if (typeof navigator === 'undefined') return false
-  return /Mac|iPod|iPhone|iPad/.test(navigator.platform) || navigator.userAgent.includes('Mac')
+  return (
+    /Mac|iPod|iPhone|iPad/.test(navigator.platform) ||
+    navigator.userAgent.includes('Mac')
+  )
 }
 
 function tryOpenNativeEmojiPicker(inputEl: HTMLInputElement | null): void {
@@ -62,7 +65,11 @@ type Props = {
 const MAC_SHORTCUT = '⌘⌃Space'
 const WIN_SHORTCUT = 'Win + .'
 
-export function EmojiSelector({ targetRef, placement = 'top', className }: Props) {
+export function EmojiSelector({
+  targetRef,
+  placement = 'top',
+  className,
+}: Props) {
   const hiddenInputRef = useRef<HTMLInputElement>(null)
 
   const handleTriggerClick = useCallback(() => {
@@ -85,7 +92,10 @@ export function EmojiSelector({ targetRef, placement = 'top', className }: Props
       />
       <Popup
         trigger={
-          <IconButton aria-label="Open emoji picker" onClick={handleTriggerClick}>
+          <IconButton
+            aria-label="Open emoji picker"
+            onClick={handleTriggerClick}
+          >
             <SmilePlus size={18} />
           </IconButton>
         }

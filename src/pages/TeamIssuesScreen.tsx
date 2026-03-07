@@ -5,6 +5,7 @@ import { Plus } from 'lucide-react'
 import {
   PageHeader,
   Text,
+  Label,
   Avatar,
   Card,
   Flex,
@@ -13,20 +14,28 @@ import {
   Button,
   Modal,
   Input,
+  Alert,
 } from '@design-system'
 import { StatusSelector, PrioritySelector } from '../components'
 import { STATUS_OPTIONS } from '../components/StatusSelector'
-import type { StatusOption } from '../components'
 import {
   fetchTeamIssues,
   updateIssue as apiUpdateIssue,
   createIssue,
 } from '../api/client'
 import { useFetch } from '../hooks/useFetch'
-import { formatDateTime, logError, countBy } from '../utils'
+import { formatDateTime, logError, getErrorMessage, countBy } from '../utils'
 
-const ISSUE_TAB_IDS = ['all', 'active', 'backlog'] as const
-type IssueTabId = (typeof ISSUE_TAB_IDS)[number]
+const DEFAULT_STATUS = 'todo'
+const DEFAULT_PRIORITY = 'medium'
+
+const ISSUE_TABS = [
+  { id: 'all', label: 'All issues' },
+  { id: 'active', label: 'Active' },
+  { id: 'backlog', label: 'Backlog' },
+] as const
+type IssueTabId = (typeof ISSUE_TABS)[number]['id']
+const ISSUE_TAB_IDS: readonly IssueTabId[] = ISSUE_TABS.map((t) => t.id)
 
 const ClickableCardWrapper = styled.div`
   cursor: pointer;
@@ -73,14 +82,15 @@ export function TeamIssuesScreen({ teamName }: Props) {
   const [creating, setCreating] = useState(false)
   const [showModal, setShowModal] = useState(false)
   const [issueTitle, setIssueTitle] = useState('')
+  const [createError, setCreateError] = useState<string | null>(null)
 
   const issues = (apiIssues ?? []).map((i) => ({
     id: i.id,
     title: i.title,
     assignee: i.assignee?.name ?? '',
     date: formatDateTime(i.date),
-    status: overrides[i.id]?.status ?? i.status ?? 'todo',
-    priority: overrides[i.id]?.priority ?? 'medium',
+    status: overrides[i.id]?.status ?? i.status ?? DEFAULT_STATUS,
+    priority: overrides[i.id]?.priority ?? DEFAULT_PRIORITY,
   }))
 
   const updateIssueStatus = (issueId: string, status: string) => {
@@ -106,15 +116,16 @@ export function TeamIssuesScreen({ teamName }: Props) {
     }
   }
 
-  const statusCounts = countBy(issues, (issue) => issue.status ?? 'todo')
+  const statusCounts = countBy(issues, (issue) => issue.status)
 
   const statusSummary = STATUS_OPTIONS.filter(
-    (opt: StatusOption) => (statusCounts[opt.id] ?? 0) > 0
-  ).map((opt: StatusOption) => `${statusCounts[opt.id]} ${opt.label}`)
+    (opt) => (statusCounts[opt.id] ?? 0) > 0
+  ).map((opt) => `${statusCounts[opt.id]} ${opt.label}`)
 
   const handleCreateIssue = async () => {
     if (!teamId || !issueTitle.trim()) return
 
+    setCreateError(null)
     setCreating(true)
     try {
       await createIssue(teamId, { title: issueTitle, status: 'todo' })
@@ -123,7 +134,7 @@ export function TeamIssuesScreen({ teamName }: Props) {
       setIssueTitle('')
     } catch (err) {
       logError(err, 'TeamIssues')
-      alert(`Failed to create issue: ${err}`)
+      setCreateError(getErrorMessage(err))
     } finally {
       setCreating(false)
     }
@@ -131,6 +142,7 @@ export function TeamIssuesScreen({ teamName }: Props) {
 
   return (
     <Stack gap={4}>
+      {createError && <Alert variant="error">{createError}</Alert>}
       <Flex align="center" justify="space-between">
         <PageHeader title={teamName} />
         <Button variant="primary" onClick={() => setShowModal(true)}>
@@ -140,18 +152,14 @@ export function TeamIssuesScreen({ teamName }: Props) {
       </Flex>
       <Flex align="center" gap={2}>
         <Tabs
-          tabs={[
-            { id: 'all', label: 'All issues' },
-            { id: 'active', label: 'Active' },
-            { id: 'backlog', label: 'Backlog' },
-          ]}
+          tabs={[...ISSUE_TABS]}
           activeId={activeTab}
           onChange={handleTabChange}
         />
       </Flex>
 
       <Flex align="center" gap={2} wrap>
-        {statusSummary.map((part: string, i: number) => (
+        {statusSummary.map((part, i) => (
           <Flex key={i} align="center" gap={1}>
             {i > 0 && (
               <Text size="sm" muted>
@@ -177,21 +185,21 @@ export function TeamIssuesScreen({ teamName }: Props) {
           >
             <Card>
               <Flex align="center" gap={2}>
-                <div onClick={(e) => e.stopPropagation()}>
-                  <PrioritySelector
-                    triggerVariant="icon"
-                    value={issue.priority ?? 'medium'}
-                    onChange={(priority) =>
-                      updateIssuePriority(issue.id, priority)
-                    }
-                  />
-                </div>
-                <div onClick={(e) => e.stopPropagation()}>
-                  <StatusSelector
-                    triggerVariant="icon"
-                    value={issue.status ?? 'todo'}
-                    onChange={(status) => updateIssueStatus(issue.id, status)}
-                  />
+                <div onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+                  <Flex align="center" gap={2}>
+                    <PrioritySelector
+                      triggerVariant="icon"
+                      value={issue.priority}
+                      onChange={(priority) =>
+                        updateIssuePriority(issue.id, priority)
+                      }
+                    />
+                    <StatusSelector
+                      triggerVariant="icon"
+                      value={issue.status}
+                      onChange={(status) => updateIssueStatus(issue.id, status)}
+                    />
+                  </Flex>
                 </div>
                 <Text size="sm">{issue.id}</Text>
                 <span style={{ flex: 1 }}>
@@ -224,15 +232,9 @@ export function TeamIssuesScreen({ teamName }: Props) {
       >
         <Stack gap={3}>
           <div>
-            <Text
-              as="label"
-              size="sm"
-              weight="medium"
-              style={{ display: 'block', marginBottom: '8px' }}
-            >
-              Issue Title
-            </Text>
+            <Label htmlFor="create-issue-title">Issue Title</Label>
             <Input
+              id="create-issue-title"
               value={issueTitle}
               onChange={(e) => setIssueTitle(e.target.value)}
               placeholder="Enter issue title"

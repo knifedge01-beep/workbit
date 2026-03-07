@@ -8,8 +8,13 @@ const StyledSkeleton = styled.div<{ $width?: string; $height?: string }>`
   animation: skeleton-pulse 1.2s ease-in-out infinite;
 
   @keyframes skeleton-pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.6; }
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.6;
+    }
   }
 `
 

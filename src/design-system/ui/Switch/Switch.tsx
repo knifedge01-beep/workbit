@@ -5,7 +5,8 @@ const Track = styled.span<{ $on: boolean }>`
   width: 36px;
   height: 20px;
   border-radius: 10px;
-  background: ${(p) => (p.$on ? p.theme.colors.primary : p.theme.colors.border)};
+  background: ${(p) =>
+    p.$on ? p.theme.colors.primary : p.theme.colors.border};
   display: inline-flex;
   align-items: center;
   padding: 2px;
@@ -35,12 +36,7 @@ type Props = {
   className?: string
 }
 
-export function Switch({
-  checked = false,
-  onChange,
-  label,
-  className,
-}: Props) {
+export function Switch({ checked = false, onChange, label, className }: Props) {
   return (
     <Wrapper className={className}>
       <input

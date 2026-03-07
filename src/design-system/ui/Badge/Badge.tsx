@@ -5,12 +5,16 @@ type BadgeSize = 'medium' | 'small'
 type BadgeColor = 'blue' | 'grey' | 'green' | 'red' | 'orange'
 
 const sizeStyles = {
-  medium: (p: { theme: { spacing: readonly number[]; radii?: { sm: number } } }) => `
+  medium: (p: {
+    theme: { spacing: readonly number[]; radii?: { sm: number } }
+  }) => `
     padding: 4px ${p.theme.spacing[2]}px;
     font-size: 0.875rem;
     border-radius: ${p.theme.radii?.sm ?? 4}px;
   `,
-  small: (p: { theme: { spacing: readonly number[]; radii?: { sm: number } } }) => `
+  small: (p: {
+    theme: { spacing: readonly number[]; radii?: { sm: number } }
+  }) => `
     padding: 2px ${p.theme.spacing[1]}px;
     font-size: 0.75rem;
     border-radius: ${p.theme.radii?.sm ?? 4}px;
@@ -58,7 +62,8 @@ export function Badge({
   children,
   className,
 }: Props) {
-  const v: BadgeVariant = variant === 'primary' ? 'solid' : variant === 'default' ? 'light' : variant
+  const v: BadgeVariant =
+    variant === 'primary' ? 'solid' : variant === 'default' ? 'light' : variant
   const c: BadgeColor = variant === 'default' ? 'grey' : color
   return (
     <StyledBadge $variant={v} $size={size} $color={c} className={className}>

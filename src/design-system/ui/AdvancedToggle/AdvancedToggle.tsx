@@ -18,7 +18,11 @@ const Segment = styled.button<{ $selected: boolean; $size: ToggleSize }>`
         ? `${p.theme.spacing[2]}px ${p.theme.spacing[3]}px`
         : `${p.theme.spacing[1]}px ${p.theme.spacing[2]}px`};
   font-size: ${(p) =>
-    p.$size === 'large' ? '1rem' : p.$size === 'medium' ? '0.875rem' : '0.8125rem'};
+    p.$size === 'large'
+      ? '1rem'
+      : p.$size === 'medium'
+        ? '0.875rem'
+        : '0.8125rem'};
   font-weight: 500;
   color: ${(p) => (p.$selected ? p.theme.colors.primary : p.theme.colors.text)};
   background: ${(p) => p.theme.colors.surface};

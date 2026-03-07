@@ -25,25 +25,39 @@ export const STATUS_OPTIONS: StatusOption[] = [
   {
     id: 'in_progress',
     label: 'In Progress',
-    icon: <CircleDot size={16} style={{ color: 'var(--status-in-progress, #F59E0B)' }} />,
+    icon: (
+      <CircleDot
+        size={16}
+        style={{ color: 'var(--status-in-progress, #F59E0B)' }}
+      />
+    ),
     shortcut: 3,
   },
   {
     id: 'done',
     label: 'Done',
-    icon: <CheckCircle2 size={16} style={{ color: 'var(--status-done, #8B5CF6)' }} />,
+    icon: (
+      <CheckCircle2
+        size={16}
+        style={{ color: 'var(--status-done, #8B5CF6)' }}
+      />
+    ),
     shortcut: 4,
   },
   {
     id: 'canceled',
     label: 'Canceled',
-    icon: <XCircle size={16} style={{ color: 'var(--status-canceled, #EF4444)' }} />,
+    icon: (
+      <XCircle size={16} style={{ color: 'var(--status-canceled, #EF4444)' }} />
+    ),
     shortcut: 5,
   },
   {
     id: 'duplicate',
     label: 'Duplicate',
-    icon: <Copy size={16} style={{ color: 'var(--status-duplicate, #6B7280)' }} />,
+    icon: (
+      <Copy size={16} style={{ color: 'var(--status-duplicate, #6B7280)' }} />
+    ),
     shortcut: 6,
   },
 ]
@@ -65,14 +79,19 @@ const Trigger = styled.button<{ $iconOnly?: boolean }>`
   font-size: 0.875rem;
   color: ${(p) => p.theme.colors.text};
   background: ${(p) => (p.$iconOnly ? 'transparent' : p.theme.colors.surface)};
-  border: ${(p) => (p.$iconOnly ? 'none' : `1px solid ${p.theme.colors.border}`)};
+  border: ${(p) =>
+    p.$iconOnly ? 'none' : `1px solid ${p.theme.colors.border}`};
   border-radius: ${(p) => p.theme.radii?.md ?? 6}px;
   cursor: pointer;
   text-align: left;
-  transition: border-color 0.15s, background 0.15s;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
   &:hover {
-    border-color: ${(p) => (p.$iconOnly ? 'transparent' : p.theme.colors.borderFocus)};
-    background: ${(p) => (p.$iconOnly ? p.theme.colors.surfaceHover : 'inherit')};
+    border-color: ${(p) =>
+      p.$iconOnly ? 'transparent' : p.theme.colors.borderFocus};
+    background: ${(p) =>
+      p.$iconOnly ? p.theme.colors.surfaceHover : 'inherit'};
   }
   svg {
     flex-shrink: 0;
@@ -135,12 +154,16 @@ const Item = styled.button<{ $selected: boolean }>`
   padding: ${(p) => p.theme.spacing[2]}px ${(p) => p.theme.spacing[3]}px;
   font-size: 0.875rem;
   color: ${(p) => p.theme.colors.text};
-  background: ${(p) => (p.$selected ? p.theme.colors.dropdownSelectedBg ?? '#E0F2FF' : 'transparent')};
+  background: ${(p) =>
+    p.$selected
+      ? (p.theme.colors.dropdownSelectedBg ?? '#E0F2FF')
+      : 'transparent'};
   border: none;
   cursor: pointer;
   text-align: left;
   &:hover {
-    background: ${(p) => p.theme.colors.dropdownHoverBg ?? p.theme.colors.surfaceHover};
+    background: ${(p) =>
+      p.theme.colors.dropdownHoverBg ?? p.theme.colors.surfaceHover};
   }
 `
 
@@ -201,7 +224,9 @@ export function StatusSelector({
   }, [open])
 
   const filtered = search.trim()
-    ? options.filter((o) => o.label.toLowerCase().includes(search.trim().toLowerCase()))
+    ? options.filter((o) =>
+        o.label.toLowerCase().includes(search.trim().toLowerCase())
+      )
     : options
 
   const selected = options.find((o) => o.id === value)
@@ -221,13 +246,14 @@ export function StatusSelector({
             <Circle size={18} style={{ opacity: 0.6 }} />
           </ItemIcon>
         )}
-        {!iconOnly && (
-          selected ? (
+        {!iconOnly &&
+          (selected ? (
             <span>{selected.label}</span>
           ) : (
-            <span style={{ color: 'var(--text-muted, #64748b)' }}>{placeholder}</span>
-          )
-        )}
+            <span style={{ color: 'var(--text-muted, #64748b)' }}>
+              {placeholder}
+            </span>
+          ))}
       </Trigger>
       {open && (
         <Panel>
@@ -256,7 +282,9 @@ export function StatusSelector({
               >
                 <ItemIcon>{opt.icon}</ItemIcon>
                 <ItemLabel>{opt.label}</ItemLabel>
-                {opt.shortcut != null && <ItemShortcut>{opt.shortcut}</ItemShortcut>}
+                {opt.shortcut != null && (
+                  <ItemShortcut>{opt.shortcut}</ItemShortcut>
+                )}
                 {opt.id === value && (
                   <ItemCheck>
                     <Check size={16} strokeWidth={2.5} />

@@ -1,15 +1,6 @@
 import type { Request, Response } from 'express'
 import * as workspaceModel from '../models/workspace.js'
 import { logApiError } from '../utils/log.js'
-import { getProjects as dbGetProjects } from '../db/projects.js'
-import {
-  getTeams as dbGetTeams,
-  getTeamsByWorkspace as dbGetTeamsByWorkspace,
-} from '../db/teams.js'
-import { getMembers as dbGetMembers } from '../db/members.js'
-import { getViewsWithoutTeamId } from '../db/views.js'
-import { getMemberById } from '../db/members.js'
-import { getTeamById } from '../db/teams.js'
 import {
   findSupabaseUserByEmail,
   createSupabaseUserForMember,
@@ -34,19 +25,7 @@ function sendError(res: Response, err: unknown, status = 500) {
 
 export async function getProjects(_req: Request, res: Response) {
   try {
-    const [projects, teams] = await Promise.all([dbGetProjects(), dbGetTeams()])
-    const teamsById = new Map(teams.map((t) => [t.id, t]))
-    const list = projects.map((p) => {
-      const team = teamsById.get(p.teamId)
-      return {
-        id: p.id,
-        name: p.name,
-        team: team
-          ? { id: team.id, name: team.name }
-          : { id: p.teamId, name: p.teamId },
-        status: p.status,
-      }
-    })
+    const list = await workspaceModel.getProjectsForApi()
     res.json(list)
   } catch (e) {
     logApiError(e, 'workspace.getProjects')
@@ -62,20 +41,7 @@ export async function getTeams(req: Request, res: Response) {
       return
     }
     const memberId = req.query.memberId as string | undefined
-    const [teams, projects] = await Promise.all([
-      dbGetTeamsByWorkspace(workspaceId, memberId),
-      dbGetProjects(),
-    ])
-    const projectsById = new Map(projects.map((p) => [p.id, p]))
-    const list = teams.map((t) => {
-      const project = t.projectId ? projectsById.get(t.projectId) : undefined
-      return {
-        id: t.id,
-        name: t.name,
-        memberCount: t.memberIds.length,
-        project: project ? { id: project.id, name: project.name } : null,
-      }
-    })
+    const list = await workspaceModel.getTeamsForApi(workspaceId, memberId)
     res.json(list)
   } catch (e) {
     logApiError(e, 'workspace.getTeams', { workspaceId: req.query.workspaceId })
@@ -112,30 +78,7 @@ export async function createTeam(req: Request, res: Response) {
 
 export async function getMembers(_req: Request, res: Response) {
   try {
-    const [members, teams] = await Promise.all([dbGetMembers(), dbGetTeams()])
-    const teamsById = new Map(teams.map((t) => [t.id, t]))
-    const list = await Promise.all(
-      members.map(async (m) => {
-        const uid = m.uid ?? m.userAuthId ?? null
-        console.log(
-          `[Members] member id=${m.id} name=${m.name} uid=${uid ?? 'null'} userAuthId=${m.userAuthId ?? 'null'}`
-        )
-        const teamNames = m.teamIds
-          .map((tid) => teamsById.get(tid)?.name)
-          .filter(Boolean) as string[]
-        return {
-          id: m.id,
-          name: m.name,
-          username: m.username,
-          avatarSrc: m.avatarSrc,
-          status: m.status,
-          joined: m.joined,
-          provisioned: m.provisioned,
-          uid,
-          teams: teamNames.length ? teamNames.join(', ') : '—',
-        }
-      })
-    )
+    const list = await workspaceModel.getMembersForApi()
     res.json(list)
   } catch (e) {
     logApiError(e, 'workspace.getMembers')
@@ -247,20 +190,7 @@ export async function provisionMember(req: Request, res: Response) {
 
 export async function getViews(_req: Request, res: Response) {
   try {
-    const workspaceViews = await getViewsWithoutTeamId()
-    const list = await Promise.all(
-      workspaceViews.map(async (v) => {
-        const owner = await getMemberById(v.ownerId)
-        return {
-          id: v.id,
-          name: v.name,
-          type: v.type,
-          owner: owner
-            ? { id: owner.id, name: owner.name }
-            : { id: v.ownerId, name: v.ownerId },
-        }
-      })
-    )
+    const list = await workspaceModel.getViewsForApi()
     res.json(list)
   } catch (e) {
     logApiError(e, 'workspace.getViews')
@@ -296,13 +226,11 @@ export async function createProject(req: Request, res: Response) {
       return
     }
 
-    const team = await getTeamById(teamId)
-    if (!team) {
-      sendError(res, 'Team not found', 404)
-      return
-    }
-
-    const project = await workspaceModel.createProject({ name, teamId, status })
+    const { project, team } = await workspaceModel.createProject({
+      name,
+      teamId,
+      status,
+    })
 
     res.status(201).json({
       id: project.id,

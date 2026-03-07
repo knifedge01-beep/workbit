@@ -19,7 +19,9 @@ const Trigger = styled.button<{
   color: ${(p) =>
     p.$state === 'disabled' ? p.theme.colors.textMuted : p.theme.colors.text};
   background: ${(p) =>
-    p.$state === 'disabled' ? p.theme.colors.surfaceHover : p.theme.colors.surface};
+    p.$state === 'disabled'
+      ? p.theme.colors.surfaceHover
+      : p.theme.colors.surface};
   border: 1px solid
     ${(p) => {
       if (p.$state === 'error') return p.theme.colors.error
@@ -31,7 +33,9 @@ const Trigger = styled.button<{
     p.$focused ? `2px solid ${p.theme.colors.primary}` : 'none'};
   outline-offset: 2px;
   cursor: ${(p) => (p.$state === 'disabled' ? 'not-allowed' : 'pointer')};
-  transition: border-color 0.15s, outline 0.15s;
+  transition:
+    border-color 0.15s,
+    outline 0.15s;
   &:hover {
     border-color: ${(p) =>
       p.$state === 'disabled' ? p.theme.colors.border : p.theme.colors.primary};
@@ -60,7 +64,9 @@ const Panel = styled.div<{ $open: boolean }>`
   transform: translateY(${(p) => (p.$open ? 0 : -6)}px);
   pointer-events: ${(p) => (p.$open ? 'auto' : 'none')};
   visibility: ${(p) => (p.$open ? 'visible' : 'hidden')};
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
 `
 
 const Item = styled.div<{ $selected: boolean }>`
@@ -68,9 +74,10 @@ const Item = styled.div<{ $selected: boolean }>`
   font-size: 0.875rem;
   cursor: pointer;
   background: ${(p) =>
-    p.$selected ? p.theme.colors.dropdownSelectedBg ?? '#E0F2FF' : 'transparent'};
-  color: ${(p) =>
-    p.$selected ? p.theme.colors.primary : p.theme.colors.text};
+    p.$selected
+      ? (p.theme.colors.dropdownSelectedBg ?? '#E0F2FF')
+      : 'transparent'};
+  color: ${(p) => (p.$selected ? p.theme.colors.primary : p.theme.colors.text)};
   &:hover {
     background: ${(p) => p.theme.colors.dropdownHoverBg ?? '#E0F2FF'};
     color: ${(p) => p.theme.colors.primary};

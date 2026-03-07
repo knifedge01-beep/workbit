@@ -1,4 +1,6 @@
-export const spacing = [0, 2, 4, 6, 8, 10, 12, 16, 20, 24, 32, 40, 48, 64] as const
+export const spacing = [
+  0, 2, 4, 6, 8, 10, 12, 16, 20, 24, 32, 40, 48, 64,
+] as const
 export type SpacingScale = (typeof spacing)[number]
 
 export const spacingPx = spacing.map((n) => `${n}px`) as unknown as readonly [

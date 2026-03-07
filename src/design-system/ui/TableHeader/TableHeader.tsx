@@ -26,11 +26,7 @@ type Props = {
   className?: string
 }
 
-export function TableHeader({
-  columns,
-  variant = 'light',
-  className,
-}: Props) {
+export function TableHeader({ columns, variant = 'light', className }: Props) {
   return (
     <Row $variant={variant} className={className} role="row">
       {columns.map((col, i) => (

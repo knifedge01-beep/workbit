@@ -13,14 +13,23 @@ export function RequireAuth({ children }: Props) {
 
   if (state.status === 'loading') {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '100vh',
+        }}
+      >
         <span>Loading…</span>
       </div>
     )
   }
 
   if (!isAllowed) {
-    const returnTo = (location.state as { returnTo?: string })?.returnTo ?? location.pathname + location.search
+    const returnTo =
+      (location.state as { returnTo?: string })?.returnTo ??
+      location.pathname + location.search
     return <Navigate to="/login" state={{ returnTo }} replace />
   }
 

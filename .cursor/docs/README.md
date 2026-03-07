@@ -2,11 +2,14 @@
 
 Documentation for the Workbit project.
 
+## Project structure
+
+The repo follows a clear structure: root **CLAUDE.md** (purpose, repo map, rules), **.cursor/skills/** (project structure, design system, Logbit, api/auth/db/frontend/workspace skills, code-review, refactor, release), **.cursor/docs/** (design system, API spec, Logbit SDK), **docs/** (architecture, ADRs, runbooks), and local **CLAUDE.md** in risky areas (`src/pages/auth/`, `api/src/db/`, `supabase/`). Use root `CLAUDE.md` as the north star; keep it short.
+
 ## Data & API
 
-- **GraphQL (reads):** The frontend uses **Relay** for all GraphQL fetch. Run `npm run relay` after adding or changing queries. See `schema.graphql` and `src/relay/`.
-- **REST (writes):** Mutations (create/update/delete) use REST as per [API_AND_SERVICES_SPEC.md](./API_AND_SERVICES_SPEC.md).
-- **Env:** Set `VITE_GRAPHQL_URL` (see `.env.example`) when a GraphQL server is available.
+- **REST:** All API access (reads and writes) uses REST as per [API_AND_SERVICES_SPEC.md](./API_AND_SERVICES_SPEC.md). Frontend uses `src/api/client.ts` and `useFetch`.
+- **Env:** Set `VITE_API_URL` (see `.env.example`) for the API base URL.
 
 ## Logging (Logbit SDK)
 

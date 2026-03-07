@@ -1,7 +1,14 @@
 import { useState } from 'react'
 import styled from 'styled-components'
 import { MessageCircle, MoreHorizontal, SquarePen } from 'lucide-react'
-import { Avatar, Button, Menu, IconButton, EmojiSelector, Chat } from '@design-system'
+import {
+  Avatar,
+  Button,
+  Menu,
+  IconButton,
+  EmojiSelector,
+  Chat,
+} from '@design-system'
 import type { ChatMessage, ChatUser } from '@design-system'
 import { STATUS_CONFIG } from '../constants/projectStatus'
 import { ResourceSelector } from './ResourceSelector'
@@ -17,9 +24,11 @@ const Card = styled.article`
 `
 
 const HeaderSection = styled.header`
-  padding: ${(p) => p.theme.spacing[3]}px ${(p) => p.theme.spacing[3]}px ${(p) => p.theme.spacing[2]}px;
+  padding: ${(p) => p.theme.spacing[3]}px ${(p) => p.theme.spacing[3]}px
+    ${(p) => p.theme.spacing[2]}px;
   border-bottom: 1px solid ${(p) => p.theme.colors.border};
-  background: ${(p) => p.theme.colors.backgroundSubtle ?? p.theme.colors.background};
+  background: ${(p) =>
+    p.theme.colors.backgroundSubtle ?? p.theme.colors.background};
 `
 
 const HeaderRow = styled.div`
@@ -154,8 +163,7 @@ export function StatusUpdateCard({
   const config = STATUS_CONFIG[data.status]
   const StatusIcon = config.Icon
 
-  const showCommentsWhenExpanded =
-    comments.length > 0 || onSendComment != null
+  const showCommentsWhenExpanded = comments.length > 0 || onSendComment != null
 
   const moreItems = onMore
     ? [
@@ -182,11 +190,7 @@ export function StatusUpdateCard({
             {config.label}
           </StatusPill>
           <MetaDivider aria-hidden />
-          <Avatar
-            name={data.authorName}
-            src={data.authorAvatarSrc}
-            size={24}
-          />
+          <Avatar name={data.authorName} src={data.authorAvatarSrc} size={24} />
           <AuthorName>{data.authorName}</AuthorName>
           <Timestamp>{data.timestamp}</Timestamp>
           {moreItems.length > 0 && (
@@ -213,7 +217,7 @@ export function StatusUpdateCard({
               placeholder="Add a comment..."
               onSend={onSendComment}
               attachSlot={
-                (onChooseFile || onCreateDocument || onAddLink) ? (
+                onChooseFile || onCreateDocument || onAddLink ? (
                   <ResourceSelector
                     label=""
                     triggerLabel=""

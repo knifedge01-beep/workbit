@@ -147,7 +147,13 @@ export function SignupScreen() {
             {loading ? 'Creating account…' : 'Sign up'}
           </Button>
         </Form>
-        <p style={{ marginTop: 16, fontSize: '0.875rem', color: 'var(--color-textMuted)' }}>
+        <p
+          style={{
+            marginTop: 16,
+            fontSize: '0.875rem',
+            color: 'var(--color-textMuted)',
+          }}
+        >
           Already have an account? <Link to="/login">Sign in</Link>
         </p>
       </Card>

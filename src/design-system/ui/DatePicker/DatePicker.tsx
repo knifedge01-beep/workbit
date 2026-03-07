@@ -71,10 +71,7 @@ export function DatePicker({
           onFocus={() => setOpen(true)}
           style={{ minWidth: 140 }}
         />
-        <IconButton
-          aria-label="Open calendar"
-          onClick={() => setOpen(!open)}
-        >
+        <IconButton aria-label="Open calendar" onClick={() => setOpen(!open)}>
           <CalendarIcon size={16} />
         </IconButton>
       </Trigger>

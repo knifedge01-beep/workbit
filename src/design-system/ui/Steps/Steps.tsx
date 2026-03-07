@@ -33,10 +33,14 @@ const Circle = styled.div<{ $status: StepStatus }>`
         ? p.theme.colors.primary
         : p.theme.colors.surfaceHover};
   color: ${(p) =>
-    p.$status === 'completed' || p.$status === 'active' ? '#FFFFFF' : p.theme.colors.textMuted};
+    p.$status === 'completed' || p.$status === 'active'
+      ? '#FFFFFF'
+      : p.theme.colors.textMuted};
   border: 2px solid
     ${(p) =>
-      p.$status === 'upcoming' ? p.theme.colors.border : p.theme.colors.primary};
+      p.$status === 'upcoming'
+        ? p.theme.colors.border
+        : p.theme.colors.primary};
 `
 
 const Label = styled.span<{ $status: StepStatus }>`
@@ -67,17 +71,16 @@ type Props = {
   className?: string
 }
 
-export function Steps({
-  steps,
-  orientation = 'horizontal',
-  className,
-}: Props) {
+export function Steps({ steps, orientation = 'horizontal', className }: Props) {
   const vertical = orientation === 'vertical'
 
   return (
     <Container $vertical={vertical} className={className}>
       {steps.map((step, i) => (
-        <div key={step.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div
+          key={step.id}
+          style={{ display: 'flex', alignItems: 'center', gap: 8 }}
+        >
           {i > 0 && (vertical ? <ConnectorVertical /> : <Connector />)}
           <StepWrap $vertical={vertical}>
             <Circle $status={step.status}>

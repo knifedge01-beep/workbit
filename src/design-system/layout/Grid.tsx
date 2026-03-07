@@ -6,8 +6,13 @@ const StyledGrid = styled.div<{
 }>`
   display: grid;
   grid-template-columns: ${(p) =>
-    typeof p.$columns === 'string' ? p.$columns : `repeat(${p.$columns ?? 1}, 1fr)`};
-  gap: ${(p) => (p.$gap != null ? p.theme.spacing[p.$gap] ?? p.$gap : p.theme.spacing[2])}px;
+    typeof p.$columns === 'string'
+      ? p.$columns
+      : `repeat(${p.$columns ?? 1}, 1fr)`};
+  gap: ${(p) =>
+    p.$gap != null
+      ? (p.theme.spacing[p.$gap] ?? p.$gap)
+      : p.theme.spacing[2]}px;
 `
 
 type Props = {

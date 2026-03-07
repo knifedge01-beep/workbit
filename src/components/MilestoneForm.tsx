@@ -20,7 +20,7 @@ import {
   Paperclip,
 } from 'lucide-react'
 import { ResourceSelector } from './ResourceSelector'
-import { MILESTONE_MENU_ITEMS } from './milestoneMenuItems'
+import { MILESTONE_MENU_ITEMS } from './MilestoneMenuItems'
 
 const DatePickerGroup = styled.div`
   display: flex;
@@ -76,7 +76,8 @@ const InputRow = styled.div`
   border-top: 1px solid ${(p) => p.theme.colors.border};
   background: ${(p) => p.theme.colors.surface};
   flex-shrink: 0;
-  border-radius: 0 0 ${(p) => p.theme.radii?.md ?? 6}px ${(p) => p.theme.radii?.md ?? 6}px;
+  border-radius: 0 0 ${(p) => p.theme.radii?.md ?? 6}px
+    ${(p) => p.theme.radii?.md ?? 6}px;
 `
 
 const ChatAvatar = styled(Avatar)`
@@ -177,7 +178,10 @@ export function MilestoneForm({
           <IconButton aria-label="Drag to reorder">
             <GripVertical size={18} />
           </IconButton>
-          <Diamond size={20} style={{ color: 'var(--milestone-icon, #EAB308)', flexShrink: 0 }} />
+          <Diamond
+            size={20}
+            style={{ color: 'var(--milestone-icon, #EAB308)', flexShrink: 0 }}
+          />
           <Input
             variant="ghost"
             value={name}

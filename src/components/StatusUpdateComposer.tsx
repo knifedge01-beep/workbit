@@ -1,7 +1,13 @@
 import { useRef, useState } from 'react'
 import styled from 'styled-components'
 import { Paperclip } from 'lucide-react'
-import { Button, Menu, type MenuEntry, IconButton, EmojiSelector } from '@design-system'
+import {
+  Button,
+  Menu,
+  type MenuEntry,
+  IconButton,
+  EmojiSelector,
+} from '@design-system'
 import { ResourceSelector } from './ResourceSelector'
 import { STATUS_CONFIG, type ProjectStatus } from '../constants/projectStatus'
 
@@ -113,7 +119,8 @@ export function StatusUpdateComposer({
   onAddLink,
   className,
 }: Props) {
-  const [internalStatus, setInternalStatus] = useState<ProjectStatus>('on-track')
+  const [internalStatus, setInternalStatus] =
+    useState<ProjectStatus>('on-track')
   const [draft, setDraft] = useState('')
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -126,18 +133,23 @@ export function StatusUpdateComposer({
   const config = STATUS_CONFIG[status]
   const StatusIcon = config.Icon
 
-  const statusItems: MenuEntry[] = (['on-track', 'at-risk', 'off-track'] as const).map(
-    (key) => {
-      const c = STATUS_CONFIG[key]
-      const Icon = c.Icon
-      return {
-        id: key,
-        label: c.label,
-        icon: <Icon size={16} style={{ color: `var(--status-${key})` } as React.CSSProperties} />,
-        onClick: () => setStatus(key),
-      }
+  const statusItems: MenuEntry[] = (
+    ['on-track', 'at-risk', 'off-track'] as const
+  ).map((key) => {
+    const c = STATUS_CONFIG[key]
+    const Icon = c.Icon
+    return {
+      id: key,
+      label: c.label,
+      icon: (
+        <Icon
+          size={16}
+          style={{ color: `var(--status-${key})` } as React.CSSProperties}
+        />
+      ),
+      onClick: () => setStatus(key),
     }
-  )
+  })
 
   const handlePost = () => {
     const trimmed = draft.trim()
@@ -152,7 +164,9 @@ export function StatusUpdateComposer({
         <Menu
           placement="right"
           trigger={
-            <StatusPill $color={config.color as 'success' | 'warning' | 'error'}>
+            <StatusPill
+              $color={config.color as 'success' | 'warning' | 'error'}
+            >
               <StatusIcon size={14} />
               {config.label}
             </StatusPill>

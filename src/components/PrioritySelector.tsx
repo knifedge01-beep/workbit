@@ -18,7 +18,16 @@ const defaultPriorities: PriorityOption[] = [
   { id: 'low', label: 'Low', icon: <ArrowDownCircle size={16} /> },
   { id: 'medium', label: 'Medium', icon: <MinusCircle size={16} /> },
   { id: 'high', label: 'High', icon: <ArrowUpCircle size={16} /> },
-  { id: 'urgent', label: 'Urgent', icon: <AlertCircle size={16} style={{ color: 'var(--priority-urgent, #EF4444)' }} /> },
+  {
+    id: 'urgent',
+    label: 'Urgent',
+    icon: (
+      <AlertCircle
+        size={16}
+        style={{ color: 'var(--priority-urgent, #EF4444)' }}
+      />
+    ),
+  },
 ]
 
 const Wrapper = styled.div<{ $iconOnly?: boolean }>`
@@ -38,14 +47,19 @@ const Trigger = styled.button<{ $iconOnly?: boolean }>`
   font-size: 0.875rem;
   color: ${(p) => p.theme.colors.text};
   background: ${(p) => (p.$iconOnly ? 'transparent' : p.theme.colors.surface)};
-  border: ${(p) => (p.$iconOnly ? 'none' : `1px solid ${p.theme.colors.border}`)};
+  border: ${(p) =>
+    p.$iconOnly ? 'none' : `1px solid ${p.theme.colors.border}`};
   border-radius: ${(p) => p.theme.radii?.md ?? 6}px;
   cursor: pointer;
   text-align: left;
-  transition: border-color 0.15s, background 0.15s;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
   &:hover {
-    border-color: ${(p) => (p.$iconOnly ? 'transparent' : p.theme.colors.borderFocus)};
-    background: ${(p) => (p.$iconOnly ? p.theme.colors.surfaceHover : 'inherit')};
+    border-color: ${(p) =>
+      p.$iconOnly ? 'transparent' : p.theme.colors.borderFocus};
+    background: ${(p) =>
+      p.$iconOnly ? p.theme.colors.surfaceHover : 'inherit'};
   }
   svg {
     flex-shrink: 0;
@@ -79,12 +93,16 @@ const Item = styled.button<{ $selected: boolean }>`
   padding: ${(p) => p.theme.spacing[2]}px ${(p) => p.theme.spacing[3]}px;
   font-size: 0.875rem;
   color: ${(p) => p.theme.colors.text};
-  background: ${(p) => (p.$selected ? p.theme.colors.dropdownSelectedBg ?? '#E0F2FF' : 'transparent')};
+  background: ${(p) =>
+    p.$selected
+      ? (p.theme.colors.dropdownSelectedBg ?? '#E0F2FF')
+      : 'transparent'};
   border: none;
   cursor: pointer;
   text-align: left;
   &:hover {
-    background: ${(p) => p.theme.colors.dropdownHoverBg ?? p.theme.colors.surfaceHover};
+    background: ${(p) =>
+      p.theme.colors.dropdownHoverBg ?? p.theme.colors.surfaceHover};
   }
 `
 
@@ -154,7 +172,11 @@ export function PrioritySelector({
           <ItemIcon>{defaultPriorities[0].icon}</ItemIcon>
         )}
         {!iconOnly && (
-          <span style={{ color: selected ? undefined : 'var(--text-muted, #64748b)' }}>
+          <span
+            style={{
+              color: selected ? undefined : 'var(--text-muted, #64748b)',
+            }}
+          >
             {selected ? selected.label : placeholder}
           </span>
         )}

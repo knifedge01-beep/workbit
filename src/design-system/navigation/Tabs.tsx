@@ -19,10 +19,12 @@ const TabHorizontal = styled.button<{ $active: boolean }>`
   padding: ${(p) => p.theme.spacing[2]}px ${(p) => p.theme.spacing[3]}px;
   font-size: 0.875rem;
   font-weight: ${(p) => (p.$active ? 600 : 400)};
-  color: ${(p) => (p.$active ? p.theme.colors.primary : p.theme.colors.textMuted)};
+  color: ${(p) =>
+    p.$active ? p.theme.colors.primary : p.theme.colors.textMuted};
   background: none;
   border: none;
-  border-bottom: 2px solid ${(p) => (p.$active ? p.theme.colors.primary : 'transparent')};
+  border-bottom: 2px solid
+    ${(p) => (p.$active ? p.theme.colors.primary : 'transparent')};
   margin-bottom: -1px;
   cursor: pointer;
   display: inline-flex;
@@ -40,16 +42,20 @@ const TabVertical = styled.button<{ $active: boolean }>`
   font-weight: 400;
   text-align: left;
   color: ${(p) => (p.$active ? p.theme.colors.primary : p.theme.colors.text)};
-  background: ${(p) => (p.$active ? p.theme.colors.infoBg ?? '#E0F2FE' : 'transparent')};
+  background: ${(p) =>
+    p.$active ? (p.theme.colors.infoBg ?? '#E0F2FE') : 'transparent'};
   border: none;
   border-radius: ${(p) => p.theme.radii?.md ?? 6}px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: ${(p) => p.theme.spacing[2]}px;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
   &:hover {
-    background: ${(p) => (p.$active ? p.theme.colors.infoBg : p.theme.colors.surfaceHover)};
+    background: ${(p) =>
+      p.$active ? p.theme.colors.infoBg : p.theme.colors.surfaceHover};
   }
 `
 

@@ -43,8 +43,18 @@
 }
 
 .landing__gradient-bg {
-  background: radial-gradient(ellipse 80% 50% at 50% -20%, var(--workbit-accent-soft), transparent),
-    linear-gradient(180deg, var(--workbit-gradient-start) 0%, var(--workbit-gradient-mid) 40%, var(--workbit-gradient-end) 100%);
+  background:
+    radial-gradient(
+      ellipse 80% 50% at 50% -20%,
+      var(--workbit-accent-soft),
+      transparent
+    ),
+    linear-gradient(
+      180deg,
+      var(--workbit-gradient-start) 0%,
+      var(--workbit-gradient-mid) 40%,
+      var(--workbit-gradient-end) 100%
+    );
 }
 
 .landing__heading-xl {
@@ -78,7 +88,10 @@
   font-weight: 500;
   border-radius: 8px;
   cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    transform 0.15s ease;
   border: none;
   font-family: inherit;
 }
@@ -115,7 +128,7 @@
 }
 
 @media (max-width: 768px) {
-  .landing__nav a[href^="#"] {
+  .landing__nav a[href^='#'] {
     display: none;
   }
   .landing__nav {

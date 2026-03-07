@@ -1,4 +1,4 @@
-import { authFetch } from '../api/client'
+import { authFetch } from './client'
 
 export type ApiKeyListItem = {
   id: string

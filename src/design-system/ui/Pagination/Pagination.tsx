@@ -17,11 +17,13 @@ const PageBtn = styled.button<{ $active?: boolean }>`
   font-weight: ${(p) => (p.$active ? 600 : 400)};
   color: ${(p) => (p.$active ? '#FFFFFF' : p.theme.colors.text)};
   background: ${(p) => (p.$active ? p.theme.colors.primary : 'transparent')};
-  border: 1px solid ${(p) => (p.$active ? p.theme.colors.primary : p.theme.colors.border)};
+  border: 1px solid
+    ${(p) => (p.$active ? p.theme.colors.primary : p.theme.colors.border)};
   border-radius: ${(p) => p.theme.radii?.sm ?? 4}px;
   cursor: pointer;
   &:hover:not(:disabled) {
-    background: ${(p) => (p.$active ? p.theme.colors.primaryHover : p.theme.colors.surfaceHover)};
+    background: ${(p) =>
+      p.$active ? p.theme.colors.primaryHover : p.theme.colors.surfaceHover};
   }
   &:disabled {
     opacity: 0.5;
@@ -48,7 +50,11 @@ export function Pagination({
   } else {
     pages.push(1)
     if (page > 3) pages.push('ellipsis')
-    for (let i = Math.max(2, page - 1); i <= Math.min(totalPages - 1, page + 1); i++) {
+    for (
+      let i = Math.max(2, page - 1);
+      i <= Math.min(totalPages - 1, page + 1);
+      i++
+    ) {
       if (!pages.includes(i)) pages.push(i)
     }
     if (page < totalPages - 2) pages.push('ellipsis')

@@ -25,9 +25,17 @@ const PopupPanel = styled.div<{
     const gap = 8
     const a = p.$align
     const vertAlign =
-      a === 'start' ? 'top: 0' : a === 'end' ? 'bottom: 0' : 'top: 50%; transform: translateY(-50%)'
+      a === 'start'
+        ? 'top: 0'
+        : a === 'end'
+          ? 'bottom: 0'
+          : 'top: 50%; transform: translateY(-50%)'
     const horzAlign =
-      a === 'start' ? 'left: 0' : a === 'end' ? 'right: 0' : 'left: 50%; transform: translateX(-50%)'
+      a === 'start'
+        ? 'left: 0'
+        : a === 'end'
+          ? 'right: 0'
+          : 'left: 50%; transform: translateX(-50%)'
     switch (p.$placement) {
       case 'top':
         return `bottom: 100%; ${horzAlign}; margin-bottom: ${gap}px;`
@@ -147,7 +155,11 @@ export function Popup(props: Props) {
             handleTriggerClick()
           }
         }}
-        style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
       >
         {isControlledMode ? props.children : props.trigger}
       </div>

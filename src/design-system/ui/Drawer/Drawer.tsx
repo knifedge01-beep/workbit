@@ -57,13 +57,7 @@ type Props = {
   children: React.ReactNode
 }
 
-export function Drawer({
-  open,
-  onClose,
-  title,
-  width = 400,
-  children,
-}: Props) {
+export function Drawer({ open, onClose, title, width = 400, children }: Props) {
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()

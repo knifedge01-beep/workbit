@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
 import { useFetch } from './useFetch'
-import * as api from '../pages/apiKeysApi'
+import * as api from '../api/apiKeys'
 
 export type ApiKeyListItem = api.ApiKeyListItem
 export type CreateKeyResponse = api.CreateKeyResponse

@@ -96,7 +96,12 @@ type Props = {
   className?: string
 }
 
-export function Menu({ trigger, items, placement = 'bottom', className }: Props) {
+export function Menu({
+  trigger,
+  items,
+  placement = 'bottom',
+  className,
+}: Props) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const panelOnly = trigger === undefined

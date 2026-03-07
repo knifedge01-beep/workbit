@@ -3,10 +3,6 @@ import { LOGBIT_PROJECT_ID } from '../utils/errorHandling'
 import { getAccessToken } from '../pages/auth/supabaseClient'
 
 function getApiBase(): string {
-  const graphqlUrl = import.meta.env.VITE_GRAPHQL_URL
-  if (typeof graphqlUrl === 'string' && graphqlUrl) {
-    return `${new URL(graphqlUrl).origin}/api/v1`
-  }
   const apiUrl = import.meta.env.VITE_API_URL
   if (typeof apiUrl === 'string' && apiUrl) {
     const base = apiUrl.replace(/\/$/, '')

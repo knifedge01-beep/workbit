@@ -1,10 +1,6 @@
 import type { Request, Response } from 'express'
 import * as meModel from '../models/me.js'
 import * as issuesModel from '../models/issues.js'
-import { getTeamById } from '../db/teams.js'
-import { getProjectById } from '../db/projects.js'
-import { getMemberByUid } from '../db/members.js'
-import { getTeams as dbGetTeams } from '../db/teams.js'
 import { getUserId } from '../middleware/auth.js'
 import { logApiError } from '../utils/log.js'
 
@@ -17,27 +13,12 @@ export async function getMember(req: Request, res: Response) {
       res.status(401).json({ error: 'Unauthorized' })
       return
     }
-    const member = await getMemberByUid(userId)
+    const member = await meModel.getMemberForApi(userId)
     if (!member) {
       res.status(404).json({ error: 'Member not found' })
       return
     }
-    const teams = await dbGetTeams()
-    const teamsById = new Map(teams.map((t) => [t.id, t]))
-    const teamNames = member.teamIds
-      .map((tid) => teamsById.get(tid)?.name)
-      .filter(Boolean) as string[]
-    res.json({
-      id: member.id,
-      name: member.name,
-      username: member.username,
-      avatarSrc: member.avatarSrc,
-      status: member.status,
-      joined: member.joined,
-      provisioned: member.provisioned,
-      uid: member.uid ?? member.userAuthId ?? null,
-      teams: teamNames.length ? teamNames.join(', ') : '—',
-    })
+    res.json(member)
   } catch (e) {
     logApiError(e, 'me.getMember')
     res.status(500).json({ error: (e as Error).message })
@@ -60,26 +41,7 @@ export async function getMyIssues(req: Request, res: Response) {
       req,
       (req.headers['x-user-id'] as string) ?? DEFAULT_USER_ID
     )
-    const issues = await issuesModel.getMyIssues(userId)
-    const list = await Promise.all(
-      issues.map(async (i) => {
-        const [team, project] = await Promise.all([
-          getTeamById(i.teamId),
-          i.projectId ? getProjectById(i.projectId) : null,
-        ])
-        return {
-          id: i.id,
-          title: i.title,
-          assignee: i.assigneeName
-            ? { id: i.assigneeId ?? '', name: i.assigneeName }
-            : null,
-          date: i.date,
-          status: i.status,
-          team: team ? { id: i.teamId, name: team.name } : null,
-          project: project ? { id: i.projectId!, name: project.name } : null,
-        }
-      })
-    )
+    const list = await issuesModel.getMyIssuesForApi(userId)
     res.json(list)
   } catch (e) {
     logApiError(e, 'me.getMyIssues')

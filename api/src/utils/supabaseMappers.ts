@@ -1,6 +1,6 @@
 /**
  * Map between Supabase rows (snake_case) and domain entities (camelCase).
- * Used by supabaseStore for read/write.
+ * Row-to-entity mappers are used by db/ modules; storeToRows is used by supabaseStore (seeding only).
  */
 import type {
   Store,

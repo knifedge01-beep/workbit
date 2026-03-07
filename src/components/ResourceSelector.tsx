@@ -4,9 +4,25 @@ import type { MenuEntry } from '@design-system'
 import { Plus, Upload, FileText, Link } from 'lucide-react'
 
 const RESOURCE_MENU_ITEMS: MenuEntry[] = [
-  { id: 'choose-file', label: 'Choose file', icon: <Upload size={16} />, onClick: () => {} },
-  { id: 'create-document', label: 'Create document...', icon: <FileText size={16} />, onClick: () => {} },
-  { id: 'add-link', label: 'Add a link...', icon: <Link size={16} />, right: <span>Ctrl L</span>, onClick: () => {} },
+  {
+    id: 'choose-file',
+    label: 'Choose file',
+    icon: <Upload size={16} />,
+    onClick: () => {},
+  },
+  {
+    id: 'create-document',
+    label: 'Create document...',
+    icon: <FileText size={16} />,
+    onClick: () => {},
+  },
+  {
+    id: 'add-link',
+    label: 'Add a link...',
+    icon: <Link size={16} />,
+    right: <span>Ctrl L</span>,
+    onClick: () => {},
+  },
 ]
 
 const Section = styled.div`
@@ -53,16 +69,17 @@ export function ResourceSelector({
   }
 
   const items: MenuEntry[] = RESOURCE_MENU_ITEMS.map((entry) =>
-    'type' in entry ? entry : { ...entry, onClick: () => handleAction(entry.id) }
+    'type' in entry
+      ? entry
+      : { ...entry, onClick: () => handleAction(entry.id) }
   )
 
-  const menuTrigger =
-    trigger ?? (
-      <Button variant="ghost" size="sm">
-        <Plus size={16} style={{ flexShrink: 0 }} />
-        {triggerLabel}
-      </Button>
-    )
+  const menuTrigger = trigger ?? (
+    <Button variant="ghost" size="sm">
+      <Plus size={16} style={{ flexShrink: 0 }} />
+      {triggerLabel}
+    </Button>
+  )
 
   if (trigger != null) {
     return <Menu trigger={menuTrigger} items={items} className={className} />

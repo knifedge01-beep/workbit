@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express'
 import crypto from 'crypto'
 import { supabaseAdmin, isSupabaseConfigured } from '../utils/supabaseServer.js'
+import { logApiError } from '../utils/log.js'
 
 const KEY_PREFIX = 'wb_'
 
@@ -40,6 +41,7 @@ export async function createKey(req: Request, res: Response) {
     .single()
 
   if (error) {
+    logApiError(error, 'apiKeys.createKey', { userId: req.user?.id })
     res.status(500).json({ error: error.message })
     return
   }
@@ -69,6 +71,7 @@ export async function listKeys(req: Request, res: Response) {
     .order('created_at', { ascending: false })
 
   if (error) {
+    logApiError(error, 'apiKeys.listKeys', { userId: req.user?.id })
     res.status(500).json({ error: error.message })
     return
   }
@@ -104,6 +107,10 @@ export async function deleteKey(req: Request, res: Response) {
     .eq('user_id', req.user.id)
 
   if (error) {
+    logApiError(error, 'apiKeys.deleteKey', {
+      id: req.params.id,
+      userId: req.user?.id,
+    })
     res.status(500).json({ error: error.message })
     return
   }

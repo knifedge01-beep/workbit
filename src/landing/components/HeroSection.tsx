@@ -45,7 +45,9 @@ export function HeroSection() {
         >
           Plan. Track. Ship.
           <br />
-          <span style={{ color: 'var(--workbit-accent)' }}>Without the chaos.</span>
+          <span style={{ color: 'var(--workbit-accent)' }}>
+            Without the chaos.
+          </span>
         </motion.h1>
         <motion.p
           className="landing__text-muted"
@@ -54,11 +56,17 @@ export function HeroSection() {
           transition={{ duration: 0.5, delay: 0.3 }}
           style={{ margin: '0 auto 40px' }}
         >
-          Workbit keeps your team aligned with clear projects, issues, and cycles.
-          Built for speed and clarity—so you spend less time in tools and more time building.
+          Workbit keeps your team aligned with clear projects, issues, and
+          cycles. Built for speed and clarity—so you spend less time in tools
+          and more time building.
         </motion.p>
         <motion.div
-          style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}
+          style={{
+            display: 'flex',
+            gap: 16,
+            justifyContent: 'center',
+            flexWrap: 'wrap',
+          }}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.4 }}
@@ -117,7 +125,10 @@ export function HeroSection() {
             }}
           >
             {['Project', 'Issues', 'Status'].map((col) => (
-              <div key={col} style={{ fontWeight: 600, color: 'var(--workbit-text)' }}>
+              <div
+                key={col}
+                style={{ fontWeight: 600, color: 'var(--workbit-text)' }}
+              >
                 {col}
               </div>
             ))}

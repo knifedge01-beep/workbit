@@ -11,6 +11,7 @@ import {
   Modal,
   Input,
   Select,
+  Alert,
 } from '@design-system'
 import { StatusSelector, PrioritySelector } from '../components'
 import {
@@ -22,7 +23,7 @@ import {
 import { useFetch } from '../hooks/useFetch'
 import { useWorkspace } from '../contexts/WorkspaceContext'
 import { formatDateTime } from '../utils/format'
-import { logError } from '../utils/errorHandling'
+import { logError, getErrorMessage } from '../utils/errorHandling'
 
 export function MyIssuesScreen() {
   const { currentWorkspace } = useWorkspace()
@@ -41,6 +42,7 @@ export function MyIssuesScreen() {
   const [showModal, setShowModal] = useState(false)
   const [issueTitle, setIssueTitle] = useState('')
   const [selectedTeam, setSelectedTeam] = useState('')
+  const [createError, setCreateError] = useState<string | null>(null)
 
   const issues = (data ?? []).map((i) => ({
     ...i,
@@ -69,6 +71,7 @@ export function MyIssuesScreen() {
   const handleCreateIssue = async () => {
     if (!issueTitle.trim()) return
 
+    setCreateError(null)
     setCreating(true)
     try {
       const teamIdOptional =
@@ -80,7 +83,7 @@ export function MyIssuesScreen() {
       setSelectedTeam('')
     } catch (err) {
       logError(err, 'MyIssues')
-      alert(`Failed to create issue: ${err}`)
+      setCreateError(getErrorMessage(err))
     } finally {
       setCreating(false)
     }
@@ -88,6 +91,7 @@ export function MyIssuesScreen() {
 
   return (
     <Stack gap={4}>
+      {createError && <Alert variant="error">{createError}</Alert>}
       <Flex align="center" justify="space-between">
         <PageHeader
           title="My issues"

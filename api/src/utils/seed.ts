@@ -338,7 +338,7 @@ export function getDummyStore(): Store {
       },
       {
         id: 'PLAT-2',
-        title: 'GraphQL schema docs',
+        title: 'API docs',
         date: 'Feb 19',
         status: 'backlog',
         teamId: 'team-platform',

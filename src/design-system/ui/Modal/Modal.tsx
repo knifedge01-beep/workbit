@@ -35,7 +35,9 @@ const Overlay = styled.div`
 
 const Panel = styled.div<{ $variant: ModalVariant }>`
   background: ${(p) =>
-    p.$variant === 'promotional' ? p.theme.colors.primary : p.theme.colors.surface};
+    p.$variant === 'promotional'
+      ? p.theme.colors.primary
+      : p.theme.colors.surface};
   border: 1px solid ${(p) => p.theme.colors.border};
   border-radius: ${(p) => p.theme.radii?.lg ?? 8}px;
   max-width: 100%;
@@ -151,50 +153,51 @@ export function Modal({
             transition={{ duration: 0.2 }}
             onClick={(e: React.MouseEvent) => e.stopPropagation()}
           >
-        {!isBlank && (
-          <Header $centered={isCentered && !title}>
-            {title != null ? (
-              <Title $promotional={isPromotional}>{title}</Title>
-            ) : null}
-            <CloseWrap $promotional={isPromotional}>
-              <IconButton aria-label="Close" onClick={onClose}>
-                <X size={16} />
-              </IconButton>
-            </CloseWrap>
-          </Header>
-        )}
-        {isBlank && (
-          <div style={{ position: 'absolute', top: 8, right: 8 }}>
-            <IconButton aria-label="Close" onClick={onClose}>
-              <X size={16} />
-            </IconButton>
-          </div>
-        )}
-        <Body $centered={isCentered} $promotional={isPromotional}>
-          {icon != null && (variant === 'message' || variant === 'success') && (
-            <IconWrap $promotional={isPromotional}>{icon}</IconWrap>
-          )}
-          {children}
-        </Body>
-        {!isBlank && (primaryLabel != null || secondaryLabel != null) && (
-          <Footer $centered={isCentered && secondaryLabel == null}>
-            {secondaryLabel != null && onSecondary != null && (
-              <Button variant="ghost" onClick={onSecondary}>
-                {secondaryLabel}
-              </Button>
+            {!isBlank && (
+              <Header $centered={isCentered && !title}>
+                {title != null ? (
+                  <Title $promotional={isPromotional}>{title}</Title>
+                ) : null}
+                <CloseWrap $promotional={isPromotional}>
+                  <IconButton aria-label="Close" onClick={onClose}>
+                    <X size={16} />
+                  </IconButton>
+                </CloseWrap>
+              </Header>
             )}
-            {primaryLabel != null && onPrimary != null && (
-              <PrimaryButton
-                $destructive={isDestructive}
-                $promotional={isPromotional}
-                variant="primary"
-                onClick={onPrimary}
-              >
-                {primaryLabel}
-              </PrimaryButton>
+            {isBlank && (
+              <div style={{ position: 'absolute', top: 8, right: 8 }}>
+                <IconButton aria-label="Close" onClick={onClose}>
+                  <X size={16} />
+                </IconButton>
+              </div>
             )}
-          </Footer>
-        )}
+            <Body $centered={isCentered} $promotional={isPromotional}>
+              {icon != null &&
+                (variant === 'message' || variant === 'success') && (
+                  <IconWrap $promotional={isPromotional}>{icon}</IconWrap>
+                )}
+              {children}
+            </Body>
+            {!isBlank && (primaryLabel != null || secondaryLabel != null) && (
+              <Footer $centered={isCentered && secondaryLabel == null}>
+                {secondaryLabel != null && onSecondary != null && (
+                  <Button variant="ghost" onClick={onSecondary}>
+                    {secondaryLabel}
+                  </Button>
+                )}
+                {primaryLabel != null && onPrimary != null && (
+                  <PrimaryButton
+                    $destructive={isDestructive}
+                    $promotional={isPromotional}
+                    variant="primary"
+                    onClick={onPrimary}
+                  >
+                    {primaryLabel}
+                  </PrimaryButton>
+                )}
+              </Footer>
+            )}
           </Panel>
         </Overlay>
       )}

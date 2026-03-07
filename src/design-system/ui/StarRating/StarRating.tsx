@@ -8,19 +8,19 @@ const Wrap = styled.span`
 `
 
 const StarFilled = styled(Star)`
-  color: #EAB308;
-  fill: #EAB308;
+  color: #eab308;
+  fill: #eab308;
 `
 
 const StarEmpty = styled(Star)`
-  color: #D1D5DB;
+  color: #d1d5db;
 `
 
 const StarHalfWrap = styled.span`
   position: relative;
   display: inline-flex;
   .bg {
-    color: #D1D5DB;
+    color: #d1d5db;
   }
   .fg {
     position: absolute;
@@ -28,8 +28,8 @@ const StarHalfWrap = styled.span`
     top: 0;
     width: 50%;
     overflow: hidden;
-    color: #EAB308;
-    fill: #EAB308;
+    color: #eab308;
+    fill: #eab308;
   }
 `
 

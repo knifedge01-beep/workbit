@@ -21,7 +21,8 @@ const Box = styled.span<{ $checked: boolean }>`
   height: 16px;
   border: 1px solid ${(p) => p.theme.colors.border};
   border-radius: 3px;
-  background: ${(p) => (p.$checked ? p.theme.colors.primary : p.theme.colors.surface)};
+  background: ${(p) =>
+    p.$checked ? p.theme.colors.primary : p.theme.colors.surface};
   display: flex;
   align-items: center;
   justify-content: center;

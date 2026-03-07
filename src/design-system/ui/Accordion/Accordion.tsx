@@ -6,9 +6,24 @@ import { ChevronDown } from 'lucide-react'
 type AccordionSize = 'large' | 'medium' | 'small'
 
 const sizeMap = {
-  large: { headerPadding: '16px 20px', contentPadding: '16px 20px', fontSize: '1rem', contentSize: '0.9375rem' },
-  medium: { headerPadding: '12px 16px', contentPadding: '12px 16px', fontSize: '0.9375rem', contentSize: '0.875rem' },
-  small: { headerPadding: '8px 12px', contentPadding: '8px 12px', fontSize: '0.875rem', contentSize: '0.8125rem' },
+  large: {
+    headerPadding: '16px 20px',
+    contentPadding: '16px 20px',
+    fontSize: '1rem',
+    contentSize: '0.9375rem',
+  },
+  medium: {
+    headerPadding: '12px 16px',
+    contentPadding: '12px 16px',
+    fontSize: '0.9375rem',
+    contentSize: '0.875rem',
+  },
+  small: {
+    headerPadding: '8px 12px',
+    contentPadding: '8px 12px',
+    fontSize: '0.875rem',
+    contentSize: '0.8125rem',
+  },
 }
 
 const Item = styled.div`
@@ -71,7 +86,9 @@ export function Accordion({
   const toggle = (id: string) => {
     setOpenId((prev) => {
       if (prev === id) return null
-      return singleOpen ? id : (prev ? `${prev},${id}` : id) as unknown as string
+      return singleOpen
+        ? id
+        : ((prev ? `${prev},${id}` : id) as unknown as string)
     })
   }
 

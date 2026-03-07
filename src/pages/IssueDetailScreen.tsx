@@ -354,7 +354,6 @@ export function IssueDetailScreen({
   const handleSendComment = async () => {
     if (!comment.trim()) return
     // TODO: Implement comment API when backend supports it
-    console.log('Comment:', comment)
     setComment('')
   }
 
@@ -553,9 +552,9 @@ export function IssueDetailScreen({
             <PropertyValue>
               <PrioritySelector
                 value={issue.priority}
-                onChange={() =>
-                  console.log('Priority change - not yet implemented')
-                }
+                onChange={() => {
+                  // TODO: Implement priority change when backend supports it
+                }}
                 triggerVariant="default"
               />
             </PropertyValue>

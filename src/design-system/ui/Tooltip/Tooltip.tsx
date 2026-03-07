@@ -19,10 +19,9 @@ const Popover = styled.div<{
   z-index: 100;
   background: ${(p) =>
     p.$variant === 'dark'
-      ? p.theme.colors.tooltipDarkBg ?? '#2C3E50'
+      ? (p.theme.colors.tooltipDarkBg ?? '#2C3E50')
       : p.theme.colors.background};
-  color: ${(p) =>
-    p.$variant === 'dark' ? '#FFFFFF' : p.theme.colors.text};
+  color: ${(p) => (p.$variant === 'dark' ? '#FFFFFF' : p.theme.colors.text)};
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   ${(p) =>
     p.$position === 'top' &&
@@ -43,7 +42,7 @@ const Popover = styled.div<{
     ${(p) => {
       const bg =
         p.$variant === 'dark'
-          ? p.theme.colors.tooltipDarkBg ?? '#2C3E50'
+          ? (p.theme.colors.tooltipDarkBg ?? '#2C3E50')
           : p.theme.colors.background
       switch (p.$position) {
         case 'top':

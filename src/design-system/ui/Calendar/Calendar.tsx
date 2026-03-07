@@ -26,7 +26,11 @@ const Weekday = styled.div`
   padding: ${(p) => p.theme.spacing[1]}px;
 `
 
-const Day = styled.button<{ $today?: boolean; $selected?: boolean; $other?: boolean }>`
+const Day = styled.button<{
+  $today?: boolean
+  $selected?: boolean
+  $other?: boolean
+}>`
   width: 28px;
   height: 28px;
   font-size: 0.8125rem;
@@ -44,7 +48,8 @@ const Day = styled.button<{ $today?: boolean; $selected?: boolean; $other?: bool
   }};
   cursor: pointer;
   &:hover {
-    background: ${(p) => (p.$selected ? p.theme.colors.primaryHover : p.theme.colors.surfaceHover)};
+    background: ${(p) =>
+      p.$selected ? p.theme.colors.primaryHover : p.theme.colors.surfaceHover};
   }
 `
 
@@ -60,7 +65,11 @@ function getDaysInMonth(year: number, month: number) {
 }
 
 function isSameDay(a: Date, b: Date) {
-  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate()
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  )
 }
 
 type Props = {

@@ -27,5 +27,7 @@ export const CollapsibleContent = styled.div<{
   overflow: hidden;
   max-height: ${(p) => (p.$open ? `${p.$maxHeightWhenOpen ?? 800}px` : '0')};
   opacity: ${(p) => (p.$open ? 1 : 0)};
-  transition: max-height 0.2s ease, opacity 0.2s ease;
+  transition:
+    max-height 0.2s ease,
+    opacity 0.2s ease;
 `

@@ -1,6 +1,6 @@
 import './loadEnv.js'
 import { init as initLogbit, logbit } from '@thedatablitz/logbit-sdk'
-import express, { type Request } from 'express'
+import express from 'express'
 
 initLogbit({
   service: 'workbit-api',
@@ -14,8 +14,6 @@ initLogbit({
   }),
 })
 import cors from 'cors'
-import { graphqlHTTP } from 'express-graphql'
-import { schema } from './graphql/schema.js'
 import { optionalAuth, requireAuthWhenConfigured } from './middleware/auth.js'
 import { workspaceRoutes } from './routes/workspace.js'
 import { workspacesRoutes } from './routes/workspaces.js'
@@ -34,16 +32,6 @@ const API_PREFIX = '/api/v1'
 const app = express()
 app.use(cors())
 app.use(express.json())
-
-app.use('/graphql', optionalAuth)
-app.use(
-  '/graphql',
-  graphqlHTTP({
-    schema,
-    graphiql: true,
-    context: (req: Request) => ({ req }),
-  })
-)
 
 app.use(API_PREFIX, optionalAuth)
 app.use(API_PREFIX, requireAuthWhenConfigured)

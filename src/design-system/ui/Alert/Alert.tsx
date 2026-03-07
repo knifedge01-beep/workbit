@@ -1,10 +1,14 @@
 import styled from 'styled-components'
 
 const variantStyles = {
-  info: (c: { info: string; infoBg: string }) => `background: ${c.infoBg}; color: ${c.info}; border-color: ${c.info};`,
-  success: (c: { success: string; successBg: string }) => `background: ${c.successBg}; color: ${c.success}; border-color: ${c.success};`,
-  warning: (c: { warning: string; warningBg: string }) => `background: ${c.warningBg}; color: ${c.warning}; border-color: ${c.warning};`,
-  error: (c: { error: string; errorBg: string }) => `background: ${c.errorBg}; color: ${c.error}; border-color: ${c.error};`,
+  info: (c: { info: string; infoBg: string }) =>
+    `background: ${c.infoBg}; color: ${c.info}; border-color: ${c.info};`,
+  success: (c: { success: string; successBg: string }) =>
+    `background: ${c.successBg}; color: ${c.success}; border-color: ${c.success};`,
+  warning: (c: { warning: string; warningBg: string }) =>
+    `background: ${c.warningBg}; color: ${c.warning}; border-color: ${c.warning};`,
+  error: (c: { error: string; errorBg: string }) =>
+    `background: ${c.errorBg}; color: ${c.error}; border-color: ${c.error};`,
 }
 
 const StyledAlert = styled.div<{ $variant: keyof typeof variantStyles }>`

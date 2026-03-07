@@ -30,7 +30,8 @@ const Row = styled.button<{ $depth: number; $selected: boolean }>`
   margin: 0;
   border: none;
   border-radius: 4px;
-  background: ${(p) => (p.$selected ? p.theme.colors.surfaceHover : 'transparent')};
+  background: ${(p) =>
+    p.$selected ? p.theme.colors.surfaceHover : 'transparent'};
   color: ${(p) => p.theme.colors.text};
   font-size: 0.875rem;
   text-align: left;

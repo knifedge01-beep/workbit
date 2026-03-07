@@ -9,7 +9,10 @@ const StyledFlex = styled.div<{
 }>`
   display: flex;
   flex-direction: ${(p) => p.$direction ?? 'row'};
-  gap: ${(p) => (p.$gap != null ? p.theme.spacing[p.$gap] ?? p.$gap : p.theme.spacing[2])}px;
+  gap: ${(p) =>
+    p.$gap != null
+      ? (p.theme.spacing[p.$gap] ?? p.$gap)
+      : p.theme.spacing[2]}px;
   align-items: ${(p) => p.$align ?? 'stretch'};
   justify-content: ${(p) => p.$justify ?? 'flex-start'};
   flex-wrap: ${(p) => (p.$wrap ? 'wrap' : 'nowrap')};

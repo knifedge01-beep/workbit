@@ -6,7 +6,9 @@ export function ThemeToggle() {
   const { mode, toggle } = useTheme()
   return (
     <IconButton
-      aria-label={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+      aria-label={
+        mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'
+      }
       onClick={toggle}
     >
       {mode === 'dark' ? <Sun size={18} /> : <Moon size={18} />}

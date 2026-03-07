@@ -76,7 +76,7 @@ export async function createIssue(input: {
       throw new Error('Team not found')
     }
   }
-
+  console.log('input', input)
   const issue: Issue = {
     id: `ISS-${Date.now()}`,
     title: input.title,
@@ -153,16 +153,15 @@ export async function createIssueForApi(input: {
     team = await getTeamById(input.teamId)
     if (!team) throw new Error('Team not found: ' + input.teamId)
   }
-  let projectId = input.projectId
+  const projectId = input.projectId
   if (projectId != null && projectId !== '' && input.teamId) {
     const project = await getProjectById(projectId)
     if (!project) throw new Error('Project not found: ' + projectId)
     if (project.teamId !== input.teamId) {
       throw new Error('Project does not belong to this team')
     }
-  } else if (!input.teamId) {
-    projectId = undefined
   }
+
   const issue = await createIssue({
     teamId: input.teamId,
     projectId,

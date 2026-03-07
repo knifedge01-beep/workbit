@@ -43,7 +43,9 @@ export async function createIssue(req: Request, res: Response) {
       teamIdFromParams ??
       (body.teamId && body.teamId !== '' ? body.teamId : undefined)
     const title = body.title
-    const description = body.description ?? body.body
+    const description = body.description
+    console.log('body', body)
+    console.log(body.projectId)
     if (!title || !title.trim()) {
       res.status(400).json({ error: 'title is required' })
       return
@@ -65,7 +67,7 @@ export async function createIssue(req: Request, res: Response) {
         status: issue.status,
         teamId: issue.teamId ?? null,
         team: team ? { id: team.id, name: team.name } : null,
-        project: null,
+        project_id: issue.projectId ?? null,
       })
       return
     }

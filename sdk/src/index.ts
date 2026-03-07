@@ -6,7 +6,7 @@ export interface WorkbitInitConfig {
 export interface CreateIssueParams {
   title: string
   projectId: string
-  body?: string
+  description?: string
 }
 
 export interface CreatedIssue {
@@ -48,9 +48,7 @@ export const workbit = {
         'x-api-key': config.apiKey,
       },
       body: JSON.stringify({
-        project_id: params.projectId,
-        title: params.title,
-        description: params.body,
+        ...params,
       }),
     })
     const data = await res.json().catch(() => ({}))

@@ -74,7 +74,7 @@ export type ProjectStatus = 'on-track' | 'at-risk' | 'off-track'
 
 export interface StatusUpdate {
   id: string
-  teamId: string
+  teamId: string | null
   status: ProjectStatus
   content: string
   authorId: string
@@ -82,6 +82,9 @@ export interface StatusUpdate {
   authorAvatarSrc?: string
   createdAt: string
   commentCount: number
+  projectId?: string | null
+  issueId?: string | null
+  milestoneId?: string | null
 }
 
 export interface StatusUpdateComment {
@@ -91,6 +94,15 @@ export interface StatusUpdateComment {
   authorAvatarSrc?: string
   content: string
   timestamp: string
+}
+
+export interface IssueComment {
+  id: string
+  issueId: string
+  authorName: string
+  authorAvatarSrc?: string
+  content: string
+  createdAt: string
 }
 
 export interface ProjectProperties {

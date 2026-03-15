@@ -1,0 +1,44 @@
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+import { z } from 'zod'
+import { makeWorkbitRequest } from '../utils/workbitClient.js'
+import { logMcpError } from '../logging.js'
+
+export function registerGetIssueTool(server: McpServer): void {
+  server.registerTool(
+    'getIssue',
+    {
+      description: 'Get a Workbit issue by ID.',
+      inputSchema: {
+        issueId: z.string().min(1).describe('The issue ID to fetch.'),
+      },
+    },
+    async ({ issueId }) => {
+      try {
+        const issue = await makeWorkbitRequest<unknown>(
+          `/issues/${encodeURIComponent(issueId)}`
+        )
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(issue, null, 2),
+            },
+          ],
+        }
+      } catch (error) {
+        logMcpError(error, 'tools.getIssue', { issueId })
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Failed to fetch issue from Workbit API: ${
+                (error as Error).message
+              }`,
+            },
+          ],
+        }
+      }
+    }
+  )
+}

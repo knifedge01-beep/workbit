@@ -100,7 +100,7 @@ export function rowToInvitation(r: DbRow): Invitation {
 export function rowToStatusUpdate(r: DbRow): StatusUpdate {
   return {
     id: r.id as string,
-    teamId: r.team_id as string,
+    teamId: (r.team_id as string | null) ?? null,
     status: r.status as ProjectStatus,
     content: r.content as string,
     authorId: r.author_id as string,
@@ -108,6 +108,9 @@ export function rowToStatusUpdate(r: DbRow): StatusUpdate {
     authorAvatarSrc: r.author_avatar_src as string | undefined,
     createdAt: r.created_at as string,
     commentCount: (r.comment_count as number) ?? 0,
+    projectId: (r.project_id as string | undefined) ?? null,
+    issueId: (r.issue_id as string | undefined) ?? null,
+    milestoneId: (r.milestone_id as string | undefined) ?? null,
   }
 }
 
@@ -253,7 +256,7 @@ function invitationToRow(i: Invitation): Record<string, unknown> {
 function statusUpdateToRow(u: StatusUpdate): Record<string, unknown> {
   return {
     id: u.id,
-    team_id: u.teamId,
+    team_id: u.teamId ?? null,
     status: u.status,
     content: u.content,
     author_id: u.authorId,
@@ -261,6 +264,9 @@ function statusUpdateToRow(u: StatusUpdate): Record<string, unknown> {
     author_avatar_src: u.authorAvatarSrc ?? null,
     created_at: u.createdAt,
     comment_count: u.commentCount ?? 0,
+    project_id: u.projectId ?? null,
+    issue_id: u.issueId ?? null,
+    milestone_id: u.milestoneId ?? null,
   }
 }
 

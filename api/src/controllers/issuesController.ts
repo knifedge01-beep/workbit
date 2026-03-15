@@ -2,6 +2,8 @@ import type { Request, Response } from 'express'
 import * as issuesModel from '../models/issues.js'
 import { logApiError } from '../utils/log.js'
 
+const DEFAULT_AUTHOR_NAME = 'You'
+
 export async function getTeamIssues(req: Request, res: Response) {
   try {
     const { teamId } = req.params
@@ -44,8 +46,7 @@ export async function createIssue(req: Request, res: Response) {
       (body.teamId && body.teamId !== '' ? body.teamId : undefined)
     const title = body.title
     const description = body.description
-    console.log('body', body)
-    console.log(body.projectId)
+
     if (!title || !title.trim()) {
       res.status(400).json({ error: 'title is required' })
       return
@@ -87,6 +88,60 @@ export async function createIssue(req: Request, res: Response) {
       return
     }
     res.status(500).json({ error: msg })
+  }
+}
+
+export async function getIssueComments(req: Request, res: Response) {
+  try {
+    const { issueId } = req.params
+    const comments = await issuesModel.getIssueComments(issueId)
+    res.json(
+      comments.map((c) => ({
+        id: c.id,
+        authorName: c.authorName,
+        authorAvatarSrc: c.authorAvatarSrc,
+        content: c.content,
+        createdAt: c.createdAt,
+      }))
+    )
+  } catch (e) {
+    logApiError(e, 'issues.getIssueComments', {
+      issueId: req.params.issueId,
+    })
+    res.status(500).json({ error: (e as Error).message })
+  }
+}
+
+export async function postIssueComment(req: Request, res: Response) {
+  try {
+    const { issueId } = req.params
+    const { content } = req.body as { content?: string }
+    if (!content || typeof content !== 'string') {
+      res.status(400).json({ error: 'content is required' })
+      return
+    }
+    const authorName = req.user?.email ?? DEFAULT_AUTHOR_NAME
+    const comment = await issuesModel.addIssueComment(issueId, content, {
+      name: authorName,
+      avatarSrc: undefined,
+    })
+    res.status(201).json({
+      id: comment.id,
+      authorName: comment.authorName,
+      authorAvatarSrc: comment.authorAvatarSrc,
+      content: comment.content,
+      createdAt: comment.createdAt,
+    })
+  } catch (e) {
+    logApiError(e, 'issues.postIssueComment', {
+      issueId: req.params.issueId,
+    })
+    const err = e as Error
+    if (err.message === 'Issue not found') {
+      res.status(404).json({ error: err.message })
+      return
+    }
+    res.status(500).json({ error: err.message })
   }
 }
 

@@ -14,9 +14,25 @@ import * as dbProjectProperties from '../db/projectProperties.js'
 import * as dbMilestones from '../db/milestones.js'
 import * as dbActivity from '../db/activity.js'
 import * as dbViews from '../db/views.js'
+import * as dbProjects from '../db/projects.js'
 
 export async function getTeamById(teamId: string): Promise<Team | null> {
   return dbTeams.getTeamById(teamId)
+}
+
+/** Returns the project if it exists and belongs to the given team. */
+export async function getProjectByIdIfBelongsToTeam(
+  projectId: string,
+  teamId: string
+): Promise<{
+  id: string
+  name: string
+  teamId: string
+  status: string
+} | null> {
+  const project = await dbProjects.getProjectById(projectId)
+  if (!project || project.teamId !== teamId) return null
+  return project
 }
 
 export async function getTeamProject(teamId: string) {
@@ -29,7 +45,7 @@ export async function getTeamProject(teamId: string) {
     }
   }
   const [updates, properties, milestones, activity] = await Promise.all([
-    dbStatusUpdates.getStatusUpdatesByTeamId(teamId, 20),
+    dbStatusUpdates.getStatusUpdatesByProjectId(team.projectId, 20),
     dbProjectProperties.getProjectPropertiesByTeamId(teamId),
     dbMilestones.getMilestonesByTeamId(teamId),
     dbActivity.getActivityByTeamId(teamId),
@@ -55,15 +71,27 @@ export async function getStatusUpdateComments(
   return dbStatusUpdateComments.getStatusUpdateCommentsByUpdateId(updateId)
 }
 
+export async function getStatusUpdatesByIssueId(
+  issueId: string,
+  limit = 20
+): Promise<StatusUpdate[]> {
+  return dbStatusUpdates.getStatusUpdatesByIssueId(issueId, limit)
+}
+
 export async function addStatusUpdate(
-  teamId: string,
+  teamId: string | null,
   content: string,
   status: 'on-track' | 'at-risk' | 'off-track',
-  author: { id: string; name: string; avatarSrc?: string }
+  author: { id: string; name: string; avatarSrc?: string },
+  options?: {
+    projectId?: string | null
+    issueId?: string | null
+    milestoneId?: string | null
+  }
 ): Promise<StatusUpdate> {
   const update: StatusUpdate = {
     id: generateId(),
-    teamId,
+    teamId: teamId ?? null,
     status,
     content,
     authorId: author.id,
@@ -71,6 +99,9 @@ export async function addStatusUpdate(
     authorAvatarSrc: author.avatarSrc,
     createdAt: new Date().toISOString(),
     commentCount: 0,
+    projectId: options?.projectId ?? null,
+    issueId: options?.issueId ?? null,
+    milestoneId: options?.milestoneId ?? null,
   }
   await dbStatusUpdates.insertStatusUpdate(update)
   return update

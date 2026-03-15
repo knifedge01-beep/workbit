@@ -1,16 +1,7 @@
 import { useState, useRef, useCallback } from 'react'
 import styled from 'styled-components'
-import {
-  ChevronLeft,
-  ChevronRight,
-  Star,
-  Link2,
-  MoreHorizontal,
-  Paperclip,
-  Send,
-  Plus,
-} from 'lucide-react'
-import { Avatar, Select, RichText } from '@design-system'
+import { Link2, Paperclip, Send, Plus } from 'lucide-react'
+import { Avatar, Select, RichText, Button } from '@design-system'
 import {
   StatusSelector,
   PrioritySelector,
@@ -20,13 +11,17 @@ import {
 } from '../components'
 import { useWorkspace } from '../contexts/WorkspaceContext'
 import { useFetch } from '../hooks/useFetch'
-import { fetchIssue, updateIssue } from '../api/client'
+import {
+  fetchIssue,
+  updateIssue,
+  fetchIssueComments,
+  postIssueComment,
+} from '../api/client'
 import {
   formatDateTime,
   logError,
   IconBtn,
   AddButton,
-  Divider,
   Section,
   SectionTitle,
   Breadcrumb,
@@ -40,14 +35,6 @@ type Props = {
 }
 
 // ===== STYLED COMPONENTS =====
-
-const HeaderControls = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 24px;
-  justify-content: flex-end;
-`
 
 const Container = styled.div`
   display: grid;
@@ -186,43 +173,19 @@ const CommentInput = styled.div`
   display: flex;
   gap: 12px;
   margin-top: 24px;
+  align-items: flex-start;
 `
 
-const CommentTextarea = styled.textarea`
+const CommentEditorWrap = styled.div`
   flex: 1;
-  min-height: 80px;
-  padding: 12px;
-  border: 1px solid #e6e8eb;
-  border-radius: 8px;
-  font-size: 14px;
-  font-family: Inter, sans-serif;
-  resize: vertical;
-  transition: border-color 0.15s;
-  &:focus {
-    outline: none;
-    border-color: #6366f1;
-  }
-  &::placeholder {
-    color: #9ca3af;
-  }
+  min-width: 0;
 `
 
-const SendButton = styled.button`
-  padding: 8px 16px;
-  background: #6366f1;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
+const CommentToolbar = styled.div`
   display: flex;
   align-items: center;
-  gap: 6px;
-  transition: background 0.15s;
-  &:hover {
-    background: #4f46e5;
-  }
+  justify-content: space-between;
+  margin-top: 8px;
 `
 
 const PropertiesPanel = styled.aside`
@@ -306,6 +269,12 @@ export function IssueDetailScreen({
     reload,
   } = useFetch(() => fetchIssue(issueId), [issueId])
 
+  // Fetch issue comments (from issue_comments table)
+  const { data: issueComments, reload: reloadComments } = useFetch(
+    () => fetchIssueComments(issueId),
+    [issueId]
+  )
+
   const teamProjects = teamId
     ? workspaceProjects.filter((p) => p.team.id === teamId)
     : []
@@ -350,11 +319,18 @@ export function IssueDetailScreen({
       .catch((e) => logError(e, 'Description update'))
   }, [issueId, reload])
 
-  // Handle comment submission
+  // Handle comment submission (comment may contain HTML from RichText)
+  // Stores in issue_comments table
   const handleSendComment = async () => {
-    if (!comment.trim()) return
-    // TODO: Implement comment API when backend supports it
-    setComment('')
+    const plain = comment.replace(/<[^>]*>/g, '').trim()
+    if (!plain) return
+    try {
+      await postIssueComment(issueId, comment)
+      setComment('')
+      await reloadComments()
+    } catch (e) {
+      logError(e, 'IssueDetail.comment')
+    }
   }
 
   if (loading) {
@@ -405,13 +381,18 @@ export function IssueDetailScreen({
   // Mock resources (TODO: Add to backend)
   const resources: Array<{ title: string; url: string }> = []
 
-  // Mock comments (TODO: Add to backend)
+  // Comments from issue_comments table
   const comments: Array<{
     id: string
     author: string
     timestamp: string
     body: string
-  }> = []
+  }> = (issueComments ?? []).map((c) => ({
+    id: c.id,
+    author: c.authorName,
+    timestamp: formatDateTime(c.createdAt),
+    body: c.content,
+  }))
 
   return (
     <Container>
@@ -419,24 +400,6 @@ export function IssueDetailScreen({
         <Breadcrumb>
           {teamName} &gt; {issue.project} &gt; <span>{issue.id}</span>
         </Breadcrumb>
-        <HeaderControls>
-          <IconBtn aria-label="Star">
-            <Star size={16} />
-          </IconBtn>
-          <IconBtn aria-label="Copy link">
-            <Link2 size={16} />
-          </IconBtn>
-          <IconBtn aria-label="More">
-            <MoreHorizontal size={16} />
-          </IconBtn>
-          <Divider />
-          <IconBtn aria-label="Previous issue">
-            <ChevronLeft size={16} />
-          </IconBtn>
-          <IconBtn aria-label="Next issue">
-            <ChevronRight size={16} />
-          </IconBtn>
-        </HeaderControls>
 
         <IssueHeader>
           <div>
@@ -497,7 +460,7 @@ export function IssueDetailScreen({
                       <CommentAuthor>{c.author}</CommentAuthor>
                       <CommentTime>{c.timestamp}</CommentTime>
                     </CommentHeader>
-                    <CommentBody>{c.body}</CommentBody>
+                    <CommentBody dangerouslySetInnerHTML={{ __html: c.body }} />
                   </CommentContent>
                 </CommentItem>
               ))}
@@ -508,28 +471,23 @@ export function IssueDetailScreen({
 
           <CommentInput>
             <Avatar name="You" size={32} />
-            <div style={{ flex: 1 }}>
-              <CommentTextarea
-                placeholder="Add a comment..."
+            <CommentEditorWrap>
+              <RichText
                 value={comment}
-                onChange={(e) => setComment(e.target.value)}
+                onChange={setComment}
+                placeholder="Add a comment… (bold, italic, lists)"
+                minHeight={100}
               />
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  marginTop: 8,
-                }}
-              >
-                <IconBtn>
+              <CommentToolbar>
+                <IconBtn aria-label="Attach file">
                   <Paperclip size={16} />
                 </IconBtn>
-                <SendButton onClick={handleSendComment}>
+                <Button variant="primary" size="sm" onClick={handleSendComment}>
                   <Send size={14} />
                   Comment
-                </SendButton>
-              </div>
-            </div>
+                </Button>
+              </CommentToolbar>
+            </CommentEditorWrap>
           </CommentInput>
         </Section>
       </MainColumn>

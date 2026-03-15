@@ -308,11 +308,22 @@ export async function fetchTeamProject(
 export async function postStatusUpdate(
   teamId: string,
   content: string,
-  status: ProjectStatus
+  status: ProjectStatus,
+  options?: { projectId?: string; issueId?: string; milestoneId?: string }
 ): Promise<ApiStatusUpdate> {
+  const body: {
+    content: string
+    status: string
+    projectId?: string
+    issueId?: string
+    milestoneId?: string
+  } = { content, status }
+  if (options?.projectId) body.projectId = options.projectId
+  if (options?.issueId) body.issueId = options.issueId
+  if (options?.milestoneId) body.milestoneId = options.milestoneId
   const raw = (await authFetch(`/teams/${teamId}/project/updates`, {
     method: 'POST',
-    body: JSON.stringify({ content, status }),
+    body: JSON.stringify(body),
   })) as {
     id: string
     status: string
@@ -390,6 +401,31 @@ export async function patchProject(
   }) as Promise<ApiProjectProperties>
 }
 
+/** Generate an AI summary for the team project; stored as a status update with [ai-generated] prefix. Returns the new status update. */
+export async function generateProjectSummary(
+  teamId: string
+): Promise<ApiStatusUpdate> {
+  const raw = (await authFetch(`/teams/${teamId}/project/summary`, {
+    method: 'POST',
+    body: JSON.stringify({}),
+  })) as {
+    id: string
+    status: string
+    content: string
+    author: { id: string; name: string; avatarSrc?: string }
+    createdAt: string
+    commentCount: number
+  }
+  return {
+    id: raw.id,
+    status: raw.status as ProjectStatus,
+    content: raw.content,
+    author: raw.author,
+    createdAt: raw.createdAt,
+    commentCount: raw.commentCount,
+  }
+}
+
 export async function fetchTeamViews(teamId: string): Promise<
   {
     id: string
@@ -443,6 +479,35 @@ export async function fetchTeamIssues(
   }[]
 > {
   return authFetch(`/teams/${teamId}/issues?filter=${filter}`) as Promise<
+    {
+      id: string
+      title: string
+      assignee: { id: string; name: string } | null
+      date: string
+      status: string
+    }[]
+  >
+}
+
+export async function fetchTeamProjectIssues(
+  teamId: string,
+  filter: 'all' | 'active' | 'backlog' = 'all',
+  projectId?: string
+): Promise<
+  {
+    id: string
+    title: string
+    assignee: { id: string; name: string } | null
+    date: string
+    status: string
+  }[]
+> {
+  const params = new URLSearchParams({ filter })
+  if (projectId && projectId.trim() !== '')
+    params.set('projectId', projectId.trim())
+  return authFetch(
+    `/teams/${teamId}/project/issues?${params.toString()}`
+  ) as Promise<
     {
       id: string
       title: string
@@ -542,6 +607,30 @@ export async function fetchNotifications(): Promise<
 
 export async function fetchIssue(issueId: string): Promise<ApiIssueDetail> {
   return authFetch(`/issues/${issueId}`) as Promise<ApiIssueDetail>
+}
+
+export type ApiIssueComment = {
+  id: string
+  authorName: string
+  authorAvatarSrc?: string
+  content: string
+  createdAt: string
+}
+
+export async function fetchIssueComments(
+  issueId: string
+): Promise<ApiIssueComment[]> {
+  return authFetch(`/issues/${issueId}/comments`) as Promise<ApiIssueComment[]>
+}
+
+export async function postIssueComment(
+  issueId: string,
+  content: string
+): Promise<ApiIssueComment> {
+  return authFetch(`/issues/${issueId}/comments`, {
+    method: 'POST',
+    body: JSON.stringify({ content }),
+  }) as Promise<ApiIssueComment>
 }
 
 export async function updateIssue(

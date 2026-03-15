@@ -1,6 +1,17 @@
 import { useState, useEffect } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
 import styled from 'styled-components'
-import { Stack, Text, Tabs, Modal, Input } from '@design-system'
+import {
+  Stack,
+  Text,
+  Tabs,
+  Modal,
+  Input,
+  Button,
+  Card,
+  Flex,
+  Avatar,
+} from '@design-system'
 import type { ChatMessage, ChatUser, TabItem } from '@design-system'
 import {
   StatusUpdateCard,
@@ -20,12 +31,15 @@ import { formatDateTime } from '../utils/format'
 import { logError } from '../utils/errorHandling'
 import {
   fetchTeamProject,
+  fetchTeamProjectIssues,
   postStatusUpdate,
   postComment,
   createMilestone,
   patchProject,
+  generateProjectSummary,
 } from '../api/client'
 import type { ApiStatusUpdate, ApiProjectProperties } from '../api/client'
+import { useFetch } from '../hooks/useFetch'
 
 const ContentSection = styled.div`
   padding: 24px 0;
@@ -34,6 +48,13 @@ const ContentSection = styled.div`
 const EmptyState = styled.div`
   text-align: center;
   padding: 80px 20px;
+`
+
+const ClickableCardWrapper = styled.div`
+  cursor: pointer;
+  &:hover {
+    opacity: 0.95;
+  }
 `
 
 const CenterMessage = styled.div`
@@ -121,6 +142,33 @@ const ProjectSummary = styled.p`
   margin: 0 auto;
 `
 
+const HeaderActions = styled.div`
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+`
+
+const SummaryBlock = styled.div`
+  padding: 24px 0;
+  border-bottom: 1px solid ${(p) => p.theme.colors.border};
+  margin-bottom: 24px;
+`
+
+const SummaryText = styled.div`
+  font-size: 14px;
+  color: ${(p) => p.theme.colors.text};
+  line-height: 1.6;
+  white-space: pre-wrap;
+  margin-bottom: 12px;
+`
+
+const SummaryActions = styled.div`
+  font-size: 13px;
+  color: ${(p) => p.theme.colors.textMuted};
+`
+
 const PropertiesSidebar = styled.aside`
   position: sticky;
   top: 16px;
@@ -150,6 +198,12 @@ const SectionLabel = styled.div`
 `
 
 export function TeamProjectDetailScreen({ projectName, teamId }: Props) {
+  const { workspaceId, projectId } = useParams<{
+    workspaceId: string
+    projectId: string
+  }>()
+  const navigate = useNavigate()
+
   const [updates, setUpdates] = useState<StatusUpdateCardData[]>([])
   const [milestones, setMilestones] = useState<MilestoneItem[]>([])
   const [activity, setActivity] = useState<ActivityItem[]>([])
@@ -164,6 +218,18 @@ export function TeamProjectDetailScreen({ projectName, teamId }: Props) {
   const [showMilestoneModal, setShowMilestoneModal] = useState(false)
   const [milestoneName, setMilestoneName] = useState('')
   const [milestoneDate, setMilestoneDate] = useState('')
+  const [projectSummary, setProjectSummary] = useState<string | null>(null)
+  const [summaryLoading, setSummaryLoading] = useState(false)
+  const [summaryError, setSummaryError] = useState<string | null>(null)
+
+  const { data: projectIssues, loading: issuesLoading } = useFetch(
+    () =>
+      teamId
+        ? fetchTeamProjectIssues(teamId, 'all', projectId)
+        : Promise.resolve([]),
+    [teamId, projectId]
+  )
+  const issues = projectIssues ?? []
 
   const tabs: TabItem[] = [
     { id: 'overview', label: 'Overview' },
@@ -207,7 +273,12 @@ export function TeamProjectDetailScreen({ projectName, teamId }: Props) {
 
   const handlePostUpdate = (content: string, status: ProjectStatus) => {
     if (!teamId) return
-    void postStatusUpdate(teamId, content, status)
+    void postStatusUpdate(
+      teamId,
+      content,
+      status,
+      projectId ? { projectId } : undefined
+    )
       .then((u) => setUpdates((prev) => [apiUpdateToCard(u), ...prev]))
       .catch((e) => logError(e, 'TeamProjectDetail'))
   }
@@ -281,6 +352,23 @@ export function TeamProjectDetailScreen({ projectName, teamId }: Props) {
     )
   }
 
+  const handleGenerateSummary = () => {
+    if (!teamId) return
+    setSummaryLoading(true)
+    setSummaryError(null)
+    generateProjectSummary(teamId)
+      .then((update) => {
+        setProjectSummary(update.content)
+        setSummaryError(null)
+        setUpdates((prev) => [apiUpdateToCard(update), ...prev])
+      })
+      .catch((e) => {
+        logError(e, 'TeamProjectDetail')
+        setSummaryError((e as Error).message)
+      })
+      .finally(() => setSummaryLoading(false))
+  }
+
   if (loading) {
     return (
       <Layout>
@@ -314,37 +402,113 @@ export function TeamProjectDetailScreen({ projectName, teamId }: Props) {
               <ProjectIcon>{projectName[0]?.toUpperCase() ?? 'P'}</ProjectIcon>
               <ProjectTitle>{projectName}</ProjectTitle>
               <ProjectSummary>
-                Track progress,updates, and milestones for this project
+                Track progress, updates, and milestones for this project.
               </ProjectSummary>
+              <HeaderActions>
+                <Button
+                  variant="secondary"
+                  onClick={handleGenerateSummary}
+                  disabled={summaryLoading}
+                >
+                  {summaryLoading ? 'Generating…' : 'Generate Summary'}
+                </Button>
+              </HeaderActions>
             </PageHeader>
 
-            <Stack gap={3}>
-              {updates.length === 0 ? (
+            {projectSummary !== null ? (
+              <SummaryBlock>
+                <SummaryText>{projectSummary}</SummaryText>
+                <SummaryActions>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setProjectSummary(null)
+                      setSummaryError(null)
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'inherit',
+                      cursor: 'pointer',
+                      padding: 0,
+                      textDecoration: 'underline',
+                      fontSize: 'inherit',
+                    }}
+                  >
+                    Show latest updates
+                  </button>
+                  {' · '}
+                  <button
+                    type="button"
+                    onClick={handleGenerateSummary}
+                    disabled={summaryLoading}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'inherit',
+                      cursor: summaryLoading ? 'not-allowed' : 'pointer',
+                      padding: 0,
+                      textDecoration: 'underline',
+                      fontSize: 'inherit',
+                    }}
+                  >
+                    {summaryLoading ? 'Generating…' : 'Regenerate summary'}
+                  </button>
+                </SummaryActions>
+              </SummaryBlock>
+            ) : summaryError ? (
+              <Stack gap={3}>
                 <CenterMessage>
-                  <Text size="sm" muted>
-                    Write the first project update to get started
-                  </Text>
+                  <Stack gap={2}>
+                    <Text size="sm" muted>
+                      {summaryError}
+                    </Text>
+                    <Button
+                      variant="secondary"
+                      onClick={handleGenerateSummary}
+                      disabled={summaryLoading}
+                    >
+                      Try again
+                    </Button>
+                  </Stack>
                 </CenterMessage>
-              ) : (
-                updates.map((u) => (
-                  <StatusUpdateCard
-                    key={u.id}
-                    data={u}
-                    comments={commentsByUpdateId[u.id]}
-                    currentUser={DEFAULT_CURRENT_USER}
-                    onSendComment={handleSendComment(u.id)}
-                    onMore={noop}
-                  />
-                ))
-              )}
-              <StatusUpdateComposer
-                placeholder="Write a project update..."
-                onPost={handlePostUpdate}
-                onChooseFile={noop}
-                onCreateDocument={noop}
-                onAddLink={noop}
-              />
-            </Stack>
+                <StatusUpdateComposer
+                  placeholder="Write a project update..."
+                  onPost={handlePostUpdate}
+                  onChooseFile={noop}
+                  onCreateDocument={noop}
+                  onAddLink={noop}
+                />
+              </Stack>
+            ) : (
+              <Stack gap={3}>
+                {updates.length === 0 ? (
+                  <CenterMessage>
+                    <Text size="sm" muted>
+                      Write the first project update to get started
+                    </Text>
+                  </CenterMessage>
+                ) : (
+                  updates.map((u) => (
+                    <StatusUpdateCard
+                      key={u.id}
+                      data={u}
+                      comments={commentsByUpdateId[u.id]}
+                      currentUser={DEFAULT_CURRENT_USER}
+                      onSendComment={handleSendComment(u.id)}
+                      onMore={noop}
+                    />
+                  ))
+                )}
+                <StatusUpdateComposer
+                  placeholder="Write a project update..."
+                  onPost={handlePostUpdate}
+                  onChooseFile={noop}
+                  onCreateDocument={noop}
+                  onAddLink={noop}
+                />
+              </Stack>
+            )}
 
             <ContentSection>
               <MilestonesSection
@@ -384,27 +548,75 @@ export function TeamProjectDetailScreen({ projectName, teamId }: Props) {
         )}
 
         {activeTab === 'issues' && (
-          <EmptyState>
-            <div style={{ marginBottom: 16 }}>
-              <Text size="sm" muted>
-                No issues added to this project yet
-              </Text>
-            </div>
-            <button
-              style={{
-                padding: '8px 16px',
-                background: '#6366f1',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontSize: '14px',
-                fontWeight: 500,
-              }}
-            >
-              Create new issue
-            </button>
-          </EmptyState>
+          <ContentSection>
+            <Stack gap={3}>
+              <Flex align="center" justify="space-between">
+                <Text size="sm" muted>
+                  {issuesLoading
+                    ? 'Loading issues...'
+                    : `${issues.length} issue${issues.length === 1 ? '' : 's'}`}
+                </Text>
+                {workspaceId && teamId && (
+                  <Button
+                    variant="primary"
+                    onClick={() =>
+                      navigate(
+                        `/workspace/${workspaceId}/team/${teamId}/issues/new`,
+                        projectId ? { state: { projectId } } : undefined
+                      )
+                    }
+                  >
+                    Create new issue
+                  </Button>
+                )}
+              </Flex>
+              {issuesLoading ? (
+                <Text size="sm" muted>
+                  Loading...
+                </Text>
+              ) : issues.length === 0 ? (
+                <EmptyState>
+                  <Text size="sm" muted>
+                    No issues in this project yet
+                  </Text>
+                </EmptyState>
+              ) : (
+                <Stack gap={1}>
+                  {issues.map((issue) => (
+                    <ClickableCardWrapper
+                      key={issue.id}
+                      onClick={() =>
+                        workspaceId &&
+                        teamId &&
+                        navigate(
+                          `/workspace/${workspaceId}/team/${teamId}/issue/${issue.id}`
+                        )
+                      }
+                    >
+                      <Card>
+                        <Flex align="center" gap={2}>
+                          <Text size="sm">{issue.id}</Text>
+                          <span style={{ flex: 1 }}>
+                            <Text size="sm" as="span">
+                              {issue.title}
+                            </Text>
+                          </span>
+                          {issue.assignee ? (
+                            <Avatar name={issue.assignee.name} size={24} />
+                          ) : (
+                            <span style={{ width: 24 }} />
+                          )}
+                          <Text size="xs" muted>
+                            {formatDateTime(issue.date)}
+                          </Text>
+                        </Flex>
+                      </Card>
+                    </ClickableCardWrapper>
+                  ))}
+                </Stack>
+              )}
+            </Stack>
+          </ContentSection>
         )}
       </MainContent>
 
@@ -439,12 +651,7 @@ export function TeamProjectDetailScreen({ projectName, teamId }: Props) {
       >
         <Stack gap={3}>
           <div>
-            <Text
-              as="label"
-              size="sm"
-              weight="medium"
-              style={{ display: 'block', marginBottom: '8px' }}
-            >
+            <Text as="div" size="sm" className="block mb-2">
               Milestone Name
             </Text>
             <Input
@@ -454,12 +661,7 @@ export function TeamProjectDetailScreen({ projectName, teamId }: Props) {
             />
           </div>
           <div>
-            <Text
-              as="label"
-              size="sm"
-              weight="medium"
-              style={{ display: 'block', marginBottom: '8px' }}
-            >
+            <Text as="div" size="sm" className="block mb-2">
               Target Date
             </Text>
             <Input

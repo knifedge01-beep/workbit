@@ -1,0 +1,28 @@
+{
+  "name": "workbit-mcp-server",
+  "version": "1.0.0",
+  "description": "Model Context Protocol server for Workbit.",
+  "main": "build/index.js",
+  "type": "module",
+  "bin": {
+    "workbit-mcp": "./build/index.js"
+  },
+  "scripts": {
+    "build": "tsc && chmod 755 build/index.js"
+  },
+  "files": [
+    "build"
+  ],
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "@thedatablitz/logbit-sdk": "^0.1.16",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "typescript": "^5.9.3"
+  }
+}

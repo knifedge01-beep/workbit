@@ -1,5 +1,7 @@
-import type { Issue } from './types.js'
+import type { Issue, IssueComment } from './types.js'
+import { generateId } from './store.js'
 import * as db from '../db/issues.js'
+import * as dbIssueComments from '../db/issueComments.js'
 import { getTeamById } from '../db/teams.js'
 import { getMemberById } from '../db/members.js'
 import { getProjectById } from '../db/projects.js'
@@ -62,6 +64,90 @@ export async function getIssueById(issueId: string): Promise<Issue | null> {
   return db.getIssueById(issueId)
 }
 
+/** Resolve teamId from issue (direct or via project) for use when creating status updates. */
+export async function getEffectiveTeamIdForIssue(
+  issue: Issue
+): Promise<string | null> {
+  if (issue.teamId != null && issue.teamId !== '') return issue.teamId
+  if (issue.projectId != null && issue.projectId !== '') {
+    const project = await getProjectById(issue.projectId)
+    return project?.teamId ?? null
+  }
+  return null
+}
+
+export async function getIssueComments(
+  issueId: string
+): Promise<IssueComment[]> {
+  return dbIssueComments.getIssueCommentsByIssueId(issueId)
+}
+
+export async function addIssueComment(
+  issueId: string,
+  content: string,
+  author: { name: string; avatarSrc?: string }
+): Promise<IssueComment> {
+  const issue = await db.getIssueById(issueId)
+  if (!issue) throw new Error('Issue not found')
+  const comment: IssueComment = {
+    id: generateId(),
+    issueId,
+    authorName: author.name,
+    authorAvatarSrc: author.avatarSrc,
+    content,
+    createdAt: new Date().toISOString(),
+  }
+  await dbIssueComments.insertIssueComment(comment)
+  return comment
+}
+
+/** Two letters from name: first + last (e.g. "Project" -> "PT", "Team" -> "TM"). Single char doubled; empty -> "IS". */
+function prefixFromName(name: string): string {
+  const s = (name || '').trim().toUpperCase()
+  if (s.length === 0) return 'IS'
+  if (s.length === 1) return s + s
+  return s[0] + s[s.length - 1]
+}
+
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+/** Get the next issue id for the given project or team: NN-PP (e.g. 01-PJ, 02-TE). Finds last issue with same prefix in that project/team and uses counter + 1. */
+export async function getNextIssueId(
+  projectId?: string | null,
+  teamId?: string | null
+): Promise<string> {
+  let prefix: string
+  let existingIssues: Issue[]
+
+  if (projectId != null && projectId !== '') {
+    const project = await getProjectById(projectId)
+    prefix = prefixFromName(project?.name ?? 'Project')
+    existingIssues = await db.getIssuesByProjectId(projectId)
+  } else if (teamId != null && teamId !== '') {
+    const team = await getTeamById(teamId)
+    prefix = prefixFromName(team?.name ?? 'Team')
+    existingIssues = await db.getIssuesByTeamId(teamId)
+  } else {
+    prefix = 'IS'
+    existingIssues = []
+  }
+
+  const pattern = new RegExp(`^(\\d+)-${escapeRegex(prefix)}$`, 'i')
+  let maxCounter = 0
+  for (const issue of existingIssues) {
+    const m = issue.id.match(pattern)
+    if (m) {
+      const n = parseInt(m[1], 10)
+      if (n > maxCounter) maxCounter = n
+    }
+  }
+  const nextCounter = maxCounter + 1
+  const counterStr = String(nextCounter).padStart(2, '0')
+  return `${counterStr}-${prefix}`
+}
+
 export async function createIssue(input: {
   title: string
   teamId?: string
@@ -76,9 +162,9 @@ export async function createIssue(input: {
       throw new Error('Team not found')
     }
   }
-  console.log('input', input)
+  const id = await getNextIssueId(input.projectId, input.teamId)
   const issue: Issue = {
-    id: `ISS-${Date.now()}`,
+    id,
     title: input.title,
     teamId: input.teamId,
     projectId: input.projectId,
@@ -97,6 +183,29 @@ export async function getTeamIssuesForApi(
   filter?: 'all' | 'active' | 'backlog'
 ): Promise<IssueListItemApi[]> {
   const issues = await getTeamIssues(teamId, filter)
+  return Promise.all(
+    issues.map(async (i) => {
+      const assignee = i.assigneeId ? await getMemberById(i.assigneeId) : null
+      return {
+        id: i.id,
+        title: i.title,
+        assignee: assignee
+          ? { id: assignee.id, name: assignee.name }
+          : i.assigneeName
+            ? { id: '', name: i.assigneeName }
+            : null,
+        date: i.date,
+        status: i.status,
+      }
+    })
+  )
+}
+
+export async function getProjectIssuesForApi(
+  projectId: string,
+  filter?: 'all' | 'active' | 'backlog'
+): Promise<IssueListItemApi[]> {
+  const issues = await getProjectIssues(projectId, filter)
   return Promise.all(
     issues.map(async (i) => {
       const assignee = i.assigneeId ? await getMemberById(i.assigneeId) : null

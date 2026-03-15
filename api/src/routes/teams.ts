@@ -6,6 +6,7 @@ export const teamsRoutes = Router()
 
 teamsRoutes.get('/:teamId', teamsCtrl.getTeam)
 teamsRoutes.get('/:teamId/project', teamsCtrl.getTeamProject)
+teamsRoutes.get('/:teamId/project/issues', teamsCtrl.getTeamProjectIssues)
 teamsRoutes.get(
   '/:teamId/project/updates/:updateId/comments',
   teamsCtrl.getStatusUpdateComments
@@ -21,6 +22,7 @@ teamsRoutes.patch(
   '/:teamId/project/milestones/:milestoneId',
   teamsCtrl.patchMilestone
 )
+teamsRoutes.post('/:teamId/project/summary', teamsCtrl.postProjectSummary)
 teamsRoutes.get('/:teamId/views', teamsCtrl.getTeamViews)
 teamsRoutes.get('/:teamId/logs', teamsCtrl.getTeamLogs)
 teamsRoutes.get('/:teamId/issues', issuesCtrl.getTeamIssues)

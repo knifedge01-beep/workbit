@@ -17,6 +17,34 @@ export async function getStatusUpdatesByTeamId(
   return (data ?? []).map((r) => rowToStatusUpdate(r as DbRow))
 }
 
+export async function getStatusUpdatesByProjectId(
+  projectId: string,
+  limit = 20
+): Promise<StatusUpdate[]> {
+  const { data, error } = await getClient()
+    .from('status_updates')
+    .select('*')
+    .eq('project_id', projectId)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  if (error) throw error
+  return (data ?? []).map((r) => rowToStatusUpdate(r as DbRow))
+}
+
+export async function getStatusUpdatesByIssueId(
+  issueId: string,
+  limit = 20
+): Promise<StatusUpdate[]> {
+  const { data, error } = await getClient()
+    .from('status_updates')
+    .select('*')
+    .eq('issue_id', issueId)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  if (error) throw error
+  return (data ?? []).map((r) => rowToStatusUpdate(r as DbRow))
+}
+
 export async function getStatusUpdateById(
   id: string
 ): Promise<StatusUpdate | null> {
@@ -33,7 +61,7 @@ export async function getStatusUpdateById(
 export async function insertStatusUpdate(update: StatusUpdate): Promise<void> {
   const row = {
     id: update.id,
-    team_id: update.teamId,
+    team_id: update.teamId ?? null,
     status: update.status,
     content: update.content,
     author_id: update.authorId,
@@ -41,6 +69,9 @@ export async function insertStatusUpdate(update: StatusUpdate): Promise<void> {
     author_avatar_src: update.authorAvatarSrc ?? null,
     created_at: update.createdAt,
     comment_count: update.commentCount ?? 0,
+    project_id: update.projectId ?? null,
+    issue_id: update.issueId ?? null,
+    milestone_id: update.milestoneId ?? null,
   }
   const { error } = await getClient()
     .from('status_updates')

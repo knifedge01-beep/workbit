@@ -1,6 +1,22 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Stack, Text, Tabs, Modal, Input, Button, Flex } from '@design-system'
+import styled from 'styled-components'
+import {
+  Circle,
+  ArrowDownCircle,
+  MinusCircle,
+  ArrowUpCircle,
+} from 'lucide-react'
+import {
+  Stack,
+  Text,
+  Tabs,
+  Modal,
+  Input,
+  Button,
+  Flex,
+  Avatar,
+} from '@design-system'
 import type { TabItem } from '@design-system'
 import {
   StatusUpdateComposer,
@@ -9,8 +25,9 @@ import {
   PropertiesSection,
   ProjectUpdateHighlightCard,
   UpdatesTree,
-  TaskListTable,
-  mapIssueToTaskListItem,
+  PrioritySelector,
+  StatusSelector,
+  type PriorityOption,
   DecisionTab,
 } from '../components'
 import type {
@@ -32,11 +49,137 @@ import {
   createMilestone,
   patchProject,
   generateProjectSummary,
+  updateIssue as apiUpdateIssue,
 } from '../api/client'
 import type { ApiStatusUpdate, ApiProjectProperties } from '../api/client'
 import { useFetch } from '../hooks/useFetch'
 
 type Props = { projectName: string; teamId: string }
+
+const DEFAULT_STATUS = 'todo'
+const DEFAULT_PRIORITY = 'none'
+
+const INLINE_PRIORITY_OPTIONS: PriorityOption[] = [
+  {
+    id: 'none',
+    label: 'Not set',
+    icon: <Circle size={14} strokeWidth={2.2} />,
+  },
+  {
+    id: 'low',
+    label: 'Low',
+    icon: <ArrowDownCircle size={14} strokeWidth={2.2} />,
+  },
+  {
+    id: 'medium',
+    label: 'Medium',
+    icon: <MinusCircle size={14} strokeWidth={2.2} />,
+  },
+  {
+    id: 'high',
+    label: 'High',
+    icon: <ArrowUpCircle size={14} strokeWidth={2.2} />,
+  },
+]
+
+const TableWrap = styled.div`
+  border-top: 1px solid ${(p) => p.theme.colors.border};
+`
+
+const HeadRow = styled.div`
+  display: grid;
+  grid-template-columns: minmax(320px, 2fr) 110px 120px 120px 92px;
+  gap: ${(p) => p.theme.spacing[2]}px;
+  padding: ${(p) => p.theme.spacing[1]}px ${(p) => p.theme.spacing[2]}px;
+  color: ${(p) => p.theme.colors.textMuted};
+  font-size: 0.75rem;
+  font-weight: 500;
+`
+
+const DataRow = styled.div`
+  width: 100%;
+  border-top: 1px solid ${(p) => p.theme.colors.border};
+  background: transparent;
+  padding: ${(p) => p.theme.spacing[2]}px ${(p) => p.theme.spacing[2]}px;
+  cursor: pointer;
+  text-align: left;
+  display: grid;
+  grid-template-columns: minmax(320px, 2fr) 110px 120px 120px 92px;
+  gap: ${(p) => p.theme.spacing[2]}px;
+  align-items: center;
+  min-height: 46px;
+  transition: background 0.12s ease;
+
+  &:hover {
+    background: ${(p) => p.theme.colors.surfaceHover};
+  }
+`
+
+const NameCol = styled.div`
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: ${(p) => p.theme.spacing[2]}px;
+`
+
+const IssueId = styled.span`
+  color: ${(p) => p.theme.colors.textMuted};
+  font-size: 0.75rem;
+  flex-shrink: 0;
+`
+
+const IssueTitle = styled.span`
+  color: ${(p) => p.theme.colors.text};
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`
+
+const MetaText = styled.span`
+  color: ${(p) => p.theme.colors.textMuted};
+  font-size: 0.78rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`
+
+const PriorityInline = styled(PrioritySelector)`
+  min-width: 0;
+
+  button {
+    height: 22px;
+    padding: 0 8px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    gap: 6px;
+    transition: background 0.12s ease;
+  }
+
+  button:hover {
+    background: ${(p) => p.theme.colors.surfaceHover};
+  }
+`
+
+const StatusInline = styled(StatusSelector)`
+  min-width: 0;
+
+  button {
+    height: 22px;
+    padding: 0 8px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    gap: 6px;
+    transition: background 0.12s ease;
+  }
+
+  button:hover {
+    background: ${(p) => p.theme.colors.surfaceHover};
+  }
+`
 
 function apiUpdateToCard(u: ApiStatusUpdate): StatusUpdateCardData {
   return {
@@ -95,6 +238,9 @@ export function TeamProjectDetailScreen({ projectName, teamId }: Props) {
   const [projectSummary, setProjectSummary] = useState<string | null>(null)
   const [summaryLoading, setSummaryLoading] = useState(false)
   const [summaryError, setSummaryError] = useState<string | null>(null)
+  const [issueOverrides, setIssueOverrides] = useState<
+    Record<string, { status?: string; priority?: string }>
+  >({})
 
   const { data: projectIssues, loading: issuesLoading } = useFetch(
     () =>
@@ -103,7 +249,15 @@ export function TeamProjectDetailScreen({ projectName, teamId }: Props) {
         : Promise.resolve([]),
     [teamId, projectId]
   )
-  const issues = projectIssues ?? []
+  const issues = (projectIssues ?? []).map((issue) => ({
+    ...issue,
+    status: issueOverrides[issue.id]?.status ?? issue.status ?? DEFAULT_STATUS,
+    priority: issueOverrides[issue.id]?.priority ?? DEFAULT_PRIORITY,
+    dateLabel: formatDateTime(issue.date),
+    assigneeInitials: issue.assignee?.name
+      ? issue.assignee.name.slice(0, 2).toUpperCase()
+      : '',
+  }))
 
   const tabs: TabItem[] = [
     { id: 'overview', label: 'Overview' },
@@ -326,6 +480,23 @@ export function TeamProjectDetailScreen({ projectName, teamId }: Props) {
         setSummaryError((e as Error).message)
       })
       .finally(() => setSummaryLoading(false))
+  }
+
+  const updateIssuePriority = (issueId: string, priority: string) => {
+    setIssueOverrides((prev) => ({
+      ...prev,
+      [issueId]: { ...prev[issueId], priority },
+    }))
+  }
+
+  const updateIssueStatus = (issueId: string, status: string) => {
+    setIssueOverrides((prev) => ({
+      ...prev,
+      [issueId]: { ...prev[issueId], status },
+    }))
+    void apiUpdateIssue(issueId, { status }).catch((e) =>
+      logError(e, 'TeamProjectDetail.updateIssueStatus')
+    )
   }
 
   if (loading) {
@@ -555,20 +726,73 @@ export function TeamProjectDetailScreen({ projectName, teamId }: Props) {
                     </Text>
                   </div>
                 ) : (
-                  <TaskListTable
-                    items={issues.map((issue) =>
-                      mapIssueToTaskListItem(issue, {
-                        timeLabel: formatDateTime(issue.date),
-                      })
-                    )}
-                    onRowClick={(item) => {
-                      if (workspaceId && teamId) {
-                        navigate(
-                          `/workspace/${workspaceId}/team/${teamId}/issue/${item.id}`
-                        )
-                      }
-                    }}
-                  />
+                  <TableWrap>
+                    <HeadRow>
+                      <span>Name</span>
+                      <span>Priority</span>
+                      <span>List</span>
+                      <span>Due date</span>
+                      <span>Assignee</span>
+                    </HeadRow>
+
+                    {issues.map((issue) => (
+                      <DataRow
+                        key={issue.id}
+                        onClick={() => {
+                          if (workspaceId && teamId) {
+                            navigate(
+                              `/workspace/${workspaceId}/team/${teamId}/issue/${issue.id}`
+                            )
+                          }
+                        }}
+                      >
+                        <NameCol>
+                          <IssueId>{issue.id}</IssueId>
+                          <IssueTitle>{issue.title}</IssueTitle>
+                        </NameCol>
+
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation()
+                          }}
+                        >
+                          <PriorityInline
+                            value={issue.priority}
+                            onChange={(priority) =>
+                              updateIssuePriority(issue.id, priority)
+                            }
+                            options={INLINE_PRIORITY_OPTIONS}
+                            placeholder="Not set"
+                          />
+                        </div>
+
+                        <div
+                          onClick={(e) => {
+                            e.stopPropagation()
+                          }}
+                        >
+                          <StatusInline
+                            value={issue.status}
+                            onChange={(status) =>
+                              updateIssueStatus(issue.id, status)
+                            }
+                            placeholder="Set status"
+                          />
+                        </div>
+
+                        <MetaText>{issue.dateLabel}</MetaText>
+
+                        {issue.assignee ? (
+                          <Avatar
+                            name={issue.assigneeInitials || issue.assignee.name}
+                            size={20}
+                          />
+                        ) : (
+                          <MetaText>-</MetaText>
+                        )}
+                      </DataRow>
+                    ))}
+                  </TableWrap>
                 )}
               </Stack>
             </div>

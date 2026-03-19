@@ -17,6 +17,9 @@ import type {
   Milestone,
   ActivityItem,
   Issue,
+  Decision,
+  DecisionType,
+  DecisionStatus,
   Notification,
   ProjectStatus,
   ActivityIcon,
@@ -173,6 +176,31 @@ export function rowToIssue(r: DbRow): Issue {
   }
 }
 
+export function rowToDecision(r: DbRow): Decision {
+  return {
+    id: r.id as string,
+    projectId: r.project_id as string,
+    title: r.title as string,
+    type: r.type as DecisionType,
+    rationale: r.rationale as string,
+    impact: (r.impact as string | null | undefined) ?? undefined,
+    tags: (r.tags as string[]) ?? [],
+    createdBy: {
+      id: r.created_by_id as string,
+      name: r.created_by_name as string,
+    },
+    decisionDate:
+      (r.decision_date as string | null | undefined) === null
+        ? undefined
+        : ((r.decision_date as string | undefined) ?? undefined),
+    status: r.status as DecisionStatus,
+    linkedMilestoneIds: (r.linked_milestone_ids as string[]) ?? [],
+    linkedIssueIds: (r.linked_issue_ids as string[]) ?? [],
+    createdAt: r.created_at as string,
+    updatedAt: r.updated_at as string,
+  }
+}
+
 export function issueToRow(i: Issue): Record<string, unknown> {
   return {
     id: i.id,
@@ -184,6 +212,26 @@ export function issueToRow(i: Issue): Record<string, unknown> {
     team_id: i.teamId ?? null,
     project_id: i.projectId ?? null,
     description: i.description ?? null,
+  }
+}
+
+export function decisionToRow(d: Decision): Record<string, unknown> {
+  return {
+    id: d.id,
+    project_id: d.projectId,
+    title: d.title,
+    type: d.type,
+    rationale: d.rationale,
+    impact: d.impact ?? null,
+    tags: d.tags ?? [],
+    created_by_id: d.createdBy.id,
+    created_by_name: d.createdBy.name,
+    decision_date: d.decisionDate ?? null,
+    status: d.status,
+    linked_milestone_ids: d.linkedMilestoneIds ?? [],
+    linked_issue_ids: d.linkedIssueIds ?? [],
+    created_at: d.createdAt,
+    updated_at: d.updatedAt,
   }
 }
 
@@ -368,6 +416,7 @@ export function storeToRows(store: Store) {
     milestones: store.milestones.map((m) => milestoneToRow(m)),
     activity: store.activity.map((a) => activityToRow(a)),
     issues: store.issues.map((i) => issueToRow(i)),
+    decisions: store.decisions.map((d) => decisionToRow(d)),
     notifications: store.notifications.map((n) => notificationToRow(n)),
   }
 }

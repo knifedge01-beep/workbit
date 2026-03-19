@@ -1,15 +1,10 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import styled from 'styled-components'
 import { Paperclip } from 'lucide-react'
-import {
-  Button,
-  Menu,
-  type MenuEntry,
-  IconButton,
-  EmojiSelector,
-} from '@design-system'
+import { Button, Menu, type MenuEntry, IconButton } from '@design-system'
 import { ResourceSelector } from './ResourceSelector'
 import { STATUS_CONFIG, type ProjectStatus } from '../constants/projectStatus'
+import { MarkdownEditor } from './MarkdownEditor'
 
 export type { ProjectStatus } from '../constants/projectStatus'
 
@@ -50,22 +45,6 @@ const StatusPill = styled.button<{ $color: 'success' | 'warning' | 'error' }>`
 
 const TextAreaWrap = styled.div`
   padding: 0 ${(p) => p.theme.spacing[3]}px ${(p) => p.theme.spacing[2]}px;
-`
-
-const StyledTextarea = styled.textarea`
-  width: 100%;
-  font-size: 0.875rem;
-  padding: ${(p) => p.theme.spacing[2]}px 0;
-  border: none;
-  background: transparent;
-  color: ${(p) => p.theme.colors.text};
-  outline: none;
-  resize: vertical;
-  min-height: 80px;
-  font-family: inherit;
-  &::placeholder {
-    color: ${(p) => p.theme.colors.textMuted};
-  }
 `
 
 const Divider = styled.hr`
@@ -122,7 +101,6 @@ export function StatusUpdateComposer({
   const [internalStatus, setInternalStatus] =
     useState<ProjectStatus>('on-track')
   const [draft, setDraft] = useState('')
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const status = controlledStatus ?? internalStatus
   const setStatus = (s: ProjectStatus) => {
@@ -176,12 +154,16 @@ export function StatusUpdateComposer({
       </StatusRow>
 
       <TextAreaWrap>
-        <StyledTextarea
-          ref={textareaRef}
-          placeholder={placeholder}
+        <MarkdownEditor
           value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          aria-label="Project update"
+          onChange={setDraft}
+          placeholder={placeholder}
+          preview="edit"
+          minHeight={96}
+          visibleDragbar={false}
+          textareaProps={{
+            'aria-label': 'Project update',
+          }}
         />
       </TextAreaWrap>
 
@@ -199,7 +181,6 @@ export function StatusUpdateComposer({
             onCreateDocument={onCreateDocument}
             onAddLink={onAddLink}
           />
-          <EmojiSelector targetRef={textareaRef} placement="top" />
         </ActionLeft>
         <ActionRight>
           {onCancel && (

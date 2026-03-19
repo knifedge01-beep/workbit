@@ -9,3 +9,7 @@ Operational procedures: deploy, rollback, incident response, and recurring tasks
 - **incident.md** — Who to check, where logs live (Logbit), how to disable a feature or scale.
 
 Add new runbooks as markdown files and link them from this README.
+
+## Index
+
+- [decision-tab-release-checklist.md](decision-tab-release-checklist.md)

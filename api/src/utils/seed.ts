@@ -345,6 +345,25 @@ export function getDummyStore(): Store {
         projectId: 'proj-3',
       },
     ],
+    decisions: [
+      {
+        id: 'dec-1',
+        projectId: 'proj-1',
+        title: 'Use incremental rollout for dashboard refresh',
+        type: 'major',
+        rationale:
+          'A phased rollout lowers release risk while backend metrics stabilize.',
+        impact: 'Feature flag and staged QA sign-off required.',
+        tags: ['release', 'risk'],
+        createdBy: { id: '1', name: 'Manoj Bhat' },
+        decisionDate: new Date().toISOString().slice(0, 10),
+        status: 'approved',
+        linkedMilestoneIds: ['m-1'],
+        linkedIssueIds: ['PROD-2'],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    ],
     notifications: [
       {
         id: 'n-1',

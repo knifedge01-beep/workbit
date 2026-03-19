@@ -161,11 +161,7 @@ export function IssueDetailScreen({ issueId, teamName, projectName }: Props) {
     )
   }, [])
 
-  const descriptionForEditor = issueData?.description
-    ? issueData.description.includes('<')
-      ? issueData.description
-      : issueData.description.replace(/\\n/g, '<br>')
-    : ''
+  const descriptionForEditor = issueData?.description ?? ''
 
   const editorKey = `editor-${issueId}`
 

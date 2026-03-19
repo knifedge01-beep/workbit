@@ -14,4 +14,4 @@ One file per decision, e.g. `YYYY-MM-DD-short-title.md`:
 
 (Add links here as you add ADRs.)
 
-- *(none yet)*
+- [2026-03-19-decision-tab-model-and-api.md](2026-03-19-decision-tab-model-and-api.md)

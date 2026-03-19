@@ -148,6 +148,27 @@ export interface Issue {
   description?: string
 }
 
+// Project decisions
+export type DecisionType = 'major' | 'minor'
+export type DecisionStatus = 'proposed' | 'approved' | 'rejected' | 'superseded'
+
+export interface Decision {
+  id: string
+  projectId: string
+  title: string
+  type: DecisionType
+  rationale: string
+  impact?: string
+  tags: string[]
+  createdBy: { id: string; name: string }
+  decisionDate?: string
+  status: DecisionStatus
+  linkedMilestoneIds: string[]
+  linkedIssueIds: string[]
+  createdAt: string
+  updatedAt: string
+}
+
 // Notifications
 export interface Notification {
   id: string
@@ -176,6 +197,7 @@ export interface Store {
   milestones: Milestone[]
   activity: ActivityItem[]
   issues: Issue[]
+  decisions: Decision[]
   notifications: Notification[]
 }
 
@@ -193,5 +215,6 @@ export const EMPTY_STORE: Store = {
   milestones: [],
   activity: [],
   issues: [],
+  decisions: [],
   notifications: [],
 }

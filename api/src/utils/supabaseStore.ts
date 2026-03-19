@@ -50,6 +50,7 @@ export async function writeStoreSupabase(store: Store): Promise<void> {
     { table: 'milestones', rows: rows.milestones, idColumn: 'id' as const },
     { table: 'activity', rows: rows.activity, idColumn: 'id' as const },
     { table: 'issues', rows: rows.issues, idColumn: 'id' as const },
+    { table: 'decisions', rows: rows.decisions, idColumn: 'id' as const },
     {
       table: 'notifications',
       rows: rows.notifications,

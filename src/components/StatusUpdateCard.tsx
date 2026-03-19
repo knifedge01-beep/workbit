@@ -12,6 +12,7 @@ import {
 import type { ChatMessage, ChatUser } from '@design-system'
 import { STATUS_CONFIG } from '../constants/projectStatus'
 import { ResourceSelector } from './ResourceSelector'
+import { MarkdownContent } from './MarkdownContent'
 import type { ProjectStatus } from '../constants/projectStatus'
 
 const Card = styled.article`
@@ -82,14 +83,17 @@ const MetaDivider = styled.span`
   flex-shrink: 0;
 `
 
-const Body = styled.p`
+const Body = styled.div`
   font-size: 0.875rem;
   color: ${(p) => p.theme.colors.text};
   margin: 0;
   padding: ${(p) => p.theme.spacing[2]}px ${(p) => p.theme.spacing[3]}px;
   line-height: 1.5;
-  white-space: pre-wrap;
   word-break: break-word;
+
+  .wmde-markdown {
+    padding: 0;
+  }
 `
 
 const Footer = styled.div`
@@ -206,7 +210,9 @@ export function StatusUpdateCard({
         </MetaRow>
       </HeaderSection>
 
-      <Body>{data.content}</Body>
+      <Body>
+        <MarkdownContent content={data.content} />
+      </Body>
 
       {commentsExpanded && showCommentsWhenExpanded && (
         <CommentsSection>

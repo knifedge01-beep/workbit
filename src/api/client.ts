@@ -95,6 +95,39 @@ export interface ApiProjectProperties {
   [key: string]: unknown
 }
 
+export type ApiDecisionType = 'major' | 'minor'
+export type ApiDecisionStatus =
+  | 'proposed'
+  | 'approved'
+  | 'rejected'
+  | 'superseded'
+
+export interface ApiDecision {
+  id: string
+  projectId: string
+  title: string
+  type: ApiDecisionType
+  rationale: string
+  impact?: string
+  tags: string[]
+  createdBy: { id: string; name: string }
+  decisionDate?: string
+  status: ApiDecisionStatus
+  linkedMilestoneIds: string[]
+  linkedIssueIds: string[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ApiDecisionListResponse {
+  items: ApiDecision[]
+  pagination: {
+    page: number
+    pageSize: number
+    total: number
+  }
+}
+
 // --- Workspaces ---
 
 export async function fetchWorkspaces(
@@ -541,6 +574,77 @@ export async function fetchTeamProjectIssues(
       status: string
     }[]
   >
+}
+
+export async function fetchProjectDecisions(
+  projectId: string,
+  options?: {
+    type?: ApiDecisionType
+    status?: ApiDecisionStatus
+    fromDate?: string
+    toDate?: string
+    mode?: 'sequential' | 'mixed'
+    order?: 'asc' | 'desc'
+    page?: number
+    pageSize?: number
+  }
+): Promise<ApiDecisionListResponse> {
+  const params = new URLSearchParams()
+  if (options?.type) params.set('type', options.type)
+  if (options?.status) params.set('status', options.status)
+  if (options?.fromDate) params.set('fromDate', options.fromDate)
+  if (options?.toDate) params.set('toDate', options.toDate)
+  if (options?.mode) params.set('mode', options.mode)
+  if (options?.order) params.set('order', options.order)
+  if (options?.page) params.set('page', String(options.page))
+  if (options?.pageSize) params.set('pageSize', String(options.pageSize))
+
+  const query = params.toString()
+  return authFetch(
+    `/projects/${projectId}/decisions${query ? `?${query}` : ''}`
+  ) as Promise<ApiDecisionListResponse>
+}
+
+export async function createProjectDecision(
+  projectId: string,
+  body: {
+    title: string
+    type: ApiDecisionType
+    rationale: string
+    impact?: string
+    tags?: string[]
+    createdBy?: { id?: string; name?: string }
+    decisionDate?: string
+    status?: ApiDecisionStatus
+    linkedMilestoneIds?: string[]
+    linkedIssueIds?: string[]
+  }
+): Promise<ApiDecision> {
+  return authFetch(`/projects/${projectId}/decisions`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  }) as Promise<ApiDecision>
+}
+
+export async function updateProjectDecision(
+  projectId: string,
+  decisionId: string,
+  body: {
+    title?: string
+    type?: ApiDecisionType
+    rationale?: string
+    impact?: string
+    tags?: string[]
+    decisionDate?: string
+    status?: ApiDecisionStatus
+    linkedMilestoneIds?: string[]
+    linkedIssueIds?: string[]
+  }
+): Promise<ApiDecision> {
+  return authFetch(`/projects/${projectId}/decisions/${decisionId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  }) as Promise<ApiDecision>
 }
 
 export async function createIssue(

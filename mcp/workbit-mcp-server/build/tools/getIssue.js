@@ -34,7 +34,10 @@ export function registerGetIssueTool(server) {
     server.registerTool('getIssuesByProject', {
         description: 'Get all issues for a given project.',
         inputSchema: {
-            projectId: z.string().min(1).describe('The project ID to fetch issues for.'),
+            projectId: z
+                .string()
+                .min(1)
+                .describe('The project ID to fetch issues for.'),
         },
     }, async ({ projectId }) => {
         try {

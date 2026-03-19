@@ -1,16 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import {
-  Stack,
-  Text,
-  Tabs,
-  Modal,
-  Input,
-  Button,
-  Card,
-  Flex,
-  Avatar,
-} from '@design-system'
+import { Stack, Text, Tabs, Modal, Input, Button, Flex } from '@design-system'
 import type { TabItem } from '@design-system'
 import {
   StatusUpdateComposer,
@@ -19,6 +9,9 @@ import {
   PropertiesSection,
   ProjectUpdateHighlightCard,
   UpdatesTree,
+  TaskListTable,
+  mapIssueToTaskListItem,
+  DecisionTab,
 } from '../components'
 import type {
   StatusUpdateCardData,
@@ -116,6 +109,7 @@ export function TeamProjectDetailScreen({ projectName, teamId }: Props) {
     { id: 'overview', label: 'Overview' },
     { id: 'updates', label: 'Updates' },
     { id: 'issues', label: 'Issues' },
+    { id: 'decisions', label: 'Decisions' },
   ]
 
   const updatesTreeItems: UpdateItem[] = updates.map((u) => ({
@@ -561,43 +555,38 @@ export function TeamProjectDetailScreen({ projectName, teamId }: Props) {
                     </Text>
                   </div>
                 ) : (
-                  <Stack gap={1}>
-                    {issues.map((issue) => (
-                      <div
-                        key={issue.id}
-                        onClick={() =>
-                          workspaceId &&
-                          teamId &&
-                          navigate(
-                            `/workspace/${workspaceId}/team/${teamId}/issue/${issue.id}`
-                          )
-                        }
-                        className="cursor-pointer"
-                      >
-                        <Card>
-                          <Flex align="center" gap={2}>
-                            <Text size="sm">{issue.id}</Text>
-                            <span style={{ flex: 1 }}>
-                              <Text size="sm" as="span">
-                                {issue.title}
-                              </Text>
-                            </span>
-                            {issue.assignee ? (
-                              <Avatar name={issue.assignee.name} size={24} />
-                            ) : (
-                              <span style={{ width: 24 }} />
-                            )}
-                            <Text size="xs" muted>
-                              {formatDateTime(issue.date)}
-                            </Text>
-                          </Flex>
-                        </Card>
-                      </div>
-                    ))}
-                  </Stack>
+                  <TaskListTable
+                    items={issues.map((issue) =>
+                      mapIssueToTaskListItem(issue, {
+                        timeLabel: formatDateTime(issue.date),
+                      })
+                    )}
+                    onRowClick={(item) => {
+                      if (workspaceId && teamId) {
+                        navigate(
+                          `/workspace/${workspaceId}/team/${teamId}/issue/${item.id}`
+                        )
+                      }
+                    }}
+                  />
                 )}
               </Stack>
             </div>
+          )}
+
+          {activeTab === 'decisions' && projectId && (
+            <DecisionTab
+              projectId={projectId}
+              issues={issues.map((i) => ({
+                id: i.id,
+                title: i.title,
+              }))}
+              milestones={milestones.map((m) => ({
+                id: m.id,
+                name: m.name,
+              }))}
+              isActive={activeTab === 'decisions'}
+            />
           )}
         </section>
 

@@ -11,6 +11,7 @@ import {
 import { Avatar } from '@design-system'
 import { STATUS_CONFIG } from '../constants/projectStatus'
 import type { UpdateItem } from './UpdatesTree'
+import { MarkdownContent } from './MarkdownContent'
 
 type Props = {
   update?: UpdateItem
@@ -85,12 +86,15 @@ const StatusPill = styled.span<{ $tone: 'success' | 'warning' | 'error' }>`
   white-space: nowrap;
 `
 
-const Body = styled.p`
+const Body = styled.div`
   margin: 16px 0;
   color: ${(p) => p.theme.colors.text};
   font-size: 1rem;
   line-height: 1.5;
-  white-space: pre-wrap;
+
+  .wmde-markdown {
+    padding: 0;
+  }
 `
 
 const Footer = styled.div`
@@ -176,12 +180,17 @@ const CommentTime = styled.span`
   color: ${(p) => p.theme.colors.textMuted};
 `
 
-const CommentBody = styled.p`
+const CommentBody = styled.div`
   margin: 0;
   font-size: 0.84rem;
   color: ${(p) => p.theme.colors.text};
   line-height: 1.45;
-  white-space: pre-wrap;
+
+  .wmde-markdown {
+    padding: 0;
+    font-size: 0.84rem;
+    line-height: 1.45;
+  }
 `
 
 const Composer = styled.form`
@@ -199,7 +208,7 @@ const ComposerSend = styled.button`
   align-items: center;
   justify-content: center;
   background: ${(p) => p.theme.colors.primary};
-  color: ${(p) => p.theme.colors.primaryForeground};
+  color: ${(p) => p.theme.colors.surface};
   cursor: pointer;
 
   &:hover {
@@ -330,7 +339,9 @@ export function ProjectUpdateHighlightCard({
           <StatusPill $tone={statusTone}>{statusLabel}</StatusPill>
         </TopRow>
 
-        <Body>{update.content}</Body>
+        <Body>
+          <MarkdownContent content={update.content} />
+        </Body>
 
         <Footer>
           <Reactions>
@@ -372,7 +383,9 @@ export function ProjectUpdateHighlightCard({
                     <CommentAuthor>{item.author}</CommentAuthor>
                     <CommentTime>{item.timestamp}</CommentTime>
                   </CommentHeader>
-                  <CommentBody>{item.content}</CommentBody>
+                  <CommentBody>
+                    <MarkdownContent content={item.content} />
+                  </CommentBody>
                 </CommentItem>
               ))}
             </CommentList>

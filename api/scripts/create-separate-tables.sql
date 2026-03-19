@@ -98,6 +98,23 @@ create table if not exists public.issues (
   team_id text,
   project_id text
 );
+create table if not exists public.decisions (
+  id text primary key,
+  project_id text not null,
+  title text not null,
+  type text not null,
+  rationale text not null,
+  impact text,
+  tags text[] not null default '{}',
+  created_by_id text not null,
+  created_by_name text not null,
+  decision_date text,
+  status text not null,
+  linked_milestone_ids text[] not null default '{}',
+  linked_issue_ids text[] not null default '{}',
+  created_at timestamptz not null,
+  updated_at timestamptz not null
+);
 create table if not exists public.notifications (
   id text primary key,
   type text not null,
@@ -123,6 +140,7 @@ alter table public.project_properties enable row level security;
 alter table public.milestones enable row level security;
 alter table public.activity enable row level security;
 alter table public.issues enable row level security;
+alter table public.decisions enable row level security;
 alter table public.notifications enable row level security;
 
 drop policy if exists "projects_service_role" on public.projects;
@@ -149,5 +167,7 @@ drop policy if exists "activity_service_role" on public.activity;
 create policy "activity_service_role" on public.activity for all using (true) with check (true);
 drop policy if exists "issues_service_role" on public.issues;
 create policy "issues_service_role" on public.issues for all using (true) with check (true);
+drop policy if exists "decisions_service_role" on public.decisions;
+create policy "decisions_service_role" on public.decisions for all using (true) with check (true);
 drop policy if exists "notifications_service_role" on public.notifications;
 create policy "notifications_service_role" on public.notifications for all using (true) with check (true);

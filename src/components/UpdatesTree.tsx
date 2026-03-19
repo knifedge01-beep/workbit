@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { Avatar, Badge, Button, Input, Text } from '@design-system'
 import { STATUS_CONFIG, type ProjectStatus } from '../constants/projectStatus'
+import { MarkdownContent } from './MarkdownContent'
 
 export type UpdateItem = {
   id: string
@@ -215,7 +216,12 @@ const NodeContent = styled.div`
   font-size: 0.9rem;
   color: ${(p) => p.theme.colors.text};
   line-height: 1.5;
-  white-space: pre-wrap;
+
+  .wmde-markdown {
+    padding: 0;
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
 `
 
 const ExpandedBody = styled.div`
@@ -502,7 +508,9 @@ export function UpdatesTree({
           <Collapsible $open={open}>
             <CollapsibleInner>
               <ExpandedBody>
-                <NodeContent>{item.content}</NodeContent>
+                <NodeContent>
+                  <MarkdownContent content={item.content} />
+                </NodeContent>
 
                 <ActionRow>
                   <ActionButton

@@ -369,6 +369,31 @@ export async function postComment(
   }>
 }
 
+export async function fetchStatusUpdateComments(
+  teamId: string,
+  updateId: string
+): Promise<
+  {
+    id: string
+    authorName: string
+    authorAvatarSrc?: string
+    timestamp: string
+    content: string
+  }[]
+> {
+  return authFetch(
+    `/teams/${teamId}/project/updates/${updateId}/comments`
+  ) as Promise<
+    {
+      id: string
+      authorName: string
+      authorAvatarSrc?: string
+      timestamp: string
+      content: string
+    }[]
+  >
+}
+
 export async function createMilestone(
   teamId: string,
   body: { name: string; targetDate?: string; description?: string }

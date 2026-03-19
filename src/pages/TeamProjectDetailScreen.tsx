@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import styled from 'styled-components'
 import {
   Stack,
   Text,
@@ -12,16 +11,18 @@ import {
   Flex,
   Avatar,
 } from '@design-system'
-import type { ChatMessage, ChatUser, TabItem } from '@design-system'
+import type { TabItem } from '@design-system'
 import {
-  StatusUpdateCard,
   StatusUpdateComposer,
   MilestonesSection,
   ActivitySection,
   PropertiesSection,
+  ProjectUpdateHighlightCard,
+  UpdatesTree,
 } from '../components'
 import type {
   StatusUpdateCardData,
+  UpdateItem,
   ProjectStatus,
   MilestoneItem,
   ActivityItem,
@@ -32,6 +33,7 @@ import { logError } from '../utils/errorHandling'
 import {
   fetchTeamProject,
   fetchTeamProjectIssues,
+  fetchStatusUpdateComments,
   postStatusUpdate,
   postComment,
   createMilestone,
@@ -41,30 +43,7 @@ import {
 import type { ApiStatusUpdate, ApiProjectProperties } from '../api/client'
 import { useFetch } from '../hooks/useFetch'
 
-const ContentSection = styled.div`
-  padding: 24px 0;
-`
-
-const EmptyState = styled.div`
-  text-align: center;
-  padding: 80px 20px;
-`
-
-const ClickableCardWrapper = styled.div`
-  cursor: pointer;
-  &:hover {
-    opacity: 0.95;
-  }
-`
-
-const CenterMessage = styled.div`
-  text-align: center;
-  padding: 48px 0;
-`
-
 type Props = { projectName: string; teamId: string }
-
-const DEFAULT_CURRENT_USER: ChatUser = { name: 'You' }
 
 function apiUpdateToCard(u: ApiStatusUpdate): StatusUpdateCardData {
   return {
@@ -77,125 +56,27 @@ function apiUpdateToCard(u: ApiStatusUpdate): StatusUpdateCardData {
   }
 }
 
-const Layout = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 320px;
-  gap: 32px;
-  align-items: start;
-  min-height: 0;
-`
+function appendChildNode(
+  nodes: UpdateItem[],
+  parentId: string,
+  child: UpdateItem
+): UpdateItem[] {
+  return nodes.map((node) => {
+    if (node.id === parentId) {
+      return {
+        ...node,
+        comments: [...(node.comments ?? []), child],
+      }
+    }
 
-const Breadcrumb = styled.div`
-  font-size: 13px;
-  color: ${(p) => p.theme.colors.textMuted};
-  margin-bottom: 16px;
-  span {
-    color: ${(p) => p.theme.colors.text};
-  }
-`
+    if (!node.comments || node.comments.length === 0) return node
 
-const TabsContainer = styled.div`
-  border-bottom: 1px solid ${(p) => p.theme.colors.border};
-  margin-bottom: 24px;
-`
-
-const PageHeader = styled.div`
-  text-align: center;
-  padding: 32px 0;
-  border-bottom: 1px solid ${(p) => p.theme.colors.border};
-  margin-bottom: 24px;
-`
-
-const ProjectIcon = styled.div`
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  background: ${(p) => p.theme.colors.primary};
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 12px;
-  font-weight: 600;
-  font-size: 18px;
-`
-
-const MainContent = styled.div`
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-`
-
-const ProjectTitle = styled.h1`
-  margin: 0 0 8px;
-  font-size: 24px;
-  font-weight: 600;
-  color: ${(p) => p.theme.colors.text};
-`
-
-const ProjectSummary = styled.p`
-  margin: 0;
-  font-size: 14px;
-  color: ${(p) => p.theme.colors.textMuted};
-  max-width: 600px;
-  margin: 0 auto;
-`
-
-const HeaderActions = styled.div`
-  margin-top: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-`
-
-const SummaryBlock = styled.div`
-  padding: 24px 0;
-  border-bottom: 1px solid ${(p) => p.theme.colors.border};
-  margin-bottom: 24px;
-`
-
-const SummaryText = styled.div`
-  font-size: 14px;
-  color: ${(p) => p.theme.colors.text};
-  line-height: 1.6;
-  white-space: pre-wrap;
-  margin-bottom: 12px;
-`
-
-const SummaryActions = styled.div`
-  font-size: 13px;
-  color: ${(p) => p.theme.colors.textMuted};
-`
-
-const PropertiesSidebar = styled.aside`
-  position: sticky;
-  top: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  border: 1px solid ${(p) => p.theme.colors.border};
-  border-radius: 8px;
-  background: ${(p) => p.theme.colors.backgroundSubtle};
-  overflow: hidden;
-`
-
-const SidebarSection = styled.div`
-  padding: 16px;
-  &:not(:last-child) {
-    border-bottom: 1px solid ${(p) => p.theme.colors.border};
-  }
-`
-
-const SectionLabel = styled.div`
-  font-size: 12px;
-  font-weight: 500;
-  color: ${(p) => p.theme.colors.textMuted};
-  margin-bottom: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-`
+    return {
+      ...node,
+      comments: appendChildNode(node.comments, parentId, child),
+    }
+  })
+}
 
 export function TeamProjectDetailScreen({ projectName, teamId }: Props) {
   const { workspaceId, projectId } = useParams<{
@@ -211,7 +92,7 @@ export function TeamProjectDetailScreen({ projectName, teamId }: Props) {
     null
   )
   const [commentsByUpdateId, setCommentsByUpdateId] = useState<
-    Record<string, ChatMessage[]>
+    Record<string, UpdateItem[]>
   >({})
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('overview')
@@ -237,6 +118,20 @@ export function TeamProjectDetailScreen({ projectName, teamId }: Props) {
     { id: 'issues', label: 'Issues' },
   ]
 
+  const updatesTreeItems: UpdateItem[] = updates.map((u) => ({
+    id: u.id,
+    kind: 'update',
+    updateId: u.id,
+    parentId: null,
+    content: u.content,
+    author: u.authorName,
+    timestamp: u.timestamp,
+    status: u.status,
+    comments: commentsByUpdateId[u.id] ?? [],
+  }))
+
+  const featuredUpdate = updatesTreeItems[0]
+
   useEffect(() => {
     if (!teamId) return
     setLoading(true)
@@ -244,12 +139,47 @@ export function TeamProjectDetailScreen({ projectName, teamId }: Props) {
       .then((data) => {
         if (!data.project) {
           setUpdates([])
+          setCommentsByUpdateId({})
           setMilestones([])
           setActivity([])
           setProperties({})
           return
         }
-        setUpdates(data.project.statusUpdates.nodes.map(apiUpdateToCard))
+
+        const nextUpdates =
+          data.project.statusUpdates.nodes.map(apiUpdateToCard)
+        setUpdates(nextUpdates)
+
+        if (nextUpdates.length > 0) {
+          void Promise.all(
+            nextUpdates.map(async (update) => {
+              const comments = await fetchStatusUpdateComments(
+                teamId,
+                update.id
+              )
+              const mapped: UpdateItem[] = comments.map((comment) => ({
+                id: `${update.id}:comment:${comment.id}`,
+                kind: 'comment',
+                updateId: update.id,
+                parentId: update.id,
+                content: comment.content,
+                author: comment.authorName,
+                timestamp: formatDateTime(comment.timestamp),
+                status: update.status,
+                comments: [],
+                reactions: {},
+              }))
+              return [update.id, mapped] as const
+            })
+          )
+            .then((entries) => {
+              setCommentsByUpdateId(Object.fromEntries(entries))
+            })
+            .catch((e) => logError(e, 'TeamProjectDetail.commentsLoad'))
+        } else {
+          setCommentsByUpdateId({})
+        }
+
         setMilestones(
           data.project.milestones.map((m) => ({
             id: m.id,
@@ -283,29 +213,64 @@ export function TeamProjectDetailScreen({ projectName, teamId }: Props) {
       .catch((e) => logError(e, 'TeamProjectDetail'))
   }
 
-  const handleSendComment = (updateId: string) => (text: string) => {
+  const handleAddComment = async (item: UpdateItem, content: string) => {
     if (!teamId) return
-    void postComment(teamId, updateId, text)
-      .then((c) => {
-        const msg: ChatMessage = {
-          id: c.id,
-          authorName: c.authorName,
-          timestamp: formatDateTime(c.timestamp),
-          content: c.content,
-        }
-        setCommentsByUpdateId((prev) => ({
-          ...prev,
-          [updateId]: [...(prev[updateId] ?? []), msg],
-        }))
-        setUpdates((prev) =>
-          prev.map((u) =>
-            u.id === updateId
-              ? { ...u, commentCount: (u.commentCount ?? 0) + 1 }
-              : u
+
+    const updateId = item.updateId
+
+    if (item.kind === 'update') {
+      await postComment(teamId, updateId, content)
+        .then((c) => {
+          const created: UpdateItem = {
+            id: `${updateId}:comment:${c.id}`,
+            kind: 'comment',
+            updateId,
+            parentId: updateId,
+            content: c.content,
+            author: c.authorName,
+            timestamp: formatDateTime(c.timestamp),
+            status: item.status,
+            comments: [],
+            reactions: {},
+          }
+
+          setCommentsByUpdateId((prev) => ({
+            ...prev,
+            [updateId]: [...(prev[updateId] ?? []), created],
+          }))
+
+          setUpdates((prev) =>
+            prev.map((u) =>
+              u.id === updateId
+                ? { ...u, commentCount: (u.commentCount ?? 0) + 1 }
+                : u
+            )
           )
-        )
-      })
-      .catch((e) => logError(e, 'TeamProjectDetail'))
+        })
+        .catch((e) => {
+          logError(e, 'TeamProjectDetail.postComment')
+          throw e
+        })
+      return
+    }
+
+    const localReply: UpdateItem = {
+      id: `${updateId}:local:${Date.now()}:${Math.random().toString(16).slice(2, 8)}`,
+      kind: 'comment',
+      updateId,
+      parentId: item.id,
+      content,
+      author: 'You',
+      timestamp: formatDateTime(new Date().toISOString()),
+      status: item.status,
+      comments: [],
+      reactions: {},
+    }
+
+    setCommentsByUpdateId((prev) => ({
+      ...prev,
+      [updateId]: appendChildNode(prev[updateId] ?? [], item.id, localReply),
+    }))
   }
 
   const handleAddMilestone = () => {
@@ -371,40 +336,45 @@ export function TeamProjectDetailScreen({ projectName, teamId }: Props) {
 
   if (loading) {
     return (
-      <Layout>
-        <MainContent>
-          <Breadcrumb>
-            Projects &gt; <span>{projectName}</span>
-          </Breadcrumb>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_330px]">
+        <div className="rounded-xl border border-slate-200 bg-white p-4">
           <Text size="sm" muted>
             Loading project...
           </Text>
-        </MainContent>
-        <PropertiesSidebar />
-      </Layout>
+        </div>
+        <div className="rounded-xl border border-slate-200 bg-white p-3" />
+      </div>
     )
   }
 
   return (
-    <Layout>
-      <MainContent>
-        <Breadcrumb>
-          Projects &gt; <span>{projectName}</span>
-        </Breadcrumb>
+    <>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_330px]">
+        <section className="min-w-0">
+          <div className="mb-2 flex items-center gap-2 text-sm text-slate-500">
+            <span>Projects</span>
+            <span>&gt;</span>
+            <span className="font-medium text-slate-800">{projectName}</span>
+          </div>
 
-        <TabsContainer>
-          <Tabs tabs={tabs} activeId={activeTab} onChange={setActiveTab} />
-        </TabsContainer>
+          <div className="mb-3 rounded-xl border border-slate-200 bg-white p-3">
+            <Tabs tabs={tabs} activeId={activeTab} onChange={setActiveTab} />
+          </div>
 
-        {activeTab === 'overview' && (
-          <>
-            <PageHeader>
-              <ProjectIcon>{projectName[0]?.toUpperCase() ?? 'P'}</ProjectIcon>
-              <ProjectTitle>{projectName}</ProjectTitle>
-              <ProjectSummary>
-                Track progress, updates, and milestones for this project.
-              </ProjectSummary>
-              <HeaderActions>
+          {activeTab === 'overview' && (
+            <div className="rounded-xl border border-slate-200 bg-white p-4">
+              <div className="mb-4 flex items-start justify-between gap-4">
+                <div>
+                  <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-700">
+                    {projectName[0]?.toUpperCase() ?? 'P'}
+                  </div>
+                  <h1 className="mb-1 text-2xl font-semibold text-slate-900">
+                    {projectName}
+                  </h1>
+                  <p className="text-sm text-slate-500">
+                    Add a short summary...
+                  </p>
+                </div>
                 <Button
                   variant="secondary"
                   onClick={handleGenerateSummary}
@@ -412,57 +382,66 @@ export function TeamProjectDetailScreen({ projectName, teamId }: Props) {
                 >
                   {summaryLoading ? 'Generating…' : 'Generate Summary'}
                 </Button>
-              </HeaderActions>
-            </PageHeader>
+              </div>
 
-            {projectSummary !== null ? (
-              <SummaryBlock>
-                <SummaryText>{projectSummary}</SummaryText>
-                <SummaryActions>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setProjectSummary(null)
-                      setSummaryError(null)
-                    }}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: 'inherit',
-                      cursor: 'pointer',
-                      padding: 0,
-                      textDecoration: 'underline',
-                      fontSize: 'inherit',
-                    }}
-                  >
-                    Show latest updates
-                  </button>
-                  {' · '}
-                  <button
-                    type="button"
-                    onClick={handleGenerateSummary}
-                    disabled={summaryLoading}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: 'inherit',
-                      cursor: summaryLoading ? 'not-allowed' : 'pointer',
-                      padding: 0,
-                      textDecoration: 'underline',
-                      fontSize: 'inherit',
-                    }}
-                  >
-                    {summaryLoading ? 'Generating…' : 'Regenerate summary'}
-                  </button>
-                </SummaryActions>
-              </SummaryBlock>
-            ) : summaryError ? (
-              <Stack gap={3}>
-                <CenterMessage>
-                  <Stack gap={2}>
-                    <Text size="sm" muted>
-                      {summaryError}
-                    </Text>
+              <div className="mb-3 flex flex-wrap items-center gap-3 text-sm text-slate-600">
+                <span className="font-medium text-slate-700">Properties</span>
+                <span>{properties?.status ?? 'Backlog'}</span>
+                <span>{properties?.priority ?? 'No priority'}</span>
+                <span>Lead</span>
+                <span>Target date</span>
+                <span className="rounded bg-slate-100 px-2 py-0.5 text-xs">
+                  {teamId}
+                </span>
+                <button
+                  type="button"
+                  className="text-slate-500 hover:text-slate-700"
+                >
+                  ...
+                </button>
+              </div>
+
+              <div className="mb-4 flex items-center gap-2 text-sm text-slate-600">
+                <span className="font-medium text-slate-700">Resources</span>
+                <button
+                  type="button"
+                  className="text-slate-500 hover:text-slate-700"
+                >
+                  + Add document or link...
+                </button>
+              </div>
+
+              {projectSummary !== null ? (
+                <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                  <p className="whitespace-pre-wrap text-sm leading-6 text-slate-700">
+                    {projectSummary}
+                  </p>
+                  <div className="mt-3 text-xs text-slate-500">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProjectSummary(null)
+                        setSummaryError(null)
+                      }}
+                      className="underline"
+                    >
+                      Show latest updates
+                    </button>
+                    {' · '}
+                    <button
+                      type="button"
+                      onClick={handleGenerateSummary}
+                      disabled={summaryLoading}
+                      className="underline"
+                    >
+                      {summaryLoading ? 'Generating…' : 'Regenerate summary'}
+                    </button>
+                  </div>
+                </div>
+              ) : summaryError ? (
+                <div className="mb-4 rounded-lg border border-rose-200 bg-rose-50 p-3">
+                  <Text size="sm">{summaryError}</Text>
+                  <div className="mt-2">
                     <Button
                       variant="secondary"
                       onClick={handleGenerateSummary}
@@ -470,175 +449,224 @@ export function TeamProjectDetailScreen({ projectName, teamId }: Props) {
                     >
                       Try again
                     </Button>
-                  </Stack>
-                </CenterMessage>
-                <StatusUpdateComposer
-                  placeholder="Write a project update..."
-                  onPost={handlePostUpdate}
-                  onChooseFile={noop}
-                  onCreateDocument={noop}
-                  onAddLink={noop}
-                />
-              </Stack>
-            ) : (
-              <Stack gap={3}>
-                {updates.length === 0 ? (
-                  <CenterMessage>
-                    <Text size="sm" muted>
+                  </div>
+                </div>
+              ) : (
+                <div className="mb-4 space-y-2">
+                  {updates.length === 0 ? (
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-500">
                       Write the first project update to get started
-                    </Text>
-                  </CenterMessage>
-                ) : (
-                  updates.map((u) => (
-                    <StatusUpdateCard
-                      key={u.id}
-                      data={u}
-                      comments={commentsByUpdateId[u.id]}
-                      currentUser={DEFAULT_CURRENT_USER}
-                      onSendComment={handleSendComment(u.id)}
-                      onMore={noop}
-                    />
-                  ))
-                )}
-                <StatusUpdateComposer
-                  placeholder="Write a project update..."
-                  onPost={handlePostUpdate}
-                  onChooseFile={noop}
-                  onCreateDocument={noop}
-                  onAddLink={noop}
-                />
-              </Stack>
-            )}
+                    </div>
+                  ) : (
+                    <>
+                      <ProjectUpdateHighlightCard
+                        update={featuredUpdate}
+                        onAddComment={handleAddComment}
+                        onViewFullThread={() => setActiveTab('updates')}
+                      />
+                      <UpdatesTree
+                        updates={updatesTreeItems}
+                        enableSearch={false}
+                        onAddComment={handleAddComment}
+                        onReact={noop}
+                      />
+                    </>
+                  )}
 
-            <ContentSection>
+                  <StatusUpdateComposer
+                    placeholder="Write first project update"
+                    onPost={handlePostUpdate}
+                    onChooseFile={noop}
+                    onCreateDocument={noop}
+                    onAddLink={noop}
+                  />
+                </div>
+              )}
+
+              <div className="mb-6">
+                <h3 className="mb-1 text-sm font-semibold text-slate-700">
+                  Description
+                </h3>
+                <button
+                  type="button"
+                  className="text-sm text-slate-500 hover:text-slate-700"
+                >
+                  Add description...
+                </button>
+              </div>
+
               <MilestonesSection
                 milestones={milestones}
                 onAdd={handleAddMilestone}
               />
-            </ContentSection>
 
-            <ContentSection>
-              <ActivitySection items={activity} />
-            </ContentSection>
-          </>
-        )}
+              <div className="mt-6">
+                <ActivitySection items={activity} />
+              </div>
+            </div>
+          )}
 
-        {activeTab === 'updates' && (
-          <ContentSection>
-            <Stack gap={3}>
-              {updates.map((u) => (
-                <StatusUpdateCard
-                  key={u.id}
-                  data={u}
-                  comments={commentsByUpdateId[u.id]}
-                  currentUser={DEFAULT_CURRENT_USER}
-                  onSendComment={handleSendComment(u.id)}
-                  onMore={noop}
+          {activeTab === 'updates' && (
+            <div className="rounded-xl border border-slate-200 bg-white p-4">
+              <Stack gap={3}>
+                <UpdatesTree
+                  updates={updatesTreeItems}
+                  enableSearch={false}
+                  onAddComment={handleAddComment}
+                  onReact={noop}
                 />
-              ))}
-              <StatusUpdateComposer
-                placeholder="Write a project update..."
-                onPost={handlePostUpdate}
-                onChooseFile={noop}
-                onCreateDocument={noop}
-                onAddLink={noop}
-              />
-            </Stack>
-          </ContentSection>
-        )}
+                <StatusUpdateComposer
+                  placeholder="Write a project update..."
+                  onPost={handlePostUpdate}
+                  onChooseFile={noop}
+                  onCreateDocument={noop}
+                  onAddLink={noop}
+                />
+              </Stack>
+            </div>
+          )}
 
-        {activeTab === 'issues' && (
-          <ContentSection>
-            <Stack gap={3}>
-              <Flex align="center" justify="space-between">
-                <Text size="sm" muted>
-                  {issuesLoading
-                    ? 'Loading issues...'
-                    : `${issues.length} issue${issues.length === 1 ? '' : 's'}`}
-                </Text>
-                {workspaceId && teamId && (
-                  <Button
-                    variant="primary"
-                    onClick={() =>
-                      navigate(
-                        `/workspace/${workspaceId}/team/${teamId}/issues/new`,
-                        projectId ? { state: { projectId } } : undefined
-                      )
-                    }
-                  >
-                    Create new issue
-                  </Button>
-                )}
-              </Flex>
-              {issuesLoading ? (
-                <Text size="sm" muted>
-                  Loading...
-                </Text>
-              ) : issues.length === 0 ? (
-                <EmptyState>
+          {activeTab === 'issues' && (
+            <div className="rounded-xl border border-slate-200 bg-white p-4">
+              <Stack gap={3}>
+                <Flex align="center" justify="space-between">
                   <Text size="sm" muted>
-                    No issues in this project yet
+                    {issuesLoading
+                      ? 'Loading issues...'
+                      : `${issues.length} issue${issues.length === 1 ? '' : 's'}`}
                   </Text>
-                </EmptyState>
-              ) : (
-                <Stack gap={1}>
-                  {issues.map((issue) => (
-                    <ClickableCardWrapper
-                      key={issue.id}
+                  {workspaceId && teamId && (
+                    <Button
+                      variant="primary"
                       onClick={() =>
-                        workspaceId &&
-                        teamId &&
                         navigate(
-                          `/workspace/${workspaceId}/team/${teamId}/issue/${issue.id}`
+                          `/workspace/${workspaceId}/team/${teamId}/issues/new`,
+                          projectId ? { state: { projectId } } : undefined
                         )
                       }
                     >
-                      <Card>
-                        <Flex align="center" gap={2}>
-                          <Text size="sm">{issue.id}</Text>
-                          <span style={{ flex: 1 }}>
-                            <Text size="sm" as="span">
-                              {issue.title}
-                            </Text>
-                          </span>
-                          {issue.assignee ? (
-                            <Avatar name={issue.assignee.name} size={24} />
-                          ) : (
-                            <span style={{ width: 24 }} />
-                          )}
-                          <Text size="xs" muted>
-                            {formatDateTime(issue.date)}
-                          </Text>
-                        </Flex>
-                      </Card>
-                    </ClickableCardWrapper>
-                  ))}
-                </Stack>
-              )}
-            </Stack>
-          </ContentSection>
-        )}
-      </MainContent>
+                      Create new issue
+                    </Button>
+                  )}
+                </Flex>
 
-      <PropertiesSidebar>
-        <SidebarSection>
-          <SectionLabel>Properties</SectionLabel>
-          <PropertiesSection
-            key={`${properties?.status}-${properties?.priority}`}
-            contentOnly
-            defaultStatus={properties?.status}
-            defaultPriority={properties?.priority}
-            defaultStartDate={
-              properties?.startDate ? new Date(properties.startDate) : undefined
-            }
-            defaultEndDate={
-              properties?.endDate ? new Date(properties.endDate) : undefined
-            }
-            onStatusChange={handleStatusChange}
-            onPriorityChange={handlePriorityChange}
-          />
-        </SidebarSection>
-      </PropertiesSidebar>
+                {issuesLoading ? (
+                  <Text size="sm" muted>
+                    Loading...
+                  </Text>
+                ) : issues.length === 0 ? (
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-8 text-center">
+                    <Text size="sm" muted>
+                      No issues in this project yet
+                    </Text>
+                  </div>
+                ) : (
+                  <Stack gap={1}>
+                    {issues.map((issue) => (
+                      <div
+                        key={issue.id}
+                        onClick={() =>
+                          workspaceId &&
+                          teamId &&
+                          navigate(
+                            `/workspace/${workspaceId}/team/${teamId}/issue/${issue.id}`
+                          )
+                        }
+                        className="cursor-pointer"
+                      >
+                        <Card>
+                          <Flex align="center" gap={2}>
+                            <Text size="sm">{issue.id}</Text>
+                            <span style={{ flex: 1 }}>
+                              <Text size="sm" as="span">
+                                {issue.title}
+                              </Text>
+                            </span>
+                            {issue.assignee ? (
+                              <Avatar name={issue.assignee.name} size={24} />
+                            ) : (
+                              <span style={{ width: 24 }} />
+                            )}
+                            <Text size="xs" muted>
+                              {formatDateTime(issue.date)}
+                            </Text>
+                          </Flex>
+                        </Card>
+                      </div>
+                    ))}
+                  </Stack>
+                )}
+              </Stack>
+            </div>
+          )}
+        </section>
+
+        <aside className="space-y-2">
+          <div className="rounded-xl border border-slate-200 bg-white p-3">
+            <div className="mb-2 flex items-center justify-between text-sm font-semibold text-slate-700">
+              <span>Properties</span>
+              <button
+                type="button"
+                className="text-slate-400 hover:text-slate-600"
+              >
+                +
+              </button>
+            </div>
+            <PropertiesSection
+              key={`${properties?.status}-${properties?.priority}`}
+              contentOnly
+              defaultStatus={properties?.status}
+              defaultPriority={properties?.priority}
+              defaultStartDate={
+                properties?.startDate
+                  ? new Date(properties.startDate)
+                  : undefined
+              }
+              defaultEndDate={
+                properties?.endDate ? new Date(properties.endDate) : undefined
+              }
+              onStatusChange={handleStatusChange}
+              onPriorityChange={handlePriorityChange}
+            />
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-white p-3">
+            <div className="mb-1 flex items-center justify-between text-sm font-semibold text-slate-700">
+              <span>Milestones</span>
+              <button
+                type="button"
+                onClick={handleAddMilestone}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                +
+              </button>
+            </div>
+            <p className="text-xs text-slate-500">
+              Add milestones to organize work into granular stages.
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-slate-200 bg-white p-3">
+            <div className="mb-1 flex items-center justify-between text-sm font-semibold text-slate-700">
+              <span>Activity</span>
+              <button
+                type="button"
+                className="text-xs text-slate-500 hover:text-slate-700"
+              >
+                See all
+              </button>
+            </div>
+            {activity.length > 0 ? (
+              <p className="text-sm text-slate-600">
+                {activity.length} recent activit
+                {activity.length === 1 ? 'y' : 'ies'}
+              </p>
+            ) : (
+              <p className="text-sm text-slate-500">No activity yet</p>
+            )}
+          </div>
+        </aside>
+      </div>
 
       <Modal
         open={showMilestoneModal}
@@ -672,6 +700,6 @@ export function TeamProjectDetailScreen({ projectName, teamId }: Props) {
           </div>
         </Stack>
       </Modal>
-    </Layout>
+    </>
   )
 }

@@ -256,13 +256,18 @@ export async function createIssueForApi(input: {
   projectId?: string
   title: string
   description?: string
+  status?: string
 }): Promise<{ issue: Issue; team: { id: string; name: string } | null }> {
-  let team: { id: string; name: string } | null = null
+  let teamRecord: Awaited<ReturnType<typeof getTeamById>> = null
   if (input.teamId) {
-    team = await getTeamById(input.teamId)
-    if (!team) throw new Error('Team not found: ' + input.teamId)
+    teamRecord = await getTeamById(input.teamId)
+    if (!teamRecord) throw new Error('Team not found: ' + input.teamId)
   }
-  const projectId = input.projectId
+  const projectId =
+    input.projectId && input.projectId !== ''
+      ? input.projectId
+      : teamRecord?.projectId
+
   if (projectId != null && projectId !== '' && input.teamId) {
     const project = await getProjectById(projectId)
     if (!project) throw new Error('Project not found: ' + projectId)
@@ -276,7 +281,9 @@ export async function createIssueForApi(input: {
     projectId,
     title: input.title.trim(),
     description: input.description,
+    status: input.status,
   })
+  const team = teamRecord ? { id: teamRecord.id, name: teamRecord.name } : null
   return { issue, team }
 }
 

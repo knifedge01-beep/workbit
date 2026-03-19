@@ -41,4 +41,44 @@ export function registerGetIssueTool(server: McpServer): void {
       }
     }
   )
+  server.registerTool(
+    'getIssuesByProject',
+    {
+      description: 'Get all issues for a given project.',
+      inputSchema: {
+        projectId: z
+          .string()
+          .min(1)
+          .describe('The project ID to fetch issues for.'),
+      },
+    },
+    async ({ projectId }) => {
+      try {
+        const issues = await makeWorkbitRequest<unknown>(
+          `/projects/${encodeURIComponent(projectId)}`
+        )
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(issues, null, 2),
+            },
+          ],
+        }
+      } catch (error) {
+        logMcpError(error, 'tools.getIssuesByProject', { projectId })
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Failed to fetch issues from Workbit API: ${
+                (error as Error).message
+              }`,
+            },
+          ],
+        }
+      }
+    }
+  )
 }

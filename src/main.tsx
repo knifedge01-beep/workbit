@@ -7,6 +7,7 @@ import { AuthProvider } from './pages/auth/AuthContext'
 import { WorkspaceProvider } from './contexts/WorkspaceContext'
 import App from './App'
 import '@design-system/styles/global.css'
+import '@design-system-v2/styles/globals.css'
 
 initLogbit({
   service: 'workbit-web',

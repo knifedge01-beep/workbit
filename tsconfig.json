@@ -19,10 +19,16 @@
     "baseUrl": ".",
     "paths": {
       "@design-system": ["src/design-system"],
-      "@design-system/*": ["src/design-system/*"]
+      "@design-system/*": ["src/design-system/*"],
+      "@design-system-v2": ["src/design-system-v2"],
+      "@design-system-v2/*": ["src/design-system-v2/*"]
     }
   },
   "include": ["src"],
-  "references": [{ "path": "./api" }],
+  "references": [
+    {
+      "path": "./api"
+    }
+  ],
   "exclude": ["api"]
 }

@@ -5,6 +5,9 @@ export type ApiKeyListItem = {
   name: string | null
   masked_key: string
   created_at: string
+  last_used_at?: string | null
+  permissions?: string[] | null
+  environment?: string | null
 }
 
 export type CreateKeyResponse = {

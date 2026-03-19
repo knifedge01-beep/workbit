@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import styled from 'styled-components'
 import {
   ArrowDownCircle,
@@ -6,7 +7,9 @@ import {
   ArrowUpCircle,
   AlertCircle,
   Check,
+  ChevronDown,
 } from 'lucide-react'
+import { cn } from '@design-system-v2/lib/utils'
 
 export type PriorityOption = {
   id: string
@@ -33,7 +36,8 @@ const defaultPriorities: PriorityOption[] = [
 const Wrapper = styled.div<{ $iconOnly?: boolean }>`
   position: relative;
   display: inline-block;
-  min-width: ${(p) => (p.$iconOnly ? 'auto' : '120px')};
+  min-width: ${(p) => (p.$iconOnly ? 'auto' : '0')};
+  width: ${(p) => (p.$iconOnly ? 'auto' : '100%')};
 `
 
 const Trigger = styled.button<{ $iconOnly?: boolean }>`
@@ -67,17 +71,25 @@ const Trigger = styled.button<{ $iconOnly?: boolean }>`
   }
 `
 
-const Panel = styled.div`
-  position: absolute;
-  top: 100%;
-  left: 0;
-  margin-top: 4px;
+const TriggerLabel = styled.span`
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`
+
+const Panel = styled.div<{ $openUp: boolean }>`
+  position: fixed;
+  top: var(--menu-top, 0px);
+  left: var(--menu-left, 0px);
+  transform: ${(p) => (p.$openUp ? 'translateY(-100%)' : 'none')};
   min-width: 160px;
   background: ${(p) => p.theme.colors.surface};
   border: 1px solid ${(p) => p.theme.colors.border};
   border-radius: ${(p) => p.theme.radii?.md ?? 6}px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  z-index: 50;
+  z-index: 1200;
   overflow: hidden;
 `
 
@@ -133,6 +145,7 @@ type Props = {
   /** When true, trigger shows only the priority icon (for use in issue cards). */
   triggerVariant?: 'default' | 'icon'
   className?: string
+  triggerClassName?: string
 }
 
 export function PrioritySelector({
@@ -142,18 +155,53 @@ export function PrioritySelector({
   options = defaultPriorities,
   triggerVariant = 'default',
   className,
+  triggerClassName,
 }: Props) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
   const iconOnly = triggerVariant === 'icon'
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0, openUp: false })
 
   useEffect(() => {
     if (!open) return
     const onDocClick = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+      const target = e.target as Node
+      const inTrigger = ref.current?.contains(target)
+      const inPanel = panelRef.current?.contains(target)
+      if (!inTrigger && !inPanel) setOpen(false)
     }
     document.addEventListener('mousedown', onDocClick)
     return () => document.removeEventListener('mousedown', onDocClick)
+  }, [open])
+
+  useEffect(() => {
+    if (!open || !triggerRef.current) return
+    const GAP = 6
+    const PAD = 8
+    const updatePos = () => {
+      if (!triggerRef.current) return
+      const rect = triggerRef.current.getBoundingClientRect()
+      const panelW = panelRef.current?.offsetWidth ?? 180
+      const panelH = panelRef.current?.offsetHeight ?? 220
+      const openUp =
+        window.innerHeight - rect.bottom < panelH + GAP &&
+        rect.top > panelH + GAP
+      const left = Math.max(
+        PAD,
+        Math.min(rect.left, window.innerWidth - panelW - PAD)
+      )
+      const top = openUp ? rect.top - GAP : rect.bottom + GAP
+      setMenuPos({ top, left, openUp })
+    }
+    updatePos()
+    window.addEventListener('resize', updatePos)
+    window.addEventListener('scroll', updatePos, true)
+    return () => {
+      window.removeEventListener('resize', updatePos)
+      window.removeEventListener('scroll', updatePos, true)
+    }
   }, [open])
 
   const selected = options.find((o) => o.id === value)
@@ -161,10 +209,12 @@ export function PrioritySelector({
   return (
     <Wrapper ref={ref} className={className} $iconOnly={iconOnly}>
       <Trigger
+        ref={triggerRef}
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-label={selected ? selected.label : placeholder}
         $iconOnly={iconOnly}
+        className={cn(triggerClassName)}
       >
         {selected ? (
           <ItemIcon>{selected.icon}</ItemIcon>
@@ -172,40 +222,50 @@ export function PrioritySelector({
           <ItemIcon>{defaultPriorities[0].icon}</ItemIcon>
         )}
         {!iconOnly && (
-          <span
+          <TriggerLabel
             style={{
               color: selected ? undefined : 'var(--text-muted, #64748b)',
             }}
           >
             {selected ? selected.label : placeholder}
-          </span>
+          </TriggerLabel>
         )}
+        {!iconOnly && <ChevronDown size={14} style={{ opacity: 0.55 }} />}
       </Trigger>
-      {open && (
-        <Panel>
-          <List>
-            {options.map((opt) => (
-              <Item
-                key={opt.id}
-                type="button"
-                $selected={opt.id === value}
-                onClick={() => {
-                  onChange?.(opt.id)
-                  setOpen(false)
-                }}
-              >
-                <ItemIcon>{opt.icon}</ItemIcon>
-                <ItemLabel>{opt.label}</ItemLabel>
-                {opt.id === value && (
-                  <ItemCheck>
-                    <Check size={16} strokeWidth={2.5} />
-                  </ItemCheck>
-                )}
-              </Item>
-            ))}
-          </List>
-        </Panel>
-      )}
+      {open &&
+        createPortal(
+          <Panel
+            ref={panelRef}
+            $openUp={menuPos.openUp}
+            style={{
+              ['--menu-top' as string]: `${menuPos.top}px`,
+              ['--menu-left' as string]: `${menuPos.left}px`,
+            }}
+          >
+            <List>
+              {options.map((opt) => (
+                <Item
+                  key={opt.id}
+                  type="button"
+                  $selected={opt.id === value}
+                  onClick={() => {
+                    onChange?.(opt.id)
+                    setOpen(false)
+                  }}
+                >
+                  <ItemIcon>{opt.icon}</ItemIcon>
+                  <ItemLabel>{opt.label}</ItemLabel>
+                  {opt.id === value && (
+                    <ItemCheck>
+                      <Check size={16} strokeWidth={2.5} />
+                    </ItemCheck>
+                  )}
+                </Item>
+              ))}
+            </List>
+          </Panel>,
+          document.body
+        )}
     </Wrapper>
   )
 }

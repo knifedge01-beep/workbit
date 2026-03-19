@@ -1,35 +1,32 @@
-import { z } from "zod";
-import { makeWorkbitPatchRequest } from "../utils/workbitClient.js";
-import { logMcpError } from "../logging.js";
+import { z } from 'zod';
+import { makeWorkbitPatchRequest } from '../utils/workbitClient.js';
+import { logMcpError } from '../logging.js';
 export function registerUpdateIssueTool(server) {
-    server.registerTool("updateIssue", {
-        description: "Update an existing Workbit issue. Provide the issue ID and any fields to update.",
+    server.registerTool('updateIssue', {
+        description: 'Update an existing Workbit issue. Provide the issue ID and any fields to update.',
         inputSchema: {
-            issueId: z
-                .string()
-                .min(1)
-                .describe("The issue ID to update."),
+            issueId: z.string().min(1).describe('The issue ID to update.'),
             status: z
                 .string()
                 .optional()
-                .describe("Optional new status for the issue."),
+                .describe('Optional new status for the issue.'),
             assigneeId: z
                 .string()
                 .optional()
-                .describe("Optional assignee member ID."),
+                .describe('Optional assignee member ID.'),
             assigneeName: z
                 .string()
                 .optional()
-                .describe("Optional assignee display name."),
+                .describe('Optional assignee display name.'),
             projectId: z
                 .string()
                 .nullable()
                 .optional()
-                .describe("Optional project ID to link the issue to, or null to unlink."),
+                .describe('Optional project ID to link the issue to, or null to unlink.'),
             description: z
                 .string()
                 .optional()
-                .describe("Optional new description for the issue."),
+                .describe('Optional new description for the issue.'),
         },
     }, async ({ issueId, status, assigneeId, assigneeName, projectId, description, }) => {
         try {
@@ -48,8 +45,8 @@ export function registerUpdateIssueTool(server) {
                 return {
                     content: [
                         {
-                            type: "text",
-                            text: "No fields to update. Provide at least one of: status, assigneeId, assigneeName, projectId, description.",
+                            type: 'text',
+                            text: 'No fields to update. Provide at least one of: status, assigneeId, assigneeName, projectId, description.',
                         },
                     ],
                 };
@@ -58,18 +55,18 @@ export function registerUpdateIssueTool(server) {
             return {
                 content: [
                     {
-                        type: "text",
+                        type: 'text',
                         text: JSON.stringify(result, null, 2),
                     },
                 ],
             };
         }
         catch (error) {
-            logMcpError(error, "tools.updateIssue", { issueId });
+            logMcpError(error, 'tools.updateIssue', { issueId });
             return {
                 content: [
                     {
-                        type: "text",
+                        type: 'text',
                         text: `Failed to update issue in Workbit API: ${error.message}`,
                     },
                 ],

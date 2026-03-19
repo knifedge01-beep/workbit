@@ -1,16 +1,30 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import styled from 'styled-components'
+import {
+  Building2,
+  Globe,
+  Loader2,
+  AlertCircle,
+  ArrowRight,
+} from 'lucide-react'
 import {
   Button,
-  Input,
-  Select,
   Card,
-  Container,
-  Stack,
-  Text,
-  Heading,
-} from '@design-system'
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Input,
+  Label,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Separator,
+  Skeleton,
+  Badge,
+} from '@design-system-v2'
 import {
   createWorkspace,
   fetchWorkspaces,
@@ -22,118 +36,20 @@ import { useAuthRequired } from './auth/AuthContext'
 import { useWorkspace } from '../contexts/WorkspaceContext'
 import { logError } from '../utils/errorHandling'
 
-const Page = styled.div`
-  min-height: 100vh;
-  display: flex;
-  align-items: stretch;
-  justify-content: center;
-  gap: 32px;
-  padding: 32px 24px;
-  background: ${(p) => p.theme.colors.background};
-  color: ${(p) => p.theme.colors.text};
-`
-
-const LeftColumn = styled.div`
-  flex: 0 0 400px;
-  max-width: 100%;
-`
-
-const RightColumn = styled.div`
-  flex: 1 1 360px;
-  max-width: 520px;
-  min-width: 0;
-`
-
-const WorkspaceCard = styled(Card)`
-  padding: 32px 32px 28px;
-`
-
-const WorkspaceListItemCard = styled(Card)`
-  padding: 20px 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-`
-
-const Form = styled.form`
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-`
-
-const Field = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-
-  label {
-    font-size: 0.8rem;
-    font-weight: 500;
-    color: ${(p) => p.theme.colors.text};
-  }
-
-  small {
-    font-size: 0.75rem;
-    color: ${(p) => p.theme.colors.textMuted};
-  }
-`
-
-const UrlFieldRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-`
-
-const UrlPrefix = styled.div`
-  padding: 0 10px;
-  height: 36px;
-  display: inline-flex;
-  align-items: center;
-  border-radius: 6px;
-  background: rgba(15, 23, 42, 0.9);
-  border: 1px solid rgba(148, 163, 184, 0.5);
-  font-size: 0.8rem;
-  color: ${(p) => p.theme.colors.textMuted};
-`
-
-const ErrorText = styled.p`
-  margin: 4px 0 0;
-  font-size: 0.8rem;
-  color: ${(p) => p.theme.colors.error ?? '#f97373'};
-`
-
-const Footer = styled.div`
-  margin-top: 22px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-`
-
-const WorkspaceListGrid = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-`
-
-const CardTitle = styled.strong`
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: ${(p) => p.theme.colors.text};
-`
-
-const CardMeta = styled.span`
-  font-size: 0.8rem;
-  color: ${(p) => p.theme.colors.textMuted};
-`
-
 function slugify(input: string) {
   return input
     .toLowerCase()
     .trim()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
+}
+
+function WorkspaceInitials(name: string) {
+  return name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? '')
+    .join('')
 }
 
 export function WorkspacesScreen() {
@@ -165,6 +81,7 @@ export function WorkspacesScreen() {
       setMemberError(null)
       try {
         const members: ApiMember[] = await fetchMembers()
+        console.log({ members })
         const current = members.find((m) => m.uid && userId && m.uid === userId)
         if (!cancelled) {
           setMemberId(current?.id ?? null)
@@ -185,6 +102,7 @@ export function WorkspacesScreen() {
         }
       }
     }
+    console.log({ userId })
     if (userId) {
       void resolveMember()
     }
@@ -195,6 +113,7 @@ export function WorkspacesScreen() {
 
   // Load workspaces for the resolved memberId
   useEffect(() => {
+    console.log({ memberId })
     if (!memberId) return
     let cancelled = false
     async function load() {
@@ -202,6 +121,7 @@ export function WorkspacesScreen() {
       setWorkspacesError(null)
       try {
         const data = await fetchWorkspaces(memberId as string)
+        console.log({ data })
         if (!cancelled) {
           setWorkspaces(data)
         }
@@ -272,140 +192,216 @@ export function WorkspacesScreen() {
   }
 
   return (
-    <Page>
-      <Container maxWidth="960px">
-        <div
-          style={{
-            width: '100%',
-            display: 'flex',
-            gap: 32,
-            alignItems: 'stretch',
-          }}
-        >
-          <LeftColumn>
-            <WorkspaceCard>
-              <Stack gap={3}>
-                <Stack gap={1}>
-                  <Heading level={1}>Create a new workspace</Heading>
-                  <Text size="sm" muted>
-                    Workspaces are shared environments where teams can work on
-                    projects, cycles and issues.
-                  </Text>
-                </Stack>
+    <div className="min-h-screen bg-background text-foreground">
+      {/* Top bar */}
+      <div className="border-b border-border bg-card/50 backdrop-blur-sm px-6 py-4 flex items-center gap-3">
+        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary text-primary-foreground">
+          <Building2 className="w-4 h-4" />
+        </div>
+        <span className="font-semibold text-sm tracking-tight">Workbit</span>
+      </div>
 
-                <Form onSubmit={handleSubmit}>
-                  <Field>
-                    <label htmlFor="workspace-name">Workspace Name</label>
+      <div className="max-w-5xl mx-auto px-6 py-12">
+        {/* Page heading */}
+        <div className="mb-10">
+          <h1 className="text-2xl font-bold tracking-tight">Workspaces</h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            Manage your workspaces or create a new one for your team.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-[420px_1fr] gap-8 items-start">
+          {/* ── Left column: create form ── */}
+          <Card className="shadow-sm">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-base">
+                Create a new workspace
+              </CardTitle>
+              <CardDescription>
+                Workspaces are shared environments where teams can work on
+                projects, cycles and issues.
+              </CardDescription>
+            </CardHeader>
+
+            <Separator />
+
+            <CardContent className="pt-5">
+              <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                {/* Workspace name */}
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="workspace-name">Workspace Name</Label>
+                  <Input
+                    id="workspace-name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Acme Inc"
+                    autoComplete="organization"
+                    autoFocus
+                  />
+                </div>
+
+                {/* Workspace URL */}
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="workspace-url">Workspace URL</Label>
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center h-9 px-3 rounded-md bg-muted border border-input text-xs text-muted-foreground whitespace-nowrap">
+                      workbit.app/
+                    </span>
                     <Input
-                      id="workspace-name"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="Acme Inc"
-                      autoComplete="organization"
-                      autoFocus
+                      id="workspace-url"
+                      value={slug}
+                      onChange={(e) => setSlug(slugify(e.target.value))}
+                      placeholder={derivedSlug}
+                      className="flex-1"
                     />
-                  </Field>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    This URL will be used to access your workspace and must be
+                    unique.
+                  </p>
+                </div>
 
-                  <Field>
-                    <label htmlFor="workspace-url">Workspace URL</label>
-                    <UrlFieldRow>
-                      <UrlPrefix>workbit.app/</UrlPrefix>
-                      <Input
-                        id="workspace-url"
-                        value={slug}
-                        onChange={(e) => setSlug(slugify(e.target.value))}
-                        placeholder={derivedSlug}
-                      />
-                    </UrlFieldRow>
-                    <small>
-                      <Text as="span" size="xs" muted>
-                        This URL will be used to access your workspace and must
-                        be unique.
-                      </Text>
-                    </small>
-                  </Field>
+                {/* Region */}
+                <div className="flex flex-col gap-1.5">
+                  <Label>Workspace region</Label>
+                  <Select value={region} onValueChange={(v) => setRegion(v)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="us">United States</SelectItem>
+                      <SelectItem value="eu">European Union</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Workspace will be hosted in the selected region.
+                  </p>
+                </div>
 
-                  <Field>
-                    <label>Workspace region</label>
-                    <Select
-                      value={region}
-                      onChange={(value) => setRegion(value)}
-                      options={[
-                        { value: 'us', label: 'United States' },
-                        { value: 'eu', label: 'European Union' },
-                      ]}
-                    />
-                    <Text as="span" size="xs" muted>
-                      Workspace will be hosted in the selected region.
-                    </Text>
-                  </Field>
+                {/* Error */}
+                {error && (
+                  <div className="flex items-start gap-2 rounded-md bg-destructive/10 border border-destructive/20 px-3 py-2.5">
+                    <AlertCircle className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
+                    <p className="text-xs text-destructive">{error}</p>
+                  </div>
+                )}
 
-                  {error && <ErrorText>{error}</ErrorText>}
+                <Separator />
 
-                  <Footer>
-                    <Text as="span" size="xs" muted>
-                      {memberId
-                        ? `Logged in member: ${memberId}`
-                        : 'Logged in, but no workspace member profile found yet.'}
-                    </Text>
-                    <Button type="submit" disabled={submitting}>
-                      {submitting ? 'Creating…' : 'Create workspace'}
-                    </Button>
-                  </Footer>
-                </Form>
-              </Stack>
-            </WorkspaceCard>
-          </LeftColumn>
+                {/* Footer row */}
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs text-muted-foreground truncate">
+                    {memberId
+                      ? `Logged in member: ${memberId}`
+                      : 'Logged in, but no workspace member profile found yet.'}
+                  </p>
+                  <Button
+                    type="submit"
+                    disabled={submitting}
+                    size="sm"
+                    className="shrink-0"
+                  >
+                    {submitting ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        Creating…
+                      </>
+                    ) : (
+                      'Create workspace'
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
 
-          <RightColumn>
-            <Stack gap={2}>
-              <Heading level={2}>Your workspaces</Heading>
-              <Text size="sm" muted>
+          {/* ── Right column: workspace list ── */}
+          <div className="flex flex-col gap-4">
+            <div>
+              <h2 className="text-base font-semibold">Your workspaces</h2>
+              <p className="text-sm text-muted-foreground mt-0.5">
                 Select a workspace to open it.
-              </Text>
-              <WorkspaceListGrid>
-                {workspacesLoading && (
-                  <Text size="xs" muted>
-                    Loading your workspaces…
-                  </Text>
-                )}
-                {workspacesError && (
-                  <ErrorText>
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              {workspacesLoading && (
+                <>
+                  <Skeleton className="h-20 w-full rounded-xl" />
+                  <Skeleton className="h-20 w-full rounded-xl" />
+                  <Skeleton className="h-20 w-full rounded-xl" />
+                </>
+              )}
+
+              {workspacesError && (
+                <div className="flex items-start gap-2 rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3">
+                  <AlertCircle className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
+                  <p className="text-sm text-destructive">
                     Failed to load workspaces: {workspacesError}
-                  </ErrorText>
-                )}
-                {!workspacesLoading &&
-                  !workspacesError &&
-                  workspaces.length === 0 && (
-                    <Text size="xs" muted>
+                  </p>
+                </div>
+              )}
+
+              {!workspacesLoading &&
+                !workspacesError &&
+                workspaces.length === 0 && (
+                  <div className="rounded-xl border border-dashed border-border bg-muted/40 px-6 py-10 text-center">
+                    <Building2 className="w-8 h-8 text-muted-foreground mx-auto mb-3 opacity-50" />
+                    <p className="text-sm text-muted-foreground">
                       No workspaces yet. Create your first one in the form.
-                    </Text>
-                  )}
-                {!workspacesLoading &&
-                  !workspacesError &&
-                  workspaces.map((ws) => (
-                    <WorkspaceListItemCard key={ws.id}>
-                      <div>
-                        <CardTitle>{ws.name}</CardTitle>
-                        <div>
-                          <CardMeta>
-                            workbit.app/{ws.slug} · {ws.region.toUpperCase()}
-                          </CardMeta>
+                    </p>
+                  </div>
+                )}
+
+              {!workspacesLoading &&
+                !workspacesError &&
+                workspaces.map((ws) => (
+                  <Card
+                    key={ws.id}
+                    className="group transition-shadow hover:shadow-md"
+                  >
+                    <CardContent className="p-5 flex items-center gap-4">
+                      {/* Avatar block */}
+                      <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10 text-primary font-semibold text-sm shrink-0 select-none">
+                        {WorkspaceInitials(ws.name)}
+                      </div>
+
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm truncate">
+                          {ws.name}
+                        </p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <Globe className="w-3 h-3 text-muted-foreground shrink-0" />
+                          <span className="text-xs text-muted-foreground truncate">
+                            workbit.app/{ws.slug}
+                          </span>
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] px-1.5 py-0 h-4"
+                          >
+                            {ws.region.toUpperCase()}
+                          </Badge>
                         </div>
                       </div>
+
+                      {/* Select button */}
                       <Button
-                        variant="primary"
+                        variant="outline"
+                        size="sm"
                         onClick={() => handleSelectWorkspace(ws)}
+                        className="shrink-0 gap-1.5 group-hover:border-primary group-hover:text-primary transition-colors"
                       >
                         Select
+                        <ArrowRight className="w-3.5 h-3.5" />
                       </Button>
-                    </WorkspaceListItemCard>
-                  ))}
-              </WorkspaceListGrid>
-            </Stack>
-          </RightColumn>
+                    </CardContent>
+                  </Card>
+                ))}
+            </div>
+          </div>
         </div>
-      </Container>
-    </Page>
+      </div>
+    </div>
   )
 }

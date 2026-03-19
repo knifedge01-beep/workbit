@@ -1,38 +1,28 @@
-import { useState } from 'react'
-import { Container, Heading, Text, Flex, Button } from '@design-system'
+import { Container, Heading, Text } from '@design-system'
+import { useSearchParams } from 'react-router-dom'
 import { ApiKeysTab } from '../components'
 
 type TabId = 'profile' | 'api-keys'
 
-const TABS: { id: TabId; label: string }[] = [
-  { id: 'profile', label: 'Profile' },
-  { id: 'api-keys', label: 'API keys' },
-]
-
 export function ProfilePage() {
-  const [activeTab, setActiveTab] = useState<TabId>('api-keys')
+  const [searchParams] = useSearchParams()
+  const activeTab: TabId =
+    searchParams.get('tab') === 'profile' ? 'profile' : 'api-keys'
 
   return (
     <Container maxWidth="800px">
-      <Heading level={1}>Profile</Heading>
+      <div style={{ marginBottom: 12 }}>
+        <Heading level={1}>Profile settings</Heading>
+        <Text muted>
+          Manage your personal account and developer access from the sidebar.
+        </Text>
+      </div>
       <div
         style={{
-          borderBottom: '1px solid var(--color-border, #eee)',
-          marginBottom: 24,
+          marginBottom: 12,
+          borderTop: '1px solid var(--color-border, #eee)',
         }}
-      >
-        <Flex gap={4}>
-          {TABS.map((tab) => (
-            <Button
-              key={tab.id}
-              variant={activeTab === tab.id ? 'primary' : 'secondary'}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              {tab.label}
-            </Button>
-          ))}
-        </Flex>
-      </div>
+      />
       {activeTab === 'profile' && (
         <div style={{ padding: 16 }}>
           <Text>Profile settings can go here.</Text>

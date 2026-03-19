@@ -1,15 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import {
-  Container,
-  Stack,
-  PageHeader,
-  Text,
-  Button,
-  Input,
-  Flex,
-  Select,
-} from '@design-system'
+import { Button, Input, Select } from '@design-system'
+import { cn } from '@design-system-v2/lib/utils'
 import { createProject, fetchWorkspaceTeams } from '../api/client'
 import { useFetch } from '../hooks/useFetch'
 import { useWorkspace } from '../contexts/WorkspaceContext'
@@ -74,13 +66,7 @@ export function CreateProjectScreen() {
     }
   }
 
-  if (!workspaceId || !currentWorkspace) {
-    return (
-      <Container maxWidth="600px">
-        <Text>Workspace not found.</Text>
-      </Container>
-    )
-  }
+  if (!workspaceId || !currentWorkspace) return <div>Workspace not found.</div>
 
   const summary =
     isTeamScoped && teamName
@@ -88,28 +74,53 @@ export function CreateProjectScreen() {
       : `Create a project in ${currentWorkspace.name}.`
 
   return (
-    <Container maxWidth="600px">
-      <Stack gap={4}>
-        <PageHeader title="New project" summary={summary} />
-        <form onSubmit={handleSubmit}>
-          <Stack gap={4}>
+    <div className="mx-auto w-full max-w-5xl px-4 py-6 md:px-6">
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4 text-sm text-slate-500">
+          <div className="flex items-center gap-2">
+            <span className="inline-flex h-5 items-center rounded-md border border-slate-200 bg-slate-50 px-1.5 text-[11px] font-semibold text-slate-600">
+              {teamName?.slice(0, 3).toUpperCase() ?? 'PRJ'}
+            </span>
+            <span>&gt;</span>
+            <span className="font-medium text-slate-700">New project</span>
+          </div>
+          <button
+            type="button"
+            onClick={handleCancel}
+            className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+            aria-label="Close"
+          >
+            x
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="px-6 py-5">
+          <div className="mb-4 flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-500">
+            <>□</>
+          </div>
+
+          <div className="space-y-4">
             <div>
-              <label style={{ display: 'block', marginBottom: 8 }}>
-                <Text size="sm">Project name</Text>
-              </label>
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Enter project name"
+                placeholder="Project name"
                 disabled={submitting}
                 autoFocus
+                className="text-xl font-semibold"
               />
             </div>
+
+            <div>
+              <Input
+                placeholder={summary}
+                disabled={submitting}
+                className="text-sm"
+              />
+            </div>
+
             {!isTeamScoped && (
               <div>
-                <label style={{ display: 'block', marginBottom: 8 }}>
-                  <Text size="sm">Team</Text>
-                </label>
                 <Select
                   value={teamId}
                   onChange={setTeamId}
@@ -123,26 +134,68 @@ export function CreateProjectScreen() {
                 />
               </div>
             )}
+
+            <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-4">
+              {[
+                'Backlog',
+                'No priority',
+                'Lead',
+                'Members',
+                'Start',
+                'Target',
+                'Labels',
+                'Dependencies',
+              ].map((chip) => (
+                <button
+                  key={chip}
+                  type="button"
+                  className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-600 hover:bg-slate-100"
+                >
+                  {chip}
+                </button>
+              ))}
+            </div>
+
+            <textarea
+              placeholder="Write a description, a project brief, or collect ideas..."
+              className="min-h-[320px] w-full resize-none rounded-md border border-slate-200 p-3 text-sm text-slate-700 outline-none placeholder:text-slate-400 focus:border-slate-300"
+            />
+
+            <button
+              type="button"
+              className="flex w-full items-center justify-between rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
+            >
+              <span>Milestones</span>
+              <span>+</span>
+            </button>
+
             {error && (
-              <div role="alert">
-                <Text size="sm">{error}</Text>
+              <div
+                role="alert"
+                className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700"
+              >
+                {error}
               </div>
             )}
-            <Flex gap={2} justify="flex-start">
-              <Button
-                type="submit"
-                variant="primary"
-                disabled={!name.trim() || !effectiveTeamId || submitting}
-              >
-                {submitting ? 'Creating…' : 'Create project'}
-              </Button>
-              <Button type="button" variant="secondary" onClick={handleCancel}>
-                Cancel
-              </Button>
-            </Flex>
-          </Stack>
+          </div>
+
+          <div className="mt-6 flex items-center justify-end gap-2 border-t border-slate-200 pt-4">
+            <Button type="button" variant="secondary" onClick={handleCancel}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={!name.trim() || !effectiveTeamId || submitting}
+              className={cn(
+                !name.trim() || !effectiveTeamId ? 'opacity-70' : ''
+              )}
+            >
+              {submitting ? 'Creating…' : 'Create project'}
+            </Button>
+          </div>
         </form>
-      </Stack>
-    </Container>
+      </div>
+    </div>
   )
 }

@@ -1,38 +1,29 @@
-import { z } from "zod";
-import { makeWorkbitPatchRequest } from "../utils/workbitClient.js";
-import { logMcpError } from "../logging.js";
+import { z } from 'zod';
+import { makeWorkbitPatchRequest } from '../utils/workbitClient.js';
+import { logMcpError } from '../logging.js';
 export function registerUpdateMilestoneTool(server) {
-    server.registerTool("updateMilestone", {
-        description: "Update an existing milestone. Provide team ID, milestone ID, and any fields to update.",
+    server.registerTool('updateMilestone', {
+        description: 'Update an existing milestone. Provide team ID, milestone ID, and any fields to update.',
         inputSchema: {
             teamId: z
                 .string()
                 .min(1)
-                .describe("The team ID that owns the milestone."),
-            milestoneId: z
-                .string()
-                .min(1)
-                .describe("The milestone ID to update."),
+                .describe('The team ID that owns the milestone.'),
+            milestoneId: z.string().min(1).describe('The milestone ID to update.'),
             name: z
                 .string()
                 .optional()
-                .describe("Optional new name for the milestone."),
+                .describe('Optional new name for the milestone.'),
             targetDate: z
                 .string()
                 .optional()
-                .describe("Optional new target date (e.g. ISO date)."),
+                .describe('Optional new target date (e.g. ISO date).'),
             description: z
                 .string()
                 .optional()
-                .describe("Optional new description."),
-            progress: z
-                .number()
-                .optional()
-                .describe("Optional progress value."),
-            total: z
-                .number()
-                .optional()
-                .describe("Optional total value."),
+                .describe('Optional new description.'),
+            progress: z.number().optional().describe('Optional progress value.'),
+            total: z.number().optional().describe('Optional total value.'),
         },
     }, async ({ teamId, milestoneId, name, targetDate, description, progress, total, }) => {
         try {
@@ -51,8 +42,8 @@ export function registerUpdateMilestoneTool(server) {
                 return {
                     content: [
                         {
-                            type: "text",
-                            text: "No fields to update. Provide at least one of: name, targetDate, description, progress, total.",
+                            type: 'text',
+                            text: 'No fields to update. Provide at least one of: name, targetDate, description, progress, total.',
                         },
                     ],
                 };
@@ -61,21 +52,21 @@ export function registerUpdateMilestoneTool(server) {
             return {
                 content: [
                     {
-                        type: "text",
+                        type: 'text',
                         text: JSON.stringify(result, null, 2),
                     },
                 ],
             };
         }
         catch (error) {
-            logMcpError(error, "tools.updateMilestone", {
+            logMcpError(error, 'tools.updateMilestone', {
                 teamId,
                 milestoneId,
             });
             return {
                 content: [
                     {
-                        type: "text",
+                        type: 'text',
                         text: `Failed to update milestone in Workbit API: ${error.message}`,
                     },
                 ],

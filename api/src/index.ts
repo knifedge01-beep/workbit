@@ -25,6 +25,7 @@ import { apiKeysRoutes } from './routes/apiKeys.js'
 import { seedIfEmpty } from './utils/seed.js'
 import { isSupabaseConfigured } from './utils/supabaseServer.js'
 import { LOGBIT_PROJECT_ID } from './utils/log.js'
+import { projectRoutes } from './routes/project.js'
 
 const DEFAULT_PORT = 3001
 const API_PREFIX = '/api/v1'
@@ -38,6 +39,7 @@ app.use(API_PREFIX, requireAuthWhenConfigured)
 app.use(`${API_PREFIX}/auth`, authRoutes)
 app.use(`${API_PREFIX}/workspaces`, workspacesRoutes)
 app.use(`${API_PREFIX}/workspace`, workspaceRoutes)
+app.use(`${API_PREFIX}/projects`, projectRoutes)
 app.use(`${API_PREFIX}/teams`, teamsRoutes)
 app.use(`${API_PREFIX}/issues`, issuesRoutes)
 app.use(`${API_PREFIX}/me`, meRoutes)

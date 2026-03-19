@@ -1,14 +1,14 @@
-import { init, logbit } from "@thedatablitz/logbit-sdk";
-export const LOGBIT_PROJECT_ID = "be4bc17d-3776-4b6c-b1cd-b9a473f10f77";
+import { init, logbit } from '@thedatablitz/logbit-sdk';
+export const LOGBIT_PROJECT_ID = 'be4bc17d-3776-4b6c-b1cd-b9a473f10f77';
 let initialized = false;
 export function initLogging() {
     if (initialized)
         return;
     initialized = true;
     init({
-        service: "workbit-mcp",
-        env: process.env.NODE_ENV ?? "development",
-        release: process.env.APP_VERSION ?? "0.0.1",
+        service: 'workbit-mcp',
+        env: process.env.NODE_ENV ?? 'development',
+        release: process.env.APP_VERSION ?? '0.0.1',
         ...(process.env.LOGBIT_API_BASE_URL && {
             apiBaseUrl: process.env.LOGBIT_API_BASE_URL,
         }),
@@ -23,9 +23,9 @@ export function initLogging() {
 export function logMcpError(err, context, meta) {
     const message = err instanceof Error
         ? err.message
-        : typeof err === "string"
+        : typeof err === 'string'
             ? err
-            : "Unknown error";
+            : 'Unknown error';
     const payload = {
         projectId: LOGBIT_PROJECT_ID,
         title: `[${context}] ${message}`,

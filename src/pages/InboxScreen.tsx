@@ -1,77 +1,86 @@
 import { PageHeader, Stack, Button } from '@design-system'
 import { useNavigate, useParams } from 'react-router-dom'
 import styled from 'styled-components'
-import { Mail, Plus, FolderKanban, AlertCircle } from 'lucide-react'
-import { logbit } from '@thedatablitz/logbit-sdk'
-import { LOGBIT_PROJECT_ID } from '../utils/errorHandling'
+import { Mail, Plus, FolderKanban } from 'lucide-react'
 
 const EmptyStateContainer = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 450px;
-  max-width: 480px;
-  margin: ${(p) => p.theme.spacing[8]}px auto;
+  width: min(100%, 440px);
+  align-self: center;
+  margin: 8vh auto 0;
   text-align: center;
   padding: ${(p) => p.theme.spacing[8]}px ${(p) => p.theme.spacing[6]}px;
   background: ${(p) => p.theme.colors.surface};
   border-radius: 16px;
   border: 1px solid ${(p) => p.theme.colors.border};
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+
+  @media (max-width: 640px) {
+    width: 100%;
+    margin-top: 4vh;
+    padding: ${(p) => p.theme.spacing[6]}px ${(p) => p.theme.spacing[4]}px;
+  }
 `
 
 const EmptyIconWrapper = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 72px;
-  height: 72px;
-  margin-bottom: ${(p) => p.theme.spacing[5]}px;
-  background: ${(p) => p.theme.colors.primaryBg};
+  width: 56px;
+  height: 56px;
+  margin-bottom: ${(p) => p.theme.spacing[4]}px;
+  background: ${(p) =>
+    p.theme.colors.backgroundSubtle || p.theme.colors.surfaceSecondary};
   border-radius: 50%;
+  opacity: 0.9;
 
   svg {
-    color: ${(p) => p.theme.colors.primary};
+    color: ${(p) => p.theme.colors.textMuted};
   }
 `
 
 const EmptyTitle = styled.h3`
-  font-size: 1.375rem;
+  font-size: 1.25rem;
   font-weight: 600;
   color: ${(p) => p.theme.colors.text};
-  margin: 0 0 ${(p) => p.theme.spacing[3]}px 0;
+  margin: 0 0 ${(p) => p.theme.spacing[2]}px 0;
   line-height: 1.3;
 `
 
 const EmptyDescription = styled.p`
-  font-size: 0.9375rem;
+  font-size: 0.95rem;
   color: ${(p) => p.theme.colors.textMuted};
   margin: 0 0 ${(p) => p.theme.spacing[6]}px 0;
-  line-height: 1.6;
+  line-height: 1.5;
+  font-weight: 400;
   max-width: 380px;
 `
 
 const ActionButtons = styled.div`
   display: flex;
   gap: ${(p) => p.theme.spacing[3]}px;
-  flex-wrap: wrap;
+  width: 100%;
   justify-content: center;
+
+  > * {
+    min-height: 40px;
+  }
+
+  @media (max-width: 640px) {
+    flex-direction: column;
+    > * {
+      width: 100%;
+    }
+  }
 `
 
 export function InboxScreen() {
   const navigate = useNavigate()
   const { workspaceId } = useParams<{ workspaceId: string }>()
   const base = workspaceId ? `/workspace/${workspaceId}` : ''
-
-  const handleThrowTestError = () => {
-    logbit.error('Test error from Inbox', {
-      projectId: LOGBIT_PROJECT_ID,
-      title: 'Test error from Inbox',
-      source: 'InboxScreen',
-      workspaceId: workspaceId ?? null,
-    })
-  }
 
   return (
     <Stack gap={4}>
@@ -105,14 +114,6 @@ export function InboxScreen() {
           >
             <FolderKanban size={16} />
             View Projects
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={handleThrowTestError}
-            title="Logs an error to Logbit with projectId and throws"
-          >
-            <AlertCircle size={16} />
-            Throw test error
           </Button>
         </ActionButtons>
       </EmptyStateContainer>

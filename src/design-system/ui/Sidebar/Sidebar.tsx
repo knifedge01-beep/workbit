@@ -8,7 +8,7 @@ const StyledSidebar = styled.aside<{ $collapsed?: boolean }>`
   min-width: ${(p) => (p.$collapsed ? 56 : 240)}px;
   display: flex;
   flex-direction: column;
-  background: ${(p) => p.theme.colors.surface};
+  background: ${(p) => p.theme.colors.surfaceSecondary};
   border-right: 1px solid ${(p) => p.theme.colors.border};
   transition:
     width 0.2s ease,
@@ -38,18 +38,40 @@ const StyledSidebar = styled.aside<{ $collapsed?: boolean }>`
 
     ${SidebarNavItem} {
       justify-content: center;
-      padding-left: ${p.theme.spacing[2]}px;
-      padding-right: ${p.theme.spacing[2]}px;
+      padding-left: ${p.theme.spacing[1]}px;
+      padding-right: ${p.theme.spacing[1]}px;
+      gap: 0;
 
-      > span:not([aria-hidden]) {
-        opacity: 0;
-        width: 0;
-        overflow: hidden;
+      > *:not(svg):not(.avatar-wrapper) {
+        display: none;
+      }
+
+      /* Ensure icon is visible and centered */
+      > svg,
+      > .avatar-wrapper {
+        margin: 0;
       }
     }
 
     ${CollapsibleChildren} {
       padding-left: 0;
+      padding-top: 0;
+
+      &::before {
+        display: none;
+      }
+
+      & > a {
+        margin-left: 0;
+
+        &::after {
+          display: none;
+        }
+
+        &::before {
+          display: none;
+        }
+      }
     }
   `}
 `
@@ -58,16 +80,21 @@ const Header = styled.div`
   padding: ${(p) => p.theme.spacing[3]}px;
   border-bottom: 1px solid ${(p) => p.theme.colors.border};
   flex-shrink: 0;
+
+  ${(p) => p.theme.media?.sm ?? '@media (min-width: 0px)'} {
+    /* Ensure header doesn't break layout when collapsed */
+    overflow: hidden;
+  }
 `
 
-const CollapseStrip = styled.div`
+const CollapseStrip = styled.div<{ $collapsed?: boolean }>`
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: ${(p) => (p.$collapsed ? 'center' : 'flex-end')};
   padding: ${(p) => p.theme.spacing[2]}px ${(p) => p.theme.spacing[2]}px
     ${(p) => p.theme.spacing[1]}px;
   flex-shrink: 0;
-  border-bottom: 1px solid ${(p) => p.theme.colors.border};
+  /* border-bottom: 1px solid ${(p) => p.theme.colors.border}; */
 `
 
 const Content = styled.div`
@@ -93,7 +120,7 @@ const Content = styled.div`
 
 const Footer = styled.div`
   padding: ${(p) => p.theme.spacing[3]}px;
-  border-top: 1px solid ${(p) => p.theme.colors.border};
+  /* border-top: 1px solid ${(p) => p.theme.colors.border}; */
   flex-shrink: 0;
 `
 
@@ -125,31 +152,76 @@ const CollapsibleHeading = styled.button`
   justify-content: space-between;
   width: 100%;
   padding: ${(p) => p.theme.spacing[2]}px ${(p) => p.theme.spacing[3]}px;
-  font-size: 0.6875rem;
-  font-weight: 700;
-  color: ${(p) => p.theme.colors.textMuted};
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: ${(p) => p.theme.colors.text};
   background: none;
   border: none;
   cursor: pointer;
   text-align: left;
-  margin-bottom: ${(p) => p.theme.spacing[1]}px;
+  border-radius: ${(p) => p.theme.radii?.md ?? 6}px;
+  margin-bottom: 2px;
   transition:
-    opacity 0.2s,
-    max-height 0.2s,
-    padding 0.2s,
-    margin 0.2s;
+    background 0.15s,
+    color 0.15s;
+
+  &:hover {
+    background: ${(p) => p.theme.colors.surfaceHover};
+    color: ${(p) => p.theme.colors.text};
+  }
+
   svg {
     flex-shrink: 0;
-    opacity: 0.8;
+    color: ${(p) => p.theme.colors.textMuted};
+    transition: color 0.15s;
+  }
+  &:hover svg {
+    color: ${(p) => p.theme.colors.text};
   }
 `
 
 const CollapsibleChildren = styled.div`
-  padding-left: ${(p) => p.theme.spacing[5]}px;
+  position: relative;
+  padding-left: ${(p) => p.theme.spacing[4]}px;
   padding-top: ${(p) => p.theme.spacing[1]}px;
   transition: padding-left 0.2s;
+
+  /* Vertical tree line */
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 14px;
+    left: ${(p) => p.theme.spacing[4]}px;
+    width: 1px;
+    background: ${(p) => p.theme.colors.border};
+    opacity: 0.5;
+  }
+
+  /* Horizontal branches for tree items */
+  & > a {
+    position: relative;
+    margin-left: ${(p) => p.theme.spacing[2]}px;
+
+    &::after {
+      content: '';
+      position: absolute;
+      left: -${(p) => p.theme.spacing[2]}px;
+      top: 50%;
+      width: ${(p) => p.theme.spacing[2]}px;
+      height: 1px;
+      background: ${(p) => p.theme.colors.border};
+      opacity: 0.5;
+    }
+
+    /* Curve connector for last item (optional polish) */
+    &:last-child::before {
+      content: '';
+      position: absolute;
+      left: -${(p) => p.theme.spacing[2]}px; /* match line position */
+      /* Extend vertical line to block gaps if needed, logic is tricky with just CSS */
+    }
+  }
 `
 
 export const SidebarNavItem = styled.a<{ $active?: boolean }>`
@@ -161,48 +233,38 @@ export const SidebarNavItem = styled.a<{ $active?: boolean }>`
   font-size: 0.875rem;
   font-weight: ${(p) => (p.$active ? 500 : 400)};
   color: ${(p) => (p.$active ? p.theme.colors.text : p.theme.colors.textMuted)};
-  background: ${(p) =>
-    p.$active ? p.theme.colors.surfaceHover : 'transparent'};
+  background: ${(p) => (p.$active ? p.theme.colors.surface : 'transparent')};
   border-radius: ${(p) => p.theme.radii?.md ?? 6}px;
   text-decoration: none;
   cursor: pointer;
   margin-bottom: 2px;
+  box-shadow: ${(p) =>
+    p.$active
+      ? '0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1)'
+      : 'none'};
   transition:
     background 0.15s,
     color 0.15s,
     padding 0.2s,
-    justify-content 0.2s;
-
-  /* Left indicator bar for active state */
-  &::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 25%;
-    bottom: 25%;
-    width: 3px;
-    background: ${(p) => p.theme.colors.primary};
-    border-radius: 0 2px 2px 0;
-    opacity: ${(p) => (p.$active ? 1 : 0)};
-    transition: opacity 0.15s;
-  }
+    box-shadow 0.2s;
 
   &:hover {
-    background: ${(p) => p.theme.colors.surfaceHover};
+    background: ${(p) =>
+      p.$active ? p.theme.colors.surface : p.theme.colors.surfaceHover};
     color: ${(p) => p.theme.colors.text};
   }
 
   svg {
     flex-shrink: 0;
     color: ${(p) =>
-      p.$active ? p.theme.colors.primary : p.theme.colors.textMuted};
+      p.$active ? p.theme.colors.text : p.theme.colors.textMuted};
   }
 
   /* Fixed-width icon slot so labels align when expanded */
   > svg:first-of-type {
-    width: 20px;
-    min-width: 20px;
-    height: 20px;
+    width: 18px;
+    min-width: 18px;
+    height: 18px;
   }
 
   /* Text label transitions */
@@ -304,13 +366,13 @@ export function Sidebar({
     <StyledSidebar className={className} $collapsed={collapsed}>
       {header != null ? <Header>{header}</Header> : null}
       {onCollapseToggle != null && (
-        <CollapseStrip>
+        <CollapseStrip $collapsed={collapsed}>
           <CollapseToggle
             type="button"
             onClick={onCollapseToggle}
             aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
-            {collapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+            {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
           </CollapseToggle>
         </CollapseStrip>
       )}

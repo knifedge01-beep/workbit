@@ -17,6 +17,8 @@ export {
   type ProjectStatus,
 } from './StatusUpdateComposer'
 export { StatusUpdateCard, type StatusUpdateCardData } from './StatusUpdateCard'
+export { ProjectUpdateHighlightCard } from './ProjectUpdateHighlightCard'
+export { UpdatesTree, type UpdateItem } from './UpdatesTree'
 export { NavbarLeft, NavbarRight } from './NavbarLeft'
 export { TeamDropdown } from './TeamDropdown'
 export { MembersTable, type MemberRow } from './MembersTable'
@@ -26,3 +28,4 @@ export { ViewsTable, type ViewTableRow } from './ViewsTable'
 export { RolesTable, type RoleTableRow } from './RolesTable'
 export { LoadingState, ErrorState, EmptyState } from './common'
 export { ApiKeysTab } from './ApiKeysTab'
+export { IssueDescriptionEditor } from './IssueDescriptionEditor'

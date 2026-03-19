@@ -1,42 +1,36 @@
-import { z } from "zod";
-import { makeWorkbitPatchRequest } from "../utils/workbitClient.js";
-import { logMcpError } from "../logging.js";
+import { z } from 'zod';
+import { makeWorkbitPatchRequest } from '../utils/workbitClient.js';
+import { logMcpError } from '../logging.js';
 export function registerUpdateProjectTool(server) {
-    server.registerTool("updateProject", {
+    server.registerTool('updateProject', {
         description: "Update a team's project properties. Provide the team ID and any properties to update (status, priority, dates, etc.).",
         inputSchema: {
             teamId: z
                 .string()
                 .min(1)
-                .describe("The team ID that owns the project to update."),
+                .describe('The team ID that owns the project to update.'),
             status: z
                 .string()
                 .optional()
                 .describe("Optional project status (e.g. 'on-track', 'at-risk', 'off-track')."),
-            priority: z
-                .string()
-                .optional()
-                .describe("Optional priority."),
-            leadId: z
-                .string()
-                .optional()
-                .describe("Optional lead member ID."),
+            priority: z.string().optional().describe('Optional priority.'),
+            leadId: z.string().optional().describe('Optional lead member ID.'),
             startDate: z
                 .string()
                 .optional()
-                .describe("Optional start date (e.g. ISO date)."),
+                .describe('Optional start date (e.g. ISO date).'),
             endDate: z
                 .string()
                 .optional()
-                .describe("Optional end date (e.g. ISO date)."),
+                .describe('Optional end date (e.g. ISO date).'),
             teamIds: z
                 .array(z.string())
                 .optional()
-                .describe("Optional list of team IDs."),
+                .describe('Optional list of team IDs.'),
             labelIds: z
                 .array(z.string())
                 .optional()
-                .describe("Optional list of label IDs."),
+                .describe('Optional list of label IDs.'),
         },
     }, async ({ teamId, status, priority, leadId, startDate, endDate, teamIds, labelIds, }) => {
         try {
@@ -59,8 +53,8 @@ export function registerUpdateProjectTool(server) {
                 return {
                     content: [
                         {
-                            type: "text",
-                            text: "No fields to update. Provide at least one of: status, priority, leadId, startDate, endDate, teamIds, labelIds.",
+                            type: 'text',
+                            text: 'No fields to update. Provide at least one of: status, priority, leadId, startDate, endDate, teamIds, labelIds.',
                         },
                     ],
                 };
@@ -69,18 +63,18 @@ export function registerUpdateProjectTool(server) {
             return {
                 content: [
                     {
-                        type: "text",
+                        type: 'text',
                         text: JSON.stringify(result, null, 2),
                     },
                 ],
             };
         }
         catch (error) {
-            logMcpError(error, "tools.updateProject", { teamId });
+            logMcpError(error, 'tools.updateProject', { teamId });
             return {
                 content: [
                     {
-                        type: "text",
+                        type: 'text',
                         text: `Failed to update project in Workbit API: ${error.message}`,
                     },
                 ],

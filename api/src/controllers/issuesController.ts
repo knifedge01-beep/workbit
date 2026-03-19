@@ -16,6 +16,18 @@ export async function getTeamIssues(req: Request, res: Response) {
   }
 }
 
+export async function getProjectIssues(req: Request, res: Response) {
+  try {
+    const { id } = req.params
+    const filter = (req.query.filter as 'all' | 'active' | 'backlog') ?? 'all'
+    const list = await issuesModel.getProjectIssuesForApi(id, filter)
+    res.json(list)
+  } catch (e) {
+    logApiError(e, 'issues.getProjectIssues', { projectId: req.params.id })
+    res.status(500).json({ error: (e as Error).message })
+  }
+}
+
 export async function getIssue(req: Request, res: Response) {
   try {
     const { issueId } = req.params
@@ -39,6 +51,7 @@ export async function createIssue(req: Request, res: Response) {
       projectId?: string
       title?: string
       description?: string
+      status?: string
       body?: string
     }
     const teamId =
@@ -46,6 +59,7 @@ export async function createIssue(req: Request, res: Response) {
       (body.teamId && body.teamId !== '' ? body.teamId : undefined)
     const title = body.title
     const description = body.description
+    const status = body.status
 
     if (!title || !title.trim()) {
       res.status(400).json({ error: 'title is required' })
@@ -56,6 +70,7 @@ export async function createIssue(req: Request, res: Response) {
       projectId: body.projectId,
       title: title.trim(),
       description,
+      status,
     })
     const detail = await issuesModel.getIssueDetailForApi(issue.id)
     if (!detail) {

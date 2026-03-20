@@ -507,7 +507,7 @@ export function TeamProjectDetailScreen({
           )}
 
           {activeTab === 'updates' && (
-            <Box border padding="400" className="rounded-xl bg-white">
+            <Box border padding="400">
               <Stack gap="300">
                 <UpdatesTree
                   updates={updatesTreeItems}
@@ -527,7 +527,7 @@ export function TeamProjectDetailScreen({
           )}
 
           {activeTab === 'issues' && (
-            <Box border padding="400" className="rounded-xl bg-white">
+            <Box border padding="400">
               <Stack gap="300">
                 <Inline align="center" justify="space-between" fullWidth>
                   {issuesLoading ? (

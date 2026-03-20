@@ -1,5 +1,3 @@
-import { Text } from '@design-system'
-
 import type { TeamProjectColumnDef, TeamProjectRow } from '../types'
 
 type WorkspaceProject = {
@@ -11,31 +9,42 @@ type WorkspaceProject = {
   }
 }
 
-export function createColumns(): TeamProjectColumnDef[] {
+export function createColumns(
+  onProjectOpen?: (row: TeamProjectRow) => void
+): TeamProjectColumnDef[] {
   return [
     {
       id: 'name',
       accessorKey: 'name',
       header: 'Project',
-      enableSorting: true,
       meta: { flex: 1.5 },
       cell: ({ row }) => (
-        <Text size="sm" as="span">
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation()
+            onProjectOpen?.(row.original)
+          }}
+          style={{
+            background: 'transparent',
+            border: 'none',
+            padding: 0,
+            margin: 0,
+            color: 'inherit',
+            cursor: 'pointer',
+            textAlign: 'left',
+          }}
+        >
           {row.original.name}
-        </Text>
+        </button>
       ),
     },
     {
       id: 'status',
       accessorKey: 'status',
       header: 'Status',
-      enableSorting: true,
       meta: { flex: 1 },
-      cell: ({ row }) => (
-        <Text size="sm" as="span">
-          {row.original.status}
-        </Text>
-      ),
+      cell: ({ row }) => row.original.status,
     },
   ]
 }

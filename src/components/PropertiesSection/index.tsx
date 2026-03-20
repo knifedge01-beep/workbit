@@ -8,7 +8,11 @@ import {
   Tag,
 } from 'lucide-react'
 
-import { Text, IconButton, Stack, Flex, DateRange } from '@design-system'
+import { Button } from '@thedatablitz/button'
+import { Inline } from '@thedatablitz/inline'
+import { Stack } from '@thedatablitz/stack'
+import { Text } from '@thedatablitz/text'
+import { DateTimePicker } from '@thedatablitz/date-time-picker'
 
 import { PrioritySelector } from '../PrioritySelector'
 import { SectionHeader, CollapsibleContent } from '../CollapsibleSection'
@@ -70,7 +74,7 @@ export function PropertiesSection({
         <span className="row-label">Lead</span>
         <span className="row-value">
           <UserPlus size={14} className="row-icon" />
-          <Text size="sm" muted>
+          <Text variant="body3" color="color.text.subtle">
             Add lead
           </Text>
         </span>
@@ -79,29 +83,30 @@ export function PropertiesSection({
         <span className="row-label">Members</span>
         <span className="row-value">
           <Users size={14} className="row-icon" />
-          <Text size="sm" muted>
+          <Text variant="body3" color="color.text.subtle">
             Add members
           </Text>
         </span>
       </Row>
       <Row $alignTop>
-        <span className="row-label">Dates</span>
-        <span className="row-value row-value-date-range">
-          <DateRange
-            startDate={startDate}
-            endDate={endDate}
-            onStartChange={setStartDate}
-            onEndChange={setEndDate}
-            startPlaceholder="Start"
-            endPlaceholder="Target"
-          />
-        </span>
+        <DateTimePicker
+          label="Date range"
+          mode="daterange"
+          value={{
+            start: startDate as Date,
+            end: endDate as Date,
+          }}
+          onChange={(value) => {
+            setStartDate(value?.start)
+            setEndDate(value?.end)
+          }}
+        />
       </Row>
       <Row>
         <span className="row-label">Teams</span>
         <span className="row-value">
           <Building2 size={14} className="row-icon" />
-          <Text size="sm" muted>
+          <Text variant="body3" color="color.text.subtle">
             Add team
           </Text>
         </span>
@@ -110,7 +115,7 @@ export function PropertiesSection({
         <span className="row-label">Labels</span>
         <span className="row-value">
           <Tag size={14} className="row-icon" />
-          <Text size="sm" muted>
+          <Text variant="body3" color="color.text.subtle">
             Add label
           </Text>
         </span>
@@ -118,21 +123,27 @@ export function PropertiesSection({
     </>
   )
 
-  if (contentOnly) return <Stack gap={0}>{content}</Stack>
+  if (contentOnly) return <Stack>{content}</Stack>
 
   return (
-    <Stack gap={0}>
+    <Stack>
       <SectionHeader type="button" onClick={() => setOpen((o) => !o)}>
-        <Flex align="center" gap={2}>
+        <Inline align="center" gap="050">
           <ChevronDown
             size={16}
             style={{ transform: open ? 'rotate(0deg)' : 'rotate(-90deg)' }}
           />
           <span>Properties</span>
-        </Flex>
-        <IconButton aria-label="Add property">
-          <Plus size={16} />
-        </IconButton>
+        </Inline>
+        <Button
+          buttonType="icon"
+          size="small"
+          icon={<Plus size={16} />}
+          aria-label="Add property"
+          onClick={(e) => {
+            e.stopPropagation()
+          }}
+        />
       </SectionHeader>
       <CollapsibleContent $open={open}>{content}</CollapsibleContent>
     </Stack>

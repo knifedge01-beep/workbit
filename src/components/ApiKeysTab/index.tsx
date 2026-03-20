@@ -1,17 +1,10 @@
 import { useCallback, useMemo, useState } from 'react'
 import { Check, Copy, Plus, ShieldAlert, Trash2 } from 'lucide-react'
 
-import {
-  Alert,
-  Badge,
-  Button,
-  Flex,
-  Heading,
-  Input,
-  Modal,
-  Skeleton,
-  Text,
-} from '@design-system'
+import { Alert, Badge, Button, Modal, Skeleton } from '@design-system'
+import { Inline } from '@thedatablitz/inline'
+import { Text } from '@thedatablitz/text'
+import { TextInput } from '@thedatablitz/text-input'
 
 import { useApiKeys, type CreateKeyResponse } from '../../hooks/useApiKeys'
 import { logError } from '../../utils/errorHandling'
@@ -145,8 +138,8 @@ export function ApiKeysTab() {
       <Section>
         <HeaderBlock>
           <div>
-            <Heading level={3}>API access keys</Heading>
-            <Text size="sm" muted>
+            <Text variant="heading2">API access keys</Text>
+            <Text variant="body3" color="color.text.subtle">
               Manage machine credentials for Workbit APIs. Treat these keys like
               passwords.
             </Text>
@@ -156,7 +149,7 @@ export function ApiKeysTab() {
         <ControlsRow>
           <CreateControls>
             <CreateInputWrap>
-              <Input
+              <TextInput
                 value={nameInput}
                 placeholder="Optional name, e.g. CI deploy key"
                 onChange={(e) => setNameInput(e.target.value)}
@@ -174,7 +167,7 @@ export function ApiKeysTab() {
           </CreateControls>
 
           <SearchWrap>
-            <Input
+            <TextInput
               type="search"
               placeholder="Search by name or key prefix"
               value={query}
@@ -185,12 +178,12 @@ export function ApiKeysTab() {
         </ControlsRow>
 
         <SecurityHint>
-          <Flex gap={2} align="center">
+          <Inline gap="050" align="center">
             <ShieldAlert size={16} />
-            <Text size="sm">
+            <Text variant="body3">
               For security, full keys are visible only once when created.
             </Text>
-          </Flex>
+          </Inline>
         </SecurityHint>
 
         {(error || mutationError) && (
@@ -207,7 +200,7 @@ export function ApiKeysTab() {
 
         {createdKey && (
           <KeyRevealPanel>
-            <Text as="div" size="sm">
+            <Text variant="body3" as="div">
               <strong>New key ready.</strong> Copy it now. You will not be able
               to see it again.
             </Text>
@@ -216,7 +209,7 @@ export function ApiKeysTab() {
                 ? createdKey.key
                 : maskForPreview(createdKey.key)}
             </MonospaceKey>
-            <Flex gap={2} wrap>
+            <Inline gap="050">
               <Button
                 size="sm"
                 onClick={() =>
@@ -244,7 +237,7 @@ export function ApiKeysTab() {
               >
                 Dismiss
               </Button>
-            </Flex>
+            </Inline>
           </KeyRevealPanel>
         )}
 
@@ -252,8 +245,8 @@ export function ApiKeysTab() {
 
         <ActiveHeader>
           <div>
-            <Heading level={4}>Active keys</Heading>
-            <Text size="sm" muted>
+            <Text variant="heading3">Active keys</Text>
+            <Text variant="body3" color="color.text.subtle">
               {filteredRows.length} {filteredRows.length === 1 ? 'key' : 'keys'}
             </Text>
           </div>
@@ -267,7 +260,7 @@ export function ApiKeysTab() {
           </KeysList>
         ) : filteredRows.length === 0 ? (
           <KeyItem>
-            <Text>
+            <Text variant="body3">
               No API keys found. Create one to start authenticating your
               integrations.
             </Text>
@@ -291,16 +284,16 @@ export function ApiKeysTab() {
                 >
                   <KeyItemGrid>
                     <div>
-                      <Text as="div" size="sm" muted>
+                      <Text variant="body3" color="color.text.subtle" as="div">
                         Key name
                       </Text>
-                      <Text as="div" size="md">
+                      <Text variant="body2" as="div">
                         {row.name?.trim() || 'Untitled key'}
                       </Text>
                     </div>
 
                     <div>
-                      <Text as="div" size="sm" muted>
+                      <Text variant="body3" color="color.text.subtle" as="div">
                         Key preview
                       </Text>
                       <MonospaceKey
@@ -311,13 +304,13 @@ export function ApiKeysTab() {
                     </div>
 
                     <div>
-                      <Text as="div" size="sm" muted>
+                      <Text variant="body3" color="color.text.subtle" as="div">
                         Created on
                       </Text>
-                      <Text as="div" size="sm">
+                      <Text variant="body3" as="div">
                         {formatDateTime(row.created_at)}
                       </Text>
-                      <Text as="div" size="sm" muted>
+                      <Text variant="body3" color="color.text.subtle" as="div">
                         Last used: {lastUsed}
                       </Text>
                     </div>
@@ -395,18 +388,18 @@ export function ApiKeysTab() {
         secondaryLabel="Cancel"
         onSecondary={handleCloseRevoke}
       >
-        <Text>
+        <Text variant="body3">
           This action cannot be undone. Any integration using this key will lose
           access immediately.
         </Text>
         <div style={{ marginTop: 10 }}>
-          <Text as="div" size="sm" muted>
+          <Text variant="body3" color="color.text.subtle" as="div">
             Key name
           </Text>
-          <Text as="div">
+          <Text variant="body3" as="div">
             {revokeCandidate?.name?.trim() || 'Untitled key'}
           </Text>
-          <Text as="div" size="sm" muted>
+          <Text variant="body3" color="color.text.subtle" as="div">
             Key preview
           </Text>
           <MonospaceKey style={{ marginTop: 4, marginBottom: 0 }}>

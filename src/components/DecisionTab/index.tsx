@@ -15,6 +15,7 @@ import { Stack } from '@thedatablitz/stack'
 import { Text } from '@thedatablitz/text'
 import { Badge } from '@thedatablitz/badge'
 import { TextInput as Input } from '@thedatablitz/text-input'
+import { TextBox } from '@thedatablitz/textbox'
 import { Box } from '@thedatablitz/box'
 
 import {
@@ -198,16 +199,15 @@ export function DecisionTab({
   }
 
   return (
-    <Box>
+    <Box border padding="400">
       <Stack gap="300">
         <Inline align="center" justify="space-between" gap="100" fullWidth>
           <Text variant="body3" color="color.text.subtle">
             Decisions log for roadmap changes and rationale
           </Text>
           <Button
-            size="small"
             icon={<Plus size={12} />}
-            variant="primary"
+            variant="danger"
             onClick={openCreate}
             disabled={!projectId}
           >
@@ -285,19 +285,11 @@ export function DecisionTab({
             <Text variant="body3">{error}</Text>
           </div>
         ) : items.length === 0 ? (
-          <div
-            style={{
-              border: '1px solid #e2e8f0',
-              background: '#f8fafc',
-              borderRadius: 8,
-              padding: 20,
-              textAlign: 'center',
-            }}
-          >
+          <Box>
             <Text variant="body3" color="color.text.subtle">
               No decisions logged yet
             </Text>
-          </div>
+          </Box>
         ) : (
           <Accordion
             size="medium"
@@ -482,20 +474,15 @@ export function DecisionTab({
             }
             placeholder="Impact summary (optional)"
           />
-          <textarea
+
+          <TextBox
             value={form.rationale}
             onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
               setForm((prev) => ({ ...prev, rationale: e.target.value }))
             }
-            placeholder="Rationale"
-            style={{
-              minHeight: 96,
-              border: '1px solid #e2e8f0',
-              borderRadius: 8,
-              padding: 10,
-              width: '100%',
-              fontSize: 14,
-            }}
+            label="Rationale"
+            size="medium"
+            fullWidth
           />
           <Input
             value={form.tagsCsv}

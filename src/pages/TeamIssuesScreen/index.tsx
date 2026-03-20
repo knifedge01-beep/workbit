@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Plus } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 
@@ -15,6 +15,7 @@ import {
   Text,
 } from '@design-system'
 
+import { Table, type ColumnDef } from '@thedatablitz/table'
 import { STATUS_OPTIONS } from '../../components/StatusSelector'
 import {
   createIssue,
@@ -25,20 +26,18 @@ import { countBy, getErrorMessage, logError } from '../../utils'
 import { useFetch } from '../../hooks/useFetch'
 import { modalClasses } from './styles/classes'
 import {
-  DataRow,
-  HeadRow,
   IssueId,
   IssueTitle,
   MetaText,
   NameCol,
   PriorityInline,
   StatusInline,
-  TableWrap,
 } from './styles'
 import type {
   IssueTabId,
   TeamIssueApiItem,
   TeamIssueOverrides,
+  TeamIssueRow,
   TeamIssuesParams,
   TeamIssuesScreenProps,
 } from './types'
@@ -72,6 +71,94 @@ export function TeamIssuesScreen({ teamName }: TeamIssuesScreenProps) {
   const createStatus = activeTab === 'backlog' ? 'backlog' : 'todo'
 
   const issues = toIssueRows((apiIssues ?? []) as TeamIssueApiItem[], overrides)
+
+  const handleNavigateToIssue = (issueId: string) => {
+    if (workspaceId && teamId) {
+      navigate(getIssueDetailPath(workspaceId, teamId, issueId))
+    }
+  }
+
+  const columns = useMemo<ColumnDef<TeamIssueRow, unknown>[]>(
+    () => [
+      {
+        id: 'name',
+        accessorKey: 'id',
+        header: 'Name',
+        cell: ({ row }) => (
+          <button
+            type="button"
+            onClick={() => handleNavigateToIssue(row.original.id)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              padding: 0,
+              margin: 0,
+              color: 'inherit',
+              cursor: 'pointer',
+              textAlign: 'left',
+            }}
+          >
+            <NameCol>
+              <IssueId>{row.original.id}</IssueId>
+              <IssueTitle>{row.original.title}</IssueTitle>
+            </NameCol>
+          </button>
+        ),
+      },
+      {
+        id: 'priority',
+        accessorKey: 'priority',
+        header: 'Priority',
+        cell: ({ row }) => (
+          <div onClick={(e) => e.stopPropagation()}>
+            <PriorityInline
+              value={row.original.priority}
+              onChange={(priority) =>
+                updateIssuePriority(row.original.id, priority)
+              }
+              options={INLINE_PRIORITY_OPTIONS}
+              placeholder="Not set"
+            />
+          </div>
+        ),
+      },
+      {
+        id: 'status',
+        accessorKey: 'status',
+        header: 'List',
+        cell: ({ row }) => (
+          <div onClick={(e) => e.stopPropagation()}>
+            <StatusInline
+              value={row.original.status}
+              onChange={(status) => updateIssueStatus(row.original.id, status)}
+              placeholder="Set status"
+            />
+          </div>
+        ),
+      },
+      {
+        id: 'date',
+        accessorKey: 'date',
+        header: 'Due date',
+        cell: ({ row }) => <MetaText>{row.original.date}</MetaText>,
+      },
+      {
+        id: 'assignee',
+        accessorKey: 'assignee',
+        header: 'Assignee',
+        cell: ({ row }) =>
+          row.original.assignee ? (
+            <Avatar
+              name={row.original.assigneeInitials || row.original.assignee}
+              size={20}
+            />
+          ) : (
+            <MetaText>—</MetaText>
+          ),
+      },
+    ],
+    [handleNavigateToIssue]
+  )
 
   const updateIssuePriority = (issueId: string, priority: string) => {
     setOverrides((prev) => ({
@@ -173,65 +260,14 @@ export function TeamIssuesScreen({ teamName }: TeamIssuesScreenProps) {
         ))}
       </Flex>
 
-      <TableWrap>
-        <HeadRow>
-          <span>Name</span>
-          <span>Priority</span>
-          <span>List</span>
-          <span>Due date</span>
-          <span>Assignee</span>
-        </HeadRow>
-
-        {issues.map((issue) => (
-          <DataRow
-            key={issue.id}
-            onClick={() =>
-              workspaceId &&
-              teamId &&
-              navigate(getIssueDetailPath(workspaceId, teamId, issue.id))
-            }
-          >
-            <NameCol>
-              <IssueId>{issue.id}</IssueId>
-              <IssueTitle>{issue.title}</IssueTitle>
-            </NameCol>
-
-            <div
-              onClick={(e) => {
-                e.stopPropagation()
-              }}
-            >
-              <PriorityInline
-                value={issue.priority}
-                onChange={(priority) => updateIssuePriority(issue.id, priority)}
-                options={INLINE_PRIORITY_OPTIONS}
-                placeholder="Not set"
-              />
-            </div>
-            <div
-              onClick={(e) => {
-                e.stopPropagation()
-              }}
-            >
-              <StatusInline
-                value={issue.status}
-                onChange={(status) => updateIssueStatus(issue.id, status)}
-                placeholder="Set status"
-              />
-            </div>
-            <MetaText>{issue.date}</MetaText>
-
-            {issue.assignee ? (
-              <Avatar
-                name={issue.assigneeInitials || issue.assignee}
-                size={20}
-              />
-            ) : (
-              <MetaText>—</MetaText>
-            )}
-          </DataRow>
-        ))}
-      </TableWrap>
+      <Table<TeamIssueRow>
+        data={issues}
+        columns={columns}
+        size="medium"
+        searchable
+        columnFilterable
+        emptyMessage="No issues found"
+      />
 
       {showModal && (
         <div className={modalClasses.overlay}>

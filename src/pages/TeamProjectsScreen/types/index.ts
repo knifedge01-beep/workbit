@@ -1,4 +1,4 @@
-import type { ColumnDef } from '@design-system'
+import type { ColumnDef } from '@thedatablitz/table'
 
 export type TeamProjectRow = {
   id: string

@@ -1,18 +1,13 @@
 import { useState } from 'react'
 import { Paperclip } from 'lucide-react'
 
-import { Button, Menu, IconButton } from '@design-system'
+import { Button, IconButton } from '@design-system'
+import { Dropdown } from '@thedatablitz/dropdown'
 
-import {
-  STATUS_CONFIG,
-  type ProjectStatus,
-} from '../../constants/projectStatus'
+import type { ProjectStatus } from '../../constants/projectStatus'
 import { MarkdownEditor } from '../MarkdownEditor'
 import { ResourceSelector } from '../ResourceSelector'
 import {
-  Container,
-  StatusRow,
-  StatusPill,
   TextAreaWrap,
   Divider,
   ActionBar,
@@ -21,6 +16,7 @@ import {
 } from './styles'
 import type { StatusUpdateComposerProps } from './types'
 import { buildStatusItems } from './utils/buildStatusItems'
+import { Box } from '@thedatablitz/box'
 
 export type { ProjectStatus } from '../../constants/projectStatus'
 
@@ -33,7 +29,6 @@ export function StatusUpdateComposer({
   onChooseFile,
   onCreateDocument,
   onAddLink,
-  className,
 }: StatusUpdateComposerProps) {
   const [internalStatus, setInternalStatus] =
     useState<ProjectStatus>('on-track')
@@ -49,9 +44,7 @@ export function StatusUpdateComposer({
     setInternalStatus(nextStatus)
   }
 
-  const config = STATUS_CONFIG[status]
-  const StatusIcon = config.Icon
-  const statusItems = buildStatusItems(setStatus)
+  const statusItems = buildStatusItems()
 
   const handlePost = () => {
     const trimmed = draft.trim()
@@ -61,22 +54,14 @@ export function StatusUpdateComposer({
   }
 
   return (
-    <Container className={className}>
-      <StatusRow>
-        <Menu
-          placement="right"
-          trigger={
-            <StatusPill
-              $color={config.color as 'success' | 'warning' | 'error'}
-            >
-              <StatusIcon size={14} />
-              {config.label}
-            </StatusPill>
-          }
-          items={statusItems}
-        />
-      </StatusRow>
-
+    <Box border padding="050">
+      <Dropdown
+        options={statusItems}
+        value={status}
+        onChange={(value: string) => setStatus(value as ProjectStatus)}
+        placeholder="Select status"
+        size="small"
+      />
       <TextAreaWrap>
         <MarkdownEditor
           value={draft}
@@ -122,6 +107,6 @@ export function StatusUpdateComposer({
           </Button>
         </ActionRight>
       </ActionBar>
-    </Container>
+    </Box>
   )
 }

@@ -4,7 +4,6 @@ export type ProjectUpdateHighlightCardProps = {
   update?: UpdateItem
   onAddComment?: (item: UpdateItem, content: string) => Promise<void> | void
   onViewFullThread?: () => void
-  className?: string
 }
 
 export type CommentTreeItem = {

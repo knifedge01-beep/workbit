@@ -47,7 +47,6 @@ export function ProjectUpdateHighlightCard({
   update,
   onAddComment,
   onViewFullThread,
-  className,
 }: ProjectUpdateHighlightCardProps) {
   const [showComments, setShowComments] = useState(false)
   const [draft, setDraft] = useState('')
@@ -91,126 +90,131 @@ export function ProjectUpdateHighlightCard({
   }
 
   return (
-    <Card border className={className}>
-      <Inner>
-        <TopRow>
-          <Inline align="center" justify="space-between" fullWidth>
-            <AuthorWrap>
-              <Avatar name={avatarInitials(update.author)} size="medium" />
-              <AuthorMeta>
-                <Stack gap="025">
-                  <Text variant="body3" style={{ fontWeight: 600 }}>
-                    {update.author}
-                  </Text>
-                  <Text variant="caption2" color="color.text.subtle">
-                    {update.timestamp} • Project update
-                  </Text>
-                </Stack>
-              </AuthorMeta>
-            </AuthorWrap>
+    <Stack gap="050">
+      <Text variant="heading6" color="color.text.information">
+        Latest Project Update
+      </Text>
+      <Card>
+        <Inner>
+          <TopRow>
+            <Inline align="center" justify="space-between" fullWidth>
+              <AuthorWrap>
+                <Avatar name={avatarInitials(update.author)} size="medium" />
+                <AuthorMeta>
+                  <Stack gap="025">
+                    <Text variant="body3" style={{ fontWeight: 600 }}>
+                      {update.author}
+                    </Text>
+                    <Text variant="caption2" color="color.text.subtle">
+                      {update.timestamp} • Project update
+                    </Text>
+                  </Stack>
+                </AuthorMeta>
+              </AuthorWrap>
 
-            <Badge
-              size="small"
-              variant={statusBadgeVariant}
-              label={statusLabel}
-            />
-          </Inline>
-        </TopRow>
-
-        <Body>
-          <MarkdownContent content={update.content} />
-        </Body>
-
-        <Footer>
-          <Inline align="center" justify="space-between" fullWidth>
-            <Reactions>
-              <Reaction>
-                <ThumbsUp size={13} />
-              </Reaction>
-              <Reaction>
-                <Heart size={13} />
-              </Reaction>
-              <Reaction>
-                <Rocket size={13} />
-              </Reaction>
-              <Reaction>
-                <Flame size={13} />
-              </Reaction>
-              <Button
-                buttonType="link"
+              <Badge
                 size="small"
-                icon={<MessageSquare size={14} />}
-                onClick={() => setShowComments((prev) => !prev)}
-              >
-                {commentsCount} Comments
+                variant={statusBadgeVariant}
+                label={statusLabel}
+              />
+            </Inline>
+          </TopRow>
+
+          <Body>
+            <MarkdownContent content={update.content} />
+          </Body>
+
+          <Footer>
+            <Inline align="center" justify="space-between" fullWidth>
+              <Reactions>
+                <Reaction>
+                  <ThumbsUp size={13} />
+                </Reaction>
+                <Reaction>
+                  <Heart size={13} />
+                </Reaction>
+                <Reaction>
+                  <Rocket size={13} />
+                </Reaction>
+                <Reaction>
+                  <Flame size={13} />
+                </Reaction>
+                <Button
+                  buttonType="link"
+                  size="small"
+                  icon={<MessageSquare size={14} />}
+                  onClick={() => setShowComments((prev) => !prev)}
+                >
+                  {commentsCount} Comments
+                </Button>
+                {reactionCount > 0 && (
+                  <Box>
+                    <Text variant="caption2" color="color.text.subtle">
+                      {reactionCount}
+                    </Text>
+                  </Box>
+                )}
+              </Reactions>
+
+              <Button buttonType="link" size="small" onClick={onViewFullThread}>
+                View Full Thread
               </Button>
-              {reactionCount > 0 && (
-                <Box>
-                  <Text variant="caption2" color="color.text.subtle">
-                    {reactionCount}
-                  </Text>
-                </Box>
-              )}
-            </Reactions>
+            </Inline>
+          </Footer>
+        </Inner>
 
-            <Button buttonType="link" size="small" onClick={onViewFullThread}>
-              View Full Thread
-            </Button>
-          </Inline>
-        </Footer>
-      </Inner>
+        {showComments && (
+          <CommentsSection>
+            {flattened.length > 0 && (
+              <CommentList>
+                {flattened.map(({ item, depth }) => (
+                  <CommentItem key={item.id} $depth={depth}>
+                    <CommentHeader>
+                      <Inline align="center" gap="100">
+                        <Text variant="caption1" style={{ fontWeight: 600 }}>
+                          {item.author}
+                        </Text>
+                        <Text variant="caption2" color="color.text.subtle">
+                          {item.timestamp}
+                        </Text>
+                      </Inline>
+                    </CommentHeader>
+                    <CommentBody>
+                      <MarkdownContent content={item.content} />
+                    </CommentBody>
+                  </CommentItem>
+                ))}
+              </CommentList>
+            )}
 
-      {showComments && (
-        <CommentsSection>
-          {flattened.length > 0 && (
-            <CommentList>
-              {flattened.map(({ item, depth }) => (
-                <CommentItem key={item.id} $depth={depth}>
-                  <CommentHeader>
-                    <Inline align="center" gap="100">
-                      <Text variant="caption1" style={{ fontWeight: 600 }}>
-                        {item.author}
-                      </Text>
-                      <Text variant="caption2" color="color.text.subtle">
-                        {item.timestamp}
-                      </Text>
-                    </Inline>
-                  </CommentHeader>
-                  <CommentBody>
-                    <MarkdownContent content={item.content} />
-                  </CommentBody>
-                </CommentItem>
-              ))}
-            </CommentList>
-          )}
-
-          <Composer onSubmit={handleSubmit}>
-            <TextInput
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              placeholder="Add a comment or reply..."
-              aria-label="Create comment"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault()
-                  if (!submitting && draft.trim()) {
-                    void submitComment()
+            <Composer onSubmit={handleSubmit}>
+              <TextInput
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                placeholder="Add a comment or reply..."
+                aria-label="Create comment"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault()
+                    if (!submitting && draft.trim()) {
+                      void submitComment()
+                    }
                   }
-                }
-              }}
-            />
-            <Button
-              buttonType="icon"
-              size="small"
-              icon={<Send size={14} />}
-              onClick={() => void submitComment()}
-              aria-label="Send comment"
-              title="Send"
-              disabled={submitting || !draft.trim()}
-            />
-          </Composer>
-        </CommentsSection>
-      )}
-    </Card>
+                }}
+              />
+              <Button
+                buttonType="icon"
+                size="small"
+                icon={<Send size={14} />}
+                onClick={() => void submitComment()}
+                aria-label="Send comment"
+                title="Send"
+                disabled={submitting || !draft.trim()}
+              />
+            </Composer>
+          </CommentsSection>
+        )}
+      </Card>
+    </Stack>
   )
 }

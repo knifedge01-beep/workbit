@@ -1,11 +1,17 @@
+import { useCallback, useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Plus } from 'lucide-react'
 
-import { Button, Flex, PageHeader, Stack, Table } from '@design-system'
+import { Button } from '@thedatablitz/button'
+import { Inline } from '@thedatablitz/inline'
+import { Stack } from '@thedatablitz/stack'
+import { Text } from '@thedatablitz/text'
+import { Table } from '@thedatablitz/table'
 
 import { useWorkspace } from '../../contexts/WorkspaceContext'
-import { Count, SectionHeader, Title, TitleBlock } from './styles'
+import { SectionHeader, TitleBlock } from './styles'
 import type {
+  TeamProjectColumnDef,
   TeamProjectRow,
   TeamProjectsParams,
   TeamProjectsScreenProps,
@@ -17,19 +23,25 @@ import {
   toTeamProjects,
 } from './utils/helpers'
 
-const columns = createColumns()
-
 export function TeamProjectsScreen({ teamName }: TeamProjectsScreenProps) {
   const { workspaceId, teamId } = useParams<TeamProjectsParams>()
   const navigate = useNavigate()
   const { projects: workspaceProjects } = useWorkspace()
   const projects = toTeamProjects(workspaceProjects, teamId)
 
-  const handleRowClick = (row: TeamProjectRow) => {
-    if (workspaceId && teamId) {
-      navigate(getTeamProjectPath(workspaceId, teamId, row.id))
-    }
-  }
+  const handleRowClick = useCallback(
+    (row: TeamProjectRow) => {
+      if (workspaceId && teamId) {
+        navigate(getTeamProjectPath(workspaceId, teamId, row.id))
+      }
+    },
+    [navigate, teamId, workspaceId]
+  )
+
+  const columns = useMemo<TeamProjectColumnDef[]>(
+    () => createColumns(handleRowClick),
+    [handleRowClick]
+  )
 
   const handleNewProject = () => {
     if (workspaceId && teamId) {
@@ -38,31 +50,45 @@ export function TeamProjectsScreen({ teamName }: TeamProjectsScreenProps) {
   }
 
   return (
-    <Stack gap={4}>
-      <Flex align="center" justify="space-between">
-        <PageHeader
-          title={`${teamName} – Projects`}
-          summary="Projects for this team."
-        />
+    <Stack gap="400">
+      <Inline align="center" justify="space-between" fullWidth>
+        <Stack gap="050">
+          <Text as="h1" variant="heading4">
+            {`${teamName} - Projects`}
+          </Text>
+          <Text variant="body2" color="color.text.subtle">
+            Projects for this team.
+          </Text>
+        </Stack>
         <Button variant="primary" onClick={handleNewProject}>
           <Plus size={16} />
           New Project
         </Button>
-      </Flex>
+      </Inline>
 
       <section>
         <SectionHeader>
           <TitleBlock>
-            <Title>Projects</Title>
-            <Count>{projects.length}</Count>
+            <Text as="h2" variant="heading6">
+              Projects
+            </Text>
+            <Text variant="body3" color="color.text.subtle">
+              {projects.length}
+            </Text>
           </TitleBlock>
         </SectionHeader>
-        <Table<TeamProjectRow>
+        <Table
           columns={columns}
           data={projects}
-          enableSorting
-          onRowClick={handleRowClick}
-          initialState={{ sorting: [{ id: 'name', desc: false }] }}
+          size="medium"
+          searchable
+          columnFilterable
+          emptyMessage="No projects found"
+          renderExpandedRow={(row) => (
+            <Text variant="body3" color="color.text.subtle">
+              Project ID: {row.original.id}
+            </Text>
+          )}
         />
       </section>
     </Stack>

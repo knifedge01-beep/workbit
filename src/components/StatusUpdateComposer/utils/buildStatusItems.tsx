@@ -1,19 +1,18 @@
-import type { MenuEntry } from '@design-system'
+import { STATUS_CONFIG } from '../../../constants/projectStatus'
 
-import {
-  STATUS_CONFIG,
-  type ProjectStatus,
-} from '../../../constants/projectStatus'
+export interface DropdownOption {
+  value: string
+  label: string
+  icon?: React.ReactNode
+}
 
-export function buildStatusItems(
-  setStatus: (status: ProjectStatus) => void
-): MenuEntry[] {
+export function buildStatusItems(): DropdownOption[] {
   return (['on-track', 'at-risk', 'off-track'] as const).map((key) => {
     const config = STATUS_CONFIG[key]
     const Icon = config.Icon
 
     return {
-      id: key,
+      value: key,
       label: config.label,
       icon: (
         <Icon
@@ -21,7 +20,6 @@ export function buildStatusItems(
           style={{ color: `var(--status-${key})` } as React.CSSProperties}
         />
       ),
-      onClick: () => setStatus(key),
     }
   })
 }

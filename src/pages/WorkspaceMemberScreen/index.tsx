@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from 'react-router-dom'
-import { Container, Stack, Heading, Text, Button } from '@design-system'
+import { Container, Stack, Heading, Text } from '@design-system'
 import { MembersTable } from '../../components'
 import { fetchMembers } from '../../api/client'
 import { useFetch } from '../../hooks/useFetch'
@@ -7,6 +7,7 @@ import { UserPlus } from 'lucide-react'
 import { Header, HeaderContent } from './styles'
 import type { WorkspaceMemberScreenRouteParams } from './types'
 import { mapMembersToRows } from './utils'
+import { Button } from '@thedatablitz/button'
 
 export function WorkspaceMemberScreen() {
   const { workspaceId } = useParams<WorkspaceMemberScreenRouteParams>()

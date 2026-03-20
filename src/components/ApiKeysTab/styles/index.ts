@@ -1,6 +1,6 @@
 import styled from 'styled-components'
 
-import { Button } from '@design-system'
+import { Button } from '@thedatablitz/button'
 
 export const Section = styled.section`
   padding: 8px 0 0;
@@ -10,57 +10,9 @@ export const Section = styled.section`
   }
 `
 
-export const HeaderBlock = styled.div`
-  margin-bottom: 10px;
-
-  h3 {
-    margin-bottom: 4px;
-  }
-`
-
-export const ControlsRow = styled.div`
-  display: grid;
-  grid-template-columns: minmax(220px, 1fr) auto minmax(220px, 340px);
-  gap: 8px;
-  align-items: center;
-
-  @media (max-width: 920px) {
-    grid-template-columns: 1fr auto;
-  }
-
-  @media (max-width: 620px) {
-    grid-template-columns: 1fr;
-  }
-`
-
 export const Divider = styled.div`
   margin: 10px 0;
   border-top: 1px solid ${(p) => p.theme.colors.border};
-`
-
-export const CreateControls = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-
-  @media (max-width: 760px) {
-    width: 100%;
-    flex-wrap: wrap;
-  }
-`
-
-export const CreateInputWrap = styled.div`
-  flex: 1;
-  min-width: 220px;
-`
-
-export const SecurityHint = styled.div`
-  margin-top: 8px;
-  padding: 10px 12px;
-  border: 1px solid ${(p) => p.theme.colors.border};
-  border-radius: 10px;
-  background: ${(p) => p.theme.colors.surfaceSecondary};
 `
 
 export const KeyRevealPanel = styled.div`
@@ -94,10 +46,6 @@ export const ActiveHeader = styled.div`
   gap: 8px;
   justify-content: space-between;
   flex-wrap: wrap;
-`
-
-export const SearchWrap = styled.div`
-  width: 100%;
 `
 
 export const KeysList = styled.div`

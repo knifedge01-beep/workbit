@@ -6,7 +6,6 @@ import {
   type ChangeEvent,
 } from 'react'
 
-import { Button } from '@thedatablitz/button'
 import { Accordion } from '@thedatablitz/accordion'
 import { Dropdown } from '@thedatablitz/dropdown'
 import { Inline } from '@thedatablitz/inline'
@@ -33,6 +32,7 @@ import { formatDateTime } from '../../utils/format'
 import type { DecisionForm, DecisionTabProps } from './types'
 import { csvToArray, EMPTY_FORM, toCsv } from './utils/helpers'
 import { Plus } from 'lucide-react'
+import { Button } from '@thedatablitz/button'
 
 export function DecisionTab({
   projectId,

@@ -27,19 +27,17 @@ export function PrioritySelector({
   void triggerVariant
 
   return (
-    <div classname="m-width-300">
-      <Dropdown
-        options={dropdownOptions}
-        value={value}
-        placeholder={placeholder}
-        size="small"
-        className={mergedClassName || undefined}
-        onChange={(nextValue) => {
-          if (typeof nextValue === 'string') {
-            onChange?.(nextValue)
-          }
-        }}
-      />
-    </div>
+    <Dropdown
+      options={dropdownOptions}
+      value={value}
+      placeholder={placeholder}
+      size="small"
+      className={mergedClassName || undefined}
+      onChange={(nextValue) => {
+        if (typeof nextValue === 'string') {
+          onChange?.(nextValue)
+        }
+      }}
+    />
   )
 }

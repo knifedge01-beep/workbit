@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Search, SortAsc } from 'lucide-react'
 
-import { Table } from '@design-system'
+import { Table } from '@thedatablitz/table'
 
 import {
   Toolbar,

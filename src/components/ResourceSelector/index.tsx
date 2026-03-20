@@ -1,11 +1,12 @@
 import { Plus } from 'lucide-react'
 
-import { Button, Menu } from '@design-system'
+import { Menu } from '@design-system'
 
 import { Label, Section } from './styles'
 import type { ResourceSelectorProps } from './types'
 import { buildResourceItems } from './utils/buildResourceItems'
 import { RESOURCE_MENU_ITEMS } from './utils/resourceMenuItems'
+import { Button } from '@thedatablitz/button'
 
 export function ResourceSelector({
   onChooseFile,

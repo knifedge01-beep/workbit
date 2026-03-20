@@ -1,15 +1,15 @@
 import styled from 'styled-components'
-import { Box } from 'lucide-react'
+import { Inline } from '@thedatablitz/inline'
+import { Stack } from '@thedatablitz/stack'
+import { Text } from '@thedatablitz/text'
+import { Avatar } from '@thedatablitz/avatar'
 
 const Header = styled.header`
-  display: flex;
-  align-items: flex-start;
-  gap: ${(p) => p.theme.spacing[4]}px;
   padding: 0;
   margin-bottom: ${(p) => p.theme.spacing[6]}px;
 `
 
-const IconWrap = styled.div`
+const IconWrap = styled.span`
   display: flex;
   align-items: center;
   justify-content: center;
@@ -21,52 +21,31 @@ const IconWrap = styled.div`
   color: ${(p) => p.theme.colors.primary};
 `
 
-const TextBlock = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${(p) => p.theme.spacing[1]}px;
-  min-width: 0;
-`
-
-const Title = styled.h1`
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 600;
-  line-height: 1.3;
-  color: ${(p) => p.theme.colors.text};
-`
-
-const Summary = styled.p<{ $placeholder?: boolean }>`
-  margin: 0;
-  font-size: 0.9375rem;
-  font-weight: 400;
-  line-height: 1.5;
-  color: ${(p) => p.theme.colors.textMuted};
-  font-style: ${(p) => (p.$placeholder ? 'italic' : 'normal')};
-`
-
 type Props = {
   title: string
-  /** Short summary or description. When empty, shows placeholder "Add a short summary..." */
+  /** Short summary or description. When empty, does not show */
   summary?: string
   /** Custom icon. Defaults to a project/box icon. */
   icon?: React.ReactNode
   className?: string
 }
 
-const SUMMARY_PLACEHOLDER = 'Add a short summary...'
-
 export function PageHeader({ title, summary = '', icon, className }: Props) {
-  const showPlaceholder = summary.trim() === ''
-  const displaySummary = showPlaceholder ? SUMMARY_PLACEHOLDER : summary
-
   return (
     <Header className={className}>
-      <IconWrap>{icon ?? <Box size={24} strokeWidth={1.5} />}</IconWrap>
-      <TextBlock>
-        <Title>{title}</Title>
-        <Summary $placeholder={showPlaceholder}>{displaySummary}</Summary>
-      </TextBlock>
+      <Inline align="flex-start" gap="200" fullWidth>
+        <IconWrap>{icon ?? <Avatar name="WB" size="medium" />}</IconWrap>
+        <Stack gap="025" fullWidth>
+          <Text as="h1" variant="heading3">
+            {title}
+          </Text>
+          {summary ? (
+            <Text as="p" variant="body2" color="color.text.subtle">
+              {summary}
+            </Text>
+          ) : null}
+        </Stack>
+      </Inline>
     </Header>
   )
 }

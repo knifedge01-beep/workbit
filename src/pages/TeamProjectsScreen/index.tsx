@@ -2,7 +2,6 @@ import { useCallback, useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Plus } from 'lucide-react'
 
-import { Button } from '@thedatablitz/button'
 import { Inline } from '@thedatablitz/inline'
 import { Stack } from '@thedatablitz/stack'
 import { Text } from '@thedatablitz/text'
@@ -22,6 +21,7 @@ import {
   getTeamProjectPath,
   toTeamProjects,
 } from './utils/helpers'
+import { Button } from '@thedatablitz/button'
 
 export function TeamProjectsScreen({ teamName }: TeamProjectsScreenProps) {
   const { workspaceId, teamId } = useParams<TeamProjectsParams>()

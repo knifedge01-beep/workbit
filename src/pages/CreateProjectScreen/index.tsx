@@ -1,22 +1,26 @@
-import { useState, type FormEvent } from 'react'
+import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
-import { Button, Input, Select } from '@design-system'
-import { cn } from '@design-system-v2/lib/utils'
-
+import { Box } from '@thedatablitz/box'
+import { Dropdown } from '@thedatablitz/dropdown'
+import { Inline } from '@thedatablitz/inline'
+import { Modal } from '@thedatablitz/modal'
+import { Stack } from '@thedatablitz/stack'
+import { TextBox } from '@thedatablitz/textbox'
+import { TextInput } from '@thedatablitz/text-input'
 import { createProject, fetchWorkspaceTeams } from '../../api/client'
 import { useWorkspace } from '../../contexts/WorkspaceContext'
 import { useFetch } from '../../hooks/useFetch'
 import { logError } from '../../utils/errorHandling'
-import { createProjectScreenClasses as classes } from './styles/classes'
 import type { RouteParams } from './types'
 import {
   getProjectListPath,
   getSummary,
-  getTeamBadge,
   PROPERTY_CHIPS,
   toTeamOptions,
 } from './utils/helpers'
+import { Button } from '@thedatablitz/button'
+import { Plus } from 'lucide-react'
 
 export function CreateProjectScreen() {
   const { workspaceId, teamId: teamIdFromUrl } = useParams<RouteParams>()
@@ -39,8 +43,7 @@ export function CreateProjectScreen() {
     [currentWorkspace?.id, isTeamScoped]
   )
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = async () => {
     if (!name.trim() || !effectiveTeamId) return
 
     setError(null)
@@ -70,106 +73,80 @@ export function CreateProjectScreen() {
     navigate(getProjectListPath(workspaceId, isTeamScoped, teamIdFromUrl))
   }
 
-  if (!workspaceId || !currentWorkspace) return <div>Workspace not found.</div>
+  if (!workspaceId || !currentWorkspace) return <Box>Workspace not found.</Box>
 
   const summary = getSummary(isTeamScoped, teamName, currentWorkspace.name)
 
   return (
-    <div className={classes.root}>
-      <div className={classes.card}>
-        <div className={classes.cardHeader}>
-          <div className={classes.headerLeft}>
-            <span className={classes.teamBadge}>{getTeamBadge(teamName)}</span>
-            <span>&gt;</span>
-            <span className={classes.headerTitle}>New project</span>
-          </div>
-          <button
-            type="button"
-            onClick={handleCancel}
-            className={classes.closeButton}
-            aria-label="Close"
+    <Modal
+      open
+      onClose={handleCancel}
+      title="New project"
+      size="large"
+      footer={
+        <Inline justify="flex-end" gap="100" fullWidth>
+          <Button variant="glass" onClick={handleCancel}>
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            onClick={() => void handleSubmit()}
+            disabled={!name.trim() || !effectiveTeamId || submitting}
           >
-            x
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className={classes.form}>
-          <div className={classes.iconWrap}>
-            <>□</>
-          </div>
-
-          <div className={classes.stack}>
-            <div>
-              <Input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Project name"
-                disabled={submitting}
-                autoFocus
-                className={classes.nameInput}
-              />
-            </div>
-
-            <div>
-              <Input
-                placeholder={summary}
-                disabled={submitting}
-                className={classes.summaryInput}
-              />
-            </div>
-
-            {!isTeamScoped && (
-              <div>
-                <Select
-                  value={teamId}
-                  onChange={setTeamId}
-                  options={toTeamOptions(teamsList ?? [])}
-                />
-              </div>
-            )}
-
-            <div className={classes.chipsWrap}>
-              {PROPERTY_CHIPS.map((chip) => (
-                <button key={chip} type="button" className={classes.chip}>
-                  {chip}
-                </button>
-              ))}
-            </div>
-
-            <textarea
-              placeholder="Write a description, a project brief, or collect ideas..."
-              className={classes.description}
+            {submitting ? 'Creating…' : 'Create project'}
+          </Button>
+        </Inline>
+      }
+    >
+      <Box>
+        <Stack>
+          <Box>
+            <TextInput
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Project name"
+              disabled={submitting}
+              autoFocus
             />
+          </Box>
 
-            <button type="button" className={classes.milestonesButton}>
-              <span>Milestones</span>
-              <span>+</span>
-            </button>
+          <Box>
+            <TextInput placeholder={summary} disabled={submitting} />
+          </Box>
 
-            {error && (
-              <div role="alert" className={classes.error}>
-                {error}
-              </div>
-            )}
-          </div>
+          {!isTeamScoped ? (
+            <Box>
+              <Dropdown
+                value={teamId}
+                onChange={(next) => {
+                  if (typeof next === 'string') {
+                    setTeamId(next)
+                  }
+                }}
+                options={toTeamOptions(teamsList ?? [])}
+                placeholder="Select team"
+                size="medium"
+              />
+            </Box>
+          ) : null}
 
-          <div className={classes.formFooter}>
-            <Button type="button" variant="secondary" onClick={handleCancel}>
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              variant="primary"
-              disabled={!name.trim() || !effectiveTeamId || submitting}
-              className={cn(
-                !name.trim() || !effectiveTeamId ? 'opacity-70' : ''
-              )}
-            >
-              {submitting ? 'Creating…' : 'Create project'}
-            </Button>
-          </div>
-        </form>
-      </div>
-    </div>
+          <Inline gap="100" wrap fullWidth>
+            {PROPERTY_CHIPS.map((chip) => (
+              <Button key={chip} variant="glass" icon={<Plus size={16} />}>
+                {chip}
+              </Button>
+            ))}
+          </Inline>
+
+          <TextBox
+            placeholder="Write a description, a project brief, or collect ideas..."
+            size="medium"
+            fullWidth
+          />
+
+          {error ? <Box role="alert">{error}</Box> : null}
+        </Stack>
+      </Box>
+    </Modal>
   )
 }

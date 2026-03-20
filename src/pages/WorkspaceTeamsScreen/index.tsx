@@ -1,12 +1,13 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { Plus } from 'lucide-react'
-import { PageHeader, Stack, Text, Button, Flex } from '@design-system'
+import { PageHeader, Stack, Text, Flex } from '@design-system'
 import { TeamsTable } from '../../components'
 import { fetchWorkspaceTeams } from '../../api/client'
 import { useFetch } from '../../hooks/useFetch'
 import { useWorkspace } from '../../contexts/WorkspaceContext'
 import type { WorkspaceTeamsScreenRouteParams } from './types'
 import { mapTeamsToRows } from './utils'
+import { Button } from '@thedatablitz/button'
 
 export function WorkspaceTeamsScreen() {
   const { workspaceId } = useParams<WorkspaceTeamsScreenRouteParams>()

@@ -1,14 +1,7 @@
 import { useState } from 'react'
 import { MessageCircle, MoreHorizontal, SquarePen } from 'lucide-react'
 
-import {
-  Avatar,
-  Button,
-  Menu,
-  IconButton,
-  EmojiSelector,
-  Chat,
-} from '@design-system'
+import { Avatar, Menu, IconButton, EmojiSelector, Chat } from '@design-system'
 
 import { STATUS_CONFIG } from '../../constants/projectStatus'
 import { MarkdownContent } from '../MarkdownContent'
@@ -31,6 +24,7 @@ import {
 } from './styles'
 import type { StatusUpdateCardProps } from './types'
 import { buildMoreItems } from './utils/buildMoreItems'
+import { Button } from '@thedatablitz/button'
 
 export type { StatusUpdateCardData } from './types'
 

@@ -11,7 +11,7 @@ import {
 import { Avatar } from '@thedatablitz/avatar'
 import { Badge } from '@thedatablitz/badge'
 import { Box } from '@thedatablitz/box'
-import { Button } from '@thedatablitz/button'
+
 import { Inline } from '@thedatablitz/inline'
 import { Stack } from '@thedatablitz/stack'
 import { Text } from '@thedatablitz/text'
@@ -26,6 +26,8 @@ import {
   flattenComments,
 } from './utils/commentHelpers'
 import { getReactionCount, getStatusLabel, getStatusTone } from './utils/status'
+
+import { Button } from '@thedatablitz/button'
 import {
   Inner,
   TopRow,

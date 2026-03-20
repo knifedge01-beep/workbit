@@ -1,5 +1,7 @@
 import { useSearchParams } from 'react-router-dom'
+import { Avatar } from '@thedatablitz/avatar'
 import { Box } from '@thedatablitz/box'
+import { Inline } from '@thedatablitz/inline'
 import { Stack } from '@thedatablitz/stack'
 import { Text } from '@thedatablitz/text'
 import { ApiKeysTab } from '../../components'
@@ -11,26 +13,23 @@ export function ProfilePage() {
     searchParams.get('tab') === 'profile' ? 'profile' : 'api-keys'
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-      <Stack gap="100" padding="100">
-        <Stack gap="050">
-          <Text variant="heading1">Profile settings</Text>
-          <Text variant="body3" color="color.text.subtle">
-            Manage your personal account and developer access from the sidebar.
-          </Text>
+    <Box fullWidth>
+      <Stack gap="200" padding="200" fullWidth>
+        <Stack gap="100" padding="200" fullWidth>
+          <Inline align="center" gap="100">
+            <Avatar name="WB" size="large" variant="brand" />
+            <Stack gap="025" fullWidth>
+              <Text variant="heading2">Profile settings</Text>
+              <Text variant="body3" color="color.text.subtle">
+                Manage your personal account and developer access from the
+                sidebar.
+              </Text>
+            </Stack>
+          </Inline>
         </Stack>
-        <div
-          style={{
-            borderTop: '1px solid var(--db-color-border-default)',
-          }}
-        />
-        {activeTab === 'profile' && (
-          <Box padding="100">
-            <Text>Profile settings can go here.</Text>
-          </Box>
-        )}
+
         {activeTab === 'api-keys' && <ApiKeysTab />}
       </Stack>
-    </div>
+    </Box>
   )
 }

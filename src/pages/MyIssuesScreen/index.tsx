@@ -4,7 +4,6 @@ import { Plus } from 'lucide-react'
 import {
   Alert,
   Avatar,
-  Button,
   Flex,
   Input,
   Modal,
@@ -40,6 +39,7 @@ import {
   toIssueRows,
   toTeamSelectOptions,
 } from './utils/helpers'
+import { Button } from '@thedatablitz/button'
 
 export function MyIssuesScreen() {
   const { currentWorkspace } = useWorkspace()

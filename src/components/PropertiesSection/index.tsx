@@ -8,7 +8,6 @@ import {
   Tag,
 } from 'lucide-react'
 
-import { Button } from '@thedatablitz/button'
 import { Inline } from '@thedatablitz/inline'
 import { Stack } from '@thedatablitz/stack'
 import { Text } from '@thedatablitz/text'
@@ -20,6 +19,7 @@ import { StatusSelector } from '../StatusSelector'
 import { Row } from './styles'
 import type { PropertiesSectionProps } from './types'
 import { projectStatusOptions } from './utils/projectStatusOptions'
+import { Button } from '@thedatablitz/button'
 
 export function PropertiesSection({
   defaultOpen = true,

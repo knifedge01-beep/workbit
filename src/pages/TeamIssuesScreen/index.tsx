@@ -5,16 +5,18 @@ import { useNavigate, useParams } from 'react-router-dom'
 import {
   Alert,
   Avatar,
-  Button,
   Flex,
-  Input,
   PageHeader,
   RichText,
   Stack,
-  Tabs,
-  Text,
 } from '@design-system'
-
+import { Badge } from '@thedatablitz/badge'
+import { Modal } from '@thedatablitz/modal'
+import { Tabs } from '@thedatablitz/tabs'
+import { Text } from '@thedatablitz/text'
+import { Button } from '@thedatablitz/button'
+import { Inline } from '@thedatablitz/inline'
+import { TextInput } from '@thedatablitz/text-input'
 import { Table, type ColumnDef } from '@thedatablitz/table'
 import { STATUS_OPTIONS } from '../../components/StatusSelector'
 import {
@@ -24,15 +26,7 @@ import {
 } from '../../api/client'
 import { countBy, getErrorMessage, logError } from '../../utils'
 import { useFetch } from '../../hooks/useFetch'
-import { modalClasses } from './styles/classes'
-import {
-  IssueId,
-  IssueTitle,
-  MetaText,
-  NameCol,
-  PriorityInline,
-  StatusInline,
-} from './styles'
+import { MetaText, NameCol, PriorityInline, StatusInline } from './styles'
 import type {
   IssueTabId,
   TeamIssueApiItem,
@@ -99,8 +93,19 @@ export function TeamIssuesScreen({ teamName }: TeamIssuesScreenProps) {
             }}
           >
             <NameCol>
-              <IssueId>{row.original.id}</IssueId>
-              <IssueTitle>{row.original.title}</IssueTitle>
+              <Badge variant="brand" size="small">
+                {row.original.id}
+              </Badge>
+              <Text
+                variant="body2"
+                style={{
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {row.original.title}
+              </Text>
             </NameCol>
           </button>
         ),
@@ -157,7 +162,7 @@ export function TeamIssuesScreen({ teamName }: TeamIssuesScreenProps) {
           ),
       },
     ],
-    [handleNavigateToIssue]
+    []
   )
 
   const updateIssuePriority = (issueId: string, priority: string) => {
@@ -187,7 +192,11 @@ export function TeamIssuesScreen({ teamName }: TeamIssuesScreenProps) {
 
   const statusSummary = STATUS_OPTIONS.filter(
     (opt) => (statusCounts[opt.id] ?? 0) > 0
-  ).map((opt) => `${statusCounts[opt.id]} ${opt.label}`)
+  ).map((opt) => ({
+    count: statusCounts[opt.id],
+    label: opt.label,
+    icon: opt.icon,
+  }))
 
   const handleCreateIssue = async () => {
     if (!teamId || !issueTitle.trim()) return
@@ -232,31 +241,31 @@ export function TeamIssuesScreen({ teamName }: TeamIssuesScreenProps) {
       {createError && <Alert variant="error">{createError}</Alert>}
       <Flex align="center" justify="space-between">
         <PageHeader title={teamName} />
-        <Button variant="primary" onClick={handleOpenCreateModal}>
-          <Plus size={16} />
+        <Button
+          icon={<Plus size={16} />}
+          variant="primary"
+          onClick={handleOpenCreateModal}
+        >
           New Issue
         </Button>
       </Flex>
-      <Flex align="center" gap={2}>
-        <Tabs
-          tabs={[...ISSUE_TABS]}
-          activeId={activeTab}
-          onChange={handleTabChange}
-        />
-      </Flex>
+
+      <Tabs
+        items={[...ISSUE_TABS]}
+        value={activeTab}
+        onChange={handleTabChange}
+      />
 
       <Flex align="center" gap={2} wrap>
-        {statusSummary.map((part, i) => (
-          <Flex key={i} align="center" gap={1}>
-            {i > 0 && (
-              <Text size="sm" muted>
-                ·
-              </Text>
-            )}
-            <Text size="sm" muted>
-              {part}
-            </Text>
-          </Flex>
+        {statusSummary.map((part) => (
+          <Badge
+            key={part.label}
+            icon={part.icon}
+            size="medium"
+            variant="default"
+          >
+            {part.count} - {part.label}
+          </Badge>
         ))}
       </Flex>
 
@@ -269,99 +278,61 @@ export function TeamIssuesScreen({ teamName }: TeamIssuesScreenProps) {
         emptyMessage="No issues found"
       />
 
-      {showModal && (
-        <div className={modalClasses.overlay}>
-          <div className={modalClasses.container}>
-            <div className={modalClasses.header}>
-              <div className={modalClasses.headerTrail}>
-                <span className={modalClasses.teamBadge}>
-                  {teamName.slice(0, 3).toUpperCase()}
-                </span>
-                <span>&gt;</span>
-                <span className={modalClasses.headerTitle}>New issue</span>
-              </div>
-              <button
-                type="button"
-                onClick={handleCloseCreateModal}
-                className={modalClasses.closeButton}
-                aria-label="Close"
-              >
-                x
-              </button>
-            </div>
+      <Modal
+        open={showModal}
+        onClose={handleCloseCreateModal}
+        title="New issue"
+        size="large"
+        footer={
+          <Flex justify="flex-end" gap={2}>
+            <Button
+              variant="danger"
+              onClick={handleCloseCreateModal}
+              disabled={creating}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={() => void handleCreateIssue()}
+              disabled={!issueTitle.trim() || creating}
+            >
+              {creating ? 'Creating…' : 'Create issue'}
+            </Button>
+          </Flex>
+        }
+      >
+        <Stack gap={3}>
+          <TextInput
+            id="create-issue-title"
+            value={issueTitle}
+            onChange={(e) => setIssueTitle(e.target.value)}
+            placeholder="Issue title"
+            disabled={creating}
+          />
 
-            <div className={modalClasses.body}>
-              <Input
-                id="create-issue-title"
-                value={issueTitle}
-                onChange={(e) => setIssueTitle(e.target.value)}
-                placeholder="Issue title"
-                disabled={creating}
-                className={modalClasses.titleInput}
-              />
+          <Text variant="body3" color="color.text.subtle">
+            Create in {createStatus === 'backlog' ? 'Backlog' : 'Active'}
+            {createStatus === 'backlog' ? ' tab' : ' workflow'}.
+          </Text>
 
-              <Text size="sm" muted>
-                Create in {createStatus === 'backlog' ? 'Backlog' : 'Active'}
-                {createStatus === 'backlog' ? ' tab' : ' workflow'}.
-              </Text>
+          <Inline gap="100" wrap fullWidth>
+            {CREATE_ISSUE_CHIPS.map((chip) => (
+              <Badge key={chip} icon={<Plus size={12} />} size="small">
+                {chip}
+              </Badge>
+            ))}
+          </Inline>
 
-              <div className={modalClasses.chipsWrap}>
-                {CREATE_ISSUE_CHIPS.map((chip) => (
-                  <button
-                    key={chip}
-                    type="button"
-                    className={modalClasses.chip}
-                  >
-                    {chip}
-                  </button>
-                ))}
-              </div>
-
-              <div className={modalClasses.editorWrap}>
-                <RichText
-                  value={issueDescription}
-                  onChange={setIssueDescription}
-                  placeholder="Write a description, acceptance criteria, or notes..."
-                  disabled={creating}
-                  minHeight={170}
-                />
-              </div>
-            </div>
-
-            <div className={modalClasses.footer}>
-              <label className={modalClasses.createMoreLabel}>
-                <input
-                  type="checkbox"
-                  className={modalClasses.checkbox}
-                  checked={createMore}
-                  onChange={(e) => setCreateMore(e.target.checked)}
-                  disabled={creating}
-                />
-                Create more
-              </label>
-
-              <div className={modalClasses.footerActions}>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={handleCloseCreateModal}
-                  disabled={creating}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="button"
-                  variant="primary"
-                  onClick={handleCreateIssue}
-                  disabled={!issueTitle.trim() || creating}
-                >
-                  {creating ? 'Creating…' : 'Create issue'}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+          <RichText
+            value={issueDescription}
+            onChange={setIssueDescription}
+            placeholder="Write a description, acceptance criteria, or notes..."
+            disabled={creating}
+            minHeight={170}
+          />
+        </Stack>
+      </Modal>
     </Stack>
   )
 }

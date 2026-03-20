@@ -6,7 +6,6 @@ import {
   Stack,
   PageHeader,
   Text,
-  Button,
   Input,
   Flex,
   Select,
@@ -25,6 +24,7 @@ import {
   STATUS_OPTIONS,
   toggleTeamIds,
 } from './utils/helpers'
+import { Button } from '@thedatablitz/button'
 
 export function CreateMemberScreen() {
   const { workspaceId, teamId: teamIdFromUrl } = useParams<RouteParams>()

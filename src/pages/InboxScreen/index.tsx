@@ -3,9 +3,9 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { Mail, Plus, FolderKanban } from 'lucide-react'
 import { Text } from '@thedatablitz/text'
 import { EmptyIconWrapper } from './styles'
-import { Button, ButtonGroup } from '@thedatablitz/button'
 import { Box } from '@thedatablitz/box'
 import { Stack } from '@thedatablitz/stack'
+import { Button } from '@thedatablitz/button'
 
 export function InboxScreen() {
   const navigate = useNavigate()
@@ -47,7 +47,7 @@ export function InboxScreen() {
               projects.
             </Text>
 
-            <ButtonGroup>
+            <div style={{ display: 'flex', gap: 8 }}>
               <Button
                 variant="primary"
                 onClick={() => navigate(`${base}/my-issues`)}
@@ -56,13 +56,13 @@ export function InboxScreen() {
                 Create Issue
               </Button>
               <Button
-                variant="glass"
+                variant="outline"
                 onClick={() => navigate(`${base}/workspace/projects`)}
               >
                 <FolderKanban size={16} />
                 View Projects
               </Button>
-            </ButtonGroup>
+            </div>
           </Stack>
         </Box>
       </div>

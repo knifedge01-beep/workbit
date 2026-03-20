@@ -1,50 +1,34 @@
 import { useCallback, useMemo, useState } from 'react'
-import { Check, Copy, Plus, ShieldAlert, Trash2 } from 'lucide-react'
+import { Check, Copy, Plus, Shield, ShieldAlert, Trash2 } from 'lucide-react'
 
-import { Alert, Badge, Button, Modal, Skeleton } from '@design-system'
+import { Badge, type BadgeVariant } from '@thedatablitz/badge'
+import { Banner } from '@thedatablitz/banner'
+import { Button } from '@thedatablitz/button'
 import { Inline } from '@thedatablitz/inline'
+import { Modal } from '@thedatablitz/modal'
+import { Stack } from '@thedatablitz/stack'
+import { Table, type ColumnDef } from '@thedatablitz/table'
 import { Text } from '@thedatablitz/text'
 import { TextInput } from '@thedatablitz/text-input'
-
+import { Box } from '@thedatablitz/box'
 import { useApiKeys, type CreateKeyResponse } from '../../hooks/useApiKeys'
 import { logError } from '../../utils/errorHandling'
 import { formatDateTime, formatRelativeTime } from '../../utils/format'
-import {
-  ActionsWrap,
-  ActiveHeader,
-  ControlsRow,
-  CreateControls,
-  CreateInputWrap,
-  DangerButton,
-  Divider,
-  HeaderBlock,
-  KeyItem,
-  KeyItemGrid,
-  KeyMetaGrid,
-  KeyRevealPanel,
-  KeysList,
-  MonospaceKey,
-  SearchWrap,
-  Section,
-  SecurityHint,
-} from './styles'
+import { MonospaceKey } from './styles'
 import type { KeyRow } from './types'
 import {
   badgeColorForEnvironment,
   copyLabel,
-  filterKeyRows,
   maskForPreview,
-  toKeyRows,
 } from './utils/helpers'
 
 export function ApiKeysTab() {
-  const { keys, loading, error, createKey, deleteKey } = useApiKeys()
+  const { keys, error, createKey, deleteKey } = useApiKeys()
   const [nameInput, setNameInput] = useState('')
   const [createdKey, setCreatedKey] = useState<CreateKeyResponse | null>(null)
   const [creating, setCreating] = useState(false)
   const [revokingId, setRevokingId] = useState<string | null>(null)
   const [revokeCandidate, setRevokeCandidate] = useState<KeyRow | null>(null)
-  const [query, setQuery] = useState('')
   const [revealCreatedKey, setRevealCreatedKey] = useState(false)
   const [copiedToken, setCopiedToken] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
@@ -123,270 +107,260 @@ export function ApiKeysTab() {
     }
   }, [deleteKey, revokeCandidate, revokingId])
 
-  const keyRows: KeyRow[] = useMemo(
-    () => toKeyRows(keys, revokingId),
-    [keys, revokingId]
-  )
-
-  const filteredRows = useMemo(
-    () => filterKeyRows(keyRows, query),
-    [keyRows, query]
+  const columns = useMemo<ColumnDef<KeyRow, unknown>[]>(
+    () => [
+      {
+        id: 'name',
+        header: 'Key name',
+        cell: ({ row }) => (
+          <Text variant="body2">
+            {row.original.name?.trim() || 'Untitled key'}
+          </Text>
+        ),
+      },
+      {
+        id: 'preview',
+        header: 'Key preview',
+        cell: ({ row }) => (
+          <MonospaceKey>{row.original.masked_key}</MonospaceKey>
+        ),
+      },
+      {
+        id: 'created',
+        header: 'Created / Last used',
+        cell: ({ row }) => {
+          const lastUsed = row.original.last_used_at
+            ? `${formatRelativeTime(row.original.last_used_at)} (${formatDateTime(row.original.last_used_at)})`
+            : 'Never used'
+          return (
+            <Stack gap="025">
+              <Text variant="body3">
+                {formatDateTime(row.original.created_at)}
+              </Text>
+              <Text variant="body3" color="color.text.subtle">
+                Last used: {lastUsed}
+              </Text>
+            </Stack>
+          )
+        },
+      },
+      {
+        id: 'tags',
+        header: 'Environment / Permissions',
+        cell: ({ row }) => {
+          const permissions =
+            row.original.permissions && row.original.permissions.length > 0
+              ? row.original.permissions
+              : ['Full access']
+          const environment = row.original.environment ?? 'Live'
+          return (
+            <Inline gap="050" wrap>
+              <Badge
+                variant={badgeColorForEnvironment(environment) as BadgeVariant}
+                size="small"
+              >
+                {environment}
+              </Badge>
+              {permissions.map((permission) => (
+                <Badge
+                  key={`${row.original.id}-${permission}`}
+                  variant="default"
+                  size="small"
+                >
+                  {permission}
+                </Badge>
+              ))}
+            </Inline>
+          )
+        },
+      },
+      {
+        id: 'actions',
+        header: 'Actions',
+        cell: ({ row }) => (
+          <Inline gap="050" wrap>
+            <Button
+              size="small"
+              variant="glass"
+              onClick={() =>
+                handleCopy(
+                  row.original.masked_key,
+                  `masked:${row.original.id}`,
+                  'Masked key preview'
+                )
+              }
+              aria-label={`Copy masked key for ${row.original.name ?? row.original.id}`}
+            >
+              {copiedToken === `masked:${row.original.id}` ? (
+                <Check size={14} />
+              ) : (
+                <Copy size={14} />
+              )}
+              {copyLabel(
+                copiedToken,
+                `masked:${row.original.id}`,
+                'Copy preview'
+              )}
+            </Button>
+            <Button
+              size="small"
+              variant="danger"
+              onClick={() => handleOpenRevoke(row.original)}
+              disabled={row.original.revoking}
+              aria-label={`Revoke key ${row.original.name ?? row.original.id}`}
+            >
+              <Trash2 size={14} />
+              {row.original.revoking ? 'Revoking...' : 'Revoke key'}
+            </Button>
+          </Inline>
+        ),
+      },
+    ],
+    [copiedToken, handleCopy, handleOpenRevoke]
   )
 
   return (
     <>
-      <Section>
-        <HeaderBlock>
-          <div>
-            <Text variant="heading2">API access keys</Text>
-            <Text variant="body3" color="color.text.subtle">
-              Manage machine credentials for Workbit APIs. Treat these keys like
-              passwords.
-            </Text>
-          </div>
-        </HeaderBlock>
+      <Stack gap="100">
+        <Stack gap="050">
+          <Text variant="heading2">API access keys</Text>
+          <Text variant="body3" color="color.text.subtle">
+            Manage machine credentials for Workbit APIs. Treat these keys like
+            passwords.
+          </Text>
+        </Stack>
 
-        <ControlsRow>
-          <CreateControls>
-            <CreateInputWrap>
-              <TextInput
-                value={nameInput}
-                placeholder="Optional name, e.g. CI deploy key"
-                onChange={(e) => setNameInput(e.target.value)}
-                aria-label="API key name"
-              />
-            </CreateInputWrap>
+        <Banner
+          variant="warning"
+          message={
+            <>
+              <Inline align="center" gap="050">
+                <ShieldAlert size={16} />
+                <Text variant="heading7" color="color.text.inverse">
+                  For security, full keys are shown only once at creation. Copy
+                  and store the key in your secure secret manager immediately.
+                </Text>
+              </Inline>
+              <Text variant="body3" color="color.text.inverse">
+                If a key is exposed, revoke it right away and create a new one.
+              </Text>
+            </>
+          }
+        />
+
+        <Stack gap="100">
+          <Inline gap="100">
+            <TextInput
+              value={nameInput}
+              placeholder="Optional name, e.g. CI deploy key"
+              onChange={(e) => setNameInput(e.target.value)}
+              aria-label="API key name"
+              startIcon={<Shield size={15} />}
+            />
             <Button
               onClick={handleCreate}
               disabled={creating}
+              icon={<Plus size={15} />}
               aria-label="Create API key"
             >
-              <Plus size={15} />
               {creating ? 'Creating key...' : 'Create API key'}
             </Button>
-          </CreateControls>
-
-          <SearchWrap>
-            <TextInput
-              type="search"
-              placeholder="Search by name or key prefix"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              aria-label="Search API keys"
-            />
-          </SearchWrap>
-        </ControlsRow>
-
-        <SecurityHint>
-          <Inline gap="050" align="center">
-            <ShieldAlert size={16} />
-            <Text variant="body3">
-              For security, full keys are visible only once when created.
-            </Text>
           </Inline>
-        </SecurityHint>
+        </Stack>
 
         {(error || mutationError) && (
-          <div style={{ marginTop: 8 }}>
-            <Alert variant="error">{error ?? mutationError}</Alert>
-          </div>
-        )}
-
-        {successMessage && (
-          <div style={{ marginTop: 8 }}>
-            <Alert variant="success">{successMessage}</Alert>
+          <div style={{ marginBottom: 8 }}>
+            <Banner variant="danger" message={error ?? mutationError} />
           </div>
         )}
 
         {createdKey && (
-          <KeyRevealPanel>
-            <Text variant="body3" as="div">
-              <strong>New key ready.</strong> Copy it now. You will not be able
-              to see it again.
-            </Text>
-            <MonospaceKey>
-              {revealCreatedKey
-                ? createdKey.key
-                : maskForPreview(createdKey.key)}
-            </MonospaceKey>
-            <Inline gap="050">
-              <Button
-                size="sm"
-                onClick={() =>
-                  handleCopy(createdKey.key, `full:${createdKey.id}`, 'API key')
-                }
-              >
-                {copiedToken === `full:${createdKey.id}` ? (
-                  <Check size={14} />
-                ) : (
-                  <Copy size={14} />
-                )}
-                {copyLabel(copiedToken, `full:${createdKey.id}`, 'Copy key')}
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setRevealCreatedKey((v) => !v)}
-              >
-                {revealCreatedKey ? 'Hide key' : 'Show key'}
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => setCreatedKey(null)}
-              >
-                Dismiss
-              </Button>
-            </Inline>
-          </KeyRevealPanel>
-        )}
-
-        <Divider />
-
-        <ActiveHeader>
-          <div>
-            <Text variant="heading3">Active keys</Text>
-            <Text variant="body3" color="color.text.subtle">
-              {filteredRows.length} {filteredRows.length === 1 ? 'key' : 'keys'}
-            </Text>
-          </div>
-        </ActiveHeader>
-
-        {loading ? (
-          <KeysList>
-            <Skeleton height="72px" />
-            <Skeleton height="72px" />
-            <Skeleton height="72px" />
-          </KeysList>
-        ) : filteredRows.length === 0 ? (
-          <KeyItem>
-            <Text variant="body3">
-              No API keys found. Create one to start authenticating your
-              integrations.
-            </Text>
-          </KeyItem>
-        ) : (
-          <KeysList>
-            {filteredRows.map((row) => {
-              const lastUsed = row.last_used_at
-                ? `${formatRelativeTime(row.last_used_at)} (${formatDateTime(row.last_used_at)})`
-                : 'Never used'
-              const permissions =
-                row.permissions && row.permissions.length > 0
-                  ? row.permissions
-                  : ['Full access']
-              const environment = row.environment ?? 'Live'
-
-              return (
-                <KeyItem
-                  key={row.id}
-                  aria-label={`API key ${row.name ?? row.id}`}
+          <Box border>
+            <Stack padding="100" gap="100">
+              <Banner variant="success" message={successMessage} />
+              <Stack gap="050">
+                <Text variant="body3" as="div">
+                  <strong>New key ready.</strong> Copy it now. You will not be
+                  able to see it again.
+                </Text>
+                <MonospaceKey>
+                  {revealCreatedKey
+                    ? createdKey.key
+                    : maskForPreview(createdKey.key)}
+                </MonospaceKey>
+              </Stack>
+              <Inline gap="050">
+                <Button
+                  size="small"
+                  onClick={() =>
+                    handleCopy(
+                      createdKey.key,
+                      `full:${createdKey.id}`,
+                      'API key'
+                    )
+                  }
                 >
-                  <KeyItemGrid>
-                    <div>
-                      <Text variant="body3" color="color.text.subtle" as="div">
-                        Key name
-                      </Text>
-                      <Text variant="body2" as="div">
-                        {row.name?.trim() || 'Untitled key'}
-                      </Text>
-                    </div>
-
-                    <div>
-                      <Text variant="body3" color="color.text.subtle" as="div">
-                        Key preview
-                      </Text>
-                      <MonospaceKey
-                        style={{ margin: '4px 0 0', padding: '8px 10px' }}
-                      >
-                        {row.masked_key}
-                      </MonospaceKey>
-                    </div>
-
-                    <div>
-                      <Text variant="body3" color="color.text.subtle" as="div">
-                        Created on
-                      </Text>
-                      <Text variant="body3" as="div">
-                        {formatDateTime(row.created_at)}
-                      </Text>
-                      <Text variant="body3" color="color.text.subtle" as="div">
-                        Last used: {lastUsed}
-                      </Text>
-                    </div>
-
-                    <ActionsWrap>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() =>
-                          handleCopy(
-                            row.masked_key,
-                            `masked:${row.id}`,
-                            'Masked key preview'
-                          )
-                        }
-                        aria-label={`Copy masked key for ${row.name ?? row.id}`}
-                      >
-                        {copiedToken === `masked:${row.id}` ? (
-                          <Check size={14} />
-                        ) : (
-                          <Copy size={14} />
-                        )}
-                        {copyLabel(
-                          copiedToken,
-                          `masked:${row.id}`,
-                          'Copy preview'
-                        )}
-                      </Button>
-                      <DangerButton
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleOpenRevoke(row)}
-                        disabled={row.revoking}
-                        aria-label={`Revoke key ${row.name ?? row.id}`}
-                      >
-                        <Trash2 size={14} />
-                        {row.revoking ? 'Revoking...' : 'Revoke key'}
-                      </DangerButton>
-                    </ActionsWrap>
-                  </KeyItemGrid>
-
-                  <KeyMetaGrid>
-                    <Badge
-                      variant="light"
-                      color={badgeColorForEnvironment(environment)}
-                      size="small"
-                    >
-                      {environment}
-                    </Badge>
-                    {permissions.map((permission) => (
-                      <Badge
-                        key={`${row.id}-${permission}`}
-                        variant="light"
-                        color="grey"
-                        size="small"
-                      >
-                        {permission}
-                      </Badge>
-                    ))}
-                  </KeyMetaGrid>
-                </KeyItem>
-              )
-            })}
-          </KeysList>
+                  {copiedToken === `full:${createdKey.id}` ? (
+                    <Check size={14} />
+                  ) : (
+                    <Copy size={14} />
+                  )}
+                  {copyLabel(copiedToken, `full:${createdKey.id}`, 'Copy key')}
+                </Button>
+                <Button
+                  size="small"
+                  variant="glass"
+                  onClick={() => setRevealCreatedKey((v) => !v)}
+                >
+                  {revealCreatedKey ? 'Hide key' : 'Show key'}
+                </Button>
+                <Button
+                  size="small"
+                  variant="glass"
+                  onClick={() => setCreatedKey(null)}
+                >
+                  Dismiss
+                </Button>
+              </Inline>
+            </Stack>
+          </Box>
         )}
-      </Section>
+
+        <Stack gap="100">
+          <Inline align="center" gap="100">
+            <Text variant="heading5">Active keys</Text>
+            <Badge variant="default" size="small">
+              {keys.length} {keys.length === 1 ? 'key' : 'keys'}
+            </Badge>
+          </Inline>
+
+          <Table<KeyRow> data={keys} columns={columns} />
+        </Stack>
+      </Stack>
 
       <Modal
         open={revokeCandidate != null}
         onClose={handleCloseRevoke}
         title="Revoke API key"
-        variant="destructive"
-        primaryLabel={revokingId ? 'Revoking...' : 'Revoke key'}
-        onPrimary={handleConfirmRevoke}
-        secondaryLabel="Cancel"
-        onSecondary={handleCloseRevoke}
+        size="medium"
+        footer={
+          <Inline justify="flex-end" gap="100" fullWidth>
+            <Button
+              variant="glass"
+              onClick={handleCloseRevoke}
+              disabled={revokingId != null}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              onClick={() => void handleConfirmRevoke()}
+              disabled={revokingId != null}
+            >
+              {revokingId ? 'Revoking...' : 'Revoke key'}
+            </Button>
+          </Inline>
+        }
       >
         <Text variant="body3">
           This action cannot be undone. Any integration using this key will lose

@@ -1,15 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
-import {
-  Container,
-  Stack,
-  PageHeader,
-  Text,
-  Button,
-  Input,
-  Flex,
-} from '@design-system'
+import { Container, Stack, PageHeader, Text, Input, Flex } from '@design-system'
 
 import { createTeam } from '../../api/client'
 import { useWorkspace } from '../../contexts/WorkspaceContext'
@@ -17,6 +9,7 @@ import { logError } from '../../utils/errorHandling'
 import { labelStyle } from './styles'
 import type { RouteParams } from './types'
 import { getReturnPath, getSummary } from './utils/helpers'
+import { Button } from '@thedatablitz/button'
 
 export function CreateTeamScreen() {
   const { workspaceId, teamId: teamIdFromUrl } = useParams<RouteParams>()

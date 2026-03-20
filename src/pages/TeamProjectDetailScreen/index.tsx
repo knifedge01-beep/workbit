@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Box } from '@thedatablitz/box'
 import { Badge } from '@thedatablitz/badge'
-import { Button } from '@thedatablitz/button'
+
 import { Inline } from '@thedatablitz/inline'
 import { Modal } from '@thedatablitz/modal'
 import { Stack } from '@thedatablitz/stack'
@@ -63,6 +63,7 @@ import {
 } from './utils/helpers'
 import { Plus } from 'lucide-react'
 import { Banner } from '@thedatablitz/banner'
+import { Button } from '@thedatablitz/button'
 
 export function TeamProjectDetailScreen({
   projectName,

@@ -1,4 +1,4 @@
-import { Table } from '@design-system'
+import { Table } from '@thedatablitz/table'
 
 import { TableContainer } from './styles'
 import type { MemberRow, MembersTableProps } from './types'

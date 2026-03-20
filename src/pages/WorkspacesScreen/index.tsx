@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Building2, Loader2, AlertCircle, ArrowRight } from 'lucide-react'
-import { Button } from '@thedatablitz/button'
+
 import { Dropdown } from '@thedatablitz/dropdown'
 import { TextInput as Input } from '@thedatablitz/text-input'
 import { Text } from '@thedatablitz/text'
@@ -29,6 +29,7 @@ import { useAuthRequired } from '../auth/AuthContext'
 import { useWorkspace } from '../../contexts/WorkspaceContext'
 import { logError } from '../../utils/errorHandling'
 import { REGION_OPTIONS, slugify, workspaceInitials } from './utils'
+import { Button } from '@thedatablitz/button'
 
 export function WorkspacesScreen() {
   const [name, setName] = useState('')

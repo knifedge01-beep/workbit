@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
-import { Button, Input, Select, RichText } from '@design-system'
+import { Input, Select, RichText } from '@design-system'
 import { cn } from '@design-system-v2/lib/utils'
 
 import { createIssue, fetchWorkspaceTeams } from '../../api/client'
@@ -18,6 +18,7 @@ import {
   ISSUE_PROPERTY_CHIPS,
   toTeamOptions,
 } from './utils/helpers'
+import { Button } from '@thedatablitz/button'
 
 export function CreateIssueScreen() {
   const { workspaceId, teamId: teamIdFromUrl } = useParams<RouteParams>()

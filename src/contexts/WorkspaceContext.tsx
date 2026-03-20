@@ -45,6 +45,7 @@ const WorkspaceContext = createContext<WorkspaceContextValue | null>(null)
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const { state: authState } = useAuth()
+  const isAuthLoading = authState.status === 'loading'
   const userId =
     authState.status === 'authenticated' ? authState.session.user.id : null
 
@@ -76,6 +77,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const loadWorkspaces = useCallback(async () => {
+    if (isAuthLoading) {
+      setWorkspacesLoading(true)
+      return
+    }
     if (!userId) {
       setWorkspaces([])
       setWorkspacesLoading(false)
@@ -106,10 +111,16 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     } finally {
       setWorkspacesLoading(false)
     }
-  }, [userId])
+  }, [isAuthLoading, userId])
 
   useEffect(() => {
     let cancelled = false
+    if (isAuthLoading) {
+      setWorkspacesLoading(true)
+      return () => {
+        cancelled = true
+      }
+    }
     if (!userId) {
       setWorkspaces([])
       setWorkspacesLoading(false)
@@ -148,7 +159,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true
     }
-  }, [userId])
+  }, [isAuthLoading, userId])
 
   const loadTeamsAndProjects = useCallback(async () => {
     if (!currentWorkspace) return

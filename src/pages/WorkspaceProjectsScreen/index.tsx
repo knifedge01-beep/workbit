@@ -1,6 +1,5 @@
 import { useNavigate, useParams } from 'react-router-dom'
 import { Plus } from 'lucide-react'
-import { Button } from '@thedatablitz/button'
 
 import { Flex, PageHeader, Stack, Text } from '@design-system'
 
@@ -15,6 +14,7 @@ import {
   resolveTeamId,
   toProjectRows,
 } from './utils/helpers'
+import { Button } from '@thedatablitz/button'
 
 export function WorkspaceProjectsScreen() {
   const navigate = useNavigate()

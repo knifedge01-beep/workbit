@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
-import { Button, Input } from '@design-system'
+import { Input } from '@design-system'
 import styled from 'styled-components'
 import { getSupabase, isAuthConfigured } from './supabaseClient'
 import { useAuth } from './AuthContext'
+import { Button } from '@thedatablitz/button'
 
 const Wrapper = styled.div`
   min-height: 100vh;

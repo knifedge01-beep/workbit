@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Paperclip } from 'lucide-react'
 
-import { Button, IconButton } from '@design-system'
+import { IconButton } from '@design-system'
 import { Dropdown } from '@thedatablitz/dropdown'
 
 import type { ProjectStatus } from '../../constants/projectStatus'
@@ -17,6 +17,7 @@ import {
 import type { StatusUpdateComposerProps } from './types'
 import { buildStatusItems } from './utils/buildStatusItems'
 import { Box } from '@thedatablitz/box'
+import { Button } from '@thedatablitz/button'
 
 export type { ProjectStatus } from '../../constants/projectStatus'
 

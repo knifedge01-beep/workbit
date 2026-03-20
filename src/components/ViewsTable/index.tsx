@@ -1,4 +1,4 @@
-import { Table } from '@design-system'
+import { Table } from '@thedatablitz/table'
 
 import { SectionHeader, TitleBlock, Title, Count } from './styles'
 import type { ViewTableRow, ViewsTableProps } from './types'

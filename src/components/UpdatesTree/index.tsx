@@ -5,7 +5,7 @@ import { Tree } from '@thedatablitz/tree'
 import { Avatar } from '@thedatablitz/avatar'
 import { Badge } from '@thedatablitz/badge'
 import { Box } from '@thedatablitz/box'
-import { Button } from '@thedatablitz/button'
+
 import { Inline } from '@thedatablitz/inline'
 import { Card } from '@thedatablitz/card'
 import { Stack } from '@thedatablitz/stack'
@@ -20,6 +20,7 @@ import {
   filterRecursive,
   QUICK_EMOJIS,
 } from './utils/treeHelpers'
+import { Button } from '@thedatablitz/button'
 
 export type { UpdateItem } from './types'
 

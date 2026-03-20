@@ -1,7 +1,6 @@
 import { useMemo } from 'react'
 import { Plus } from 'lucide-react'
 
-import { Button } from '@thedatablitz/button'
 import { Box } from '@thedatablitz/box'
 import { Dropdown } from '@thedatablitz/dropdown'
 import { Inline } from '@thedatablitz/inline'
@@ -13,6 +12,7 @@ import { MILESTONE_MENU_ITEMS } from '../milestoneMenuItems'
 import type { MilestonesSectionProps } from './types'
 import { DEFAULT_MILESTONES } from './utils/defaultMilestones'
 import { getMilestonePercent } from './utils/getMilestonePercent'
+import { Button } from '@thedatablitz/button'
 
 export type { MilestoneItem } from './types'
 

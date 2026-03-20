@@ -8,7 +8,6 @@ import {
   MyIssuesScreen,
   WorkspaceProjectsScreen,
   WorkspaceViewsScreen,
-  WorkspaceMoreScreen,
   WorkspaceMemberScreen,
   WorkspaceTeamsScreen,
   WorkspaceRolesScreen,
@@ -72,7 +71,6 @@ export function AppRoutes() {
           element={<WorkspaceProjectsScreen />}
         />
         <Route path="workspace/views" element={<WorkspaceViewsScreen />} />
-        <Route path="workspace/more" element={<WorkspaceMoreScreen />} />
         <Route path="workspace/member" element={<WorkspaceMemberScreen />} />
         <Route path="workspace/member/new" element={<CreateMemberScreen />} />
         <Route path="workspace/teams" element={<WorkspaceTeamsScreen />} />

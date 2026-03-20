@@ -1,0 +1,17 @@
+import type { ProjectTableRow } from '../../../components'
+
+export type WorkspaceProjectsParams = {
+  workspaceId: string
+}
+
+export type ProjectRow = ProjectTableRow
+
+export type ApiProjectSummary = {
+  id: string
+  name: string
+  status: string
+  team: {
+    id: string
+    name: string
+  }
+}

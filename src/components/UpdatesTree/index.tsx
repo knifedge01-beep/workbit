@@ -1,42 +1,17 @@
 import { useMemo, useState } from 'react'
-import { ChevronRight, MessageCircle, MessageSquare } from 'lucide-react'
+import { MessageCircle, MessageSquare } from 'lucide-react'
 
-import { Avatar, Badge, Button, Input, Text } from '@design-system'
-
+import { Tree } from '@thedatablitz/tree'
+import { Avatar } from '@thedatablitz/avatar'
+import { Badge } from '@thedatablitz/badge'
+import { Box } from '@thedatablitz/box'
+import { Button } from '@thedatablitz/button'
+import { Inline } from '@thedatablitz/inline'
+import { Stack } from '@thedatablitz/stack'
+import { Text } from '@thedatablitz/text'
+import { TextInput as Input } from '@thedatablitz/text-input'
 import { STATUS_CONFIG } from '../../constants/projectStatus'
 import { MarkdownContent } from '../MarkdownContent'
-import {
-  Wrap,
-  SearchRow,
-  Head,
-  HeadCol,
-  TreeList,
-  TreeNode,
-  NodeCard,
-  NodeHeader,
-  LeftMain,
-  ExpandToggle,
-  NodeBody,
-  HeaderMeta,
-  Author,
-  MessagePreview,
-  StatusCol,
-  TimeCol,
-  TimeText,
-  CommentMeta,
-  Collapsible,
-  CollapsibleInner,
-  NodeContent,
-  ExpandedBody,
-  ActionRow,
-  ActionButton,
-  ReactionsRow,
-  ReactionButton,
-  Composer,
-  ComposerAvatar,
-  ComposerInput,
-  ChildrenWrap,
-} from './styles'
 import type { UpdateItem, UpdatesTreeProps } from './types'
 import {
   avatarInitials,
@@ -50,6 +25,12 @@ import {
 
 export type { UpdateItem } from './types'
 
+type UpdatesTreeNode = {
+  id: string
+  label: React.ReactNode
+  children?: UpdatesTreeNode[]
+}
+
 export function UpdatesTree({
   updates,
   className,
@@ -59,8 +40,18 @@ export function UpdatesTree({
   onReply,
   onReact,
 }: UpdatesTreeProps) {
+  const safeUpdates = useMemo(
+    () => (Array.isArray(updates) ? updates : []),
+    [updates]
+  )
+
+  const statusBadgeVariant = (status: NonNullable<UpdateItem['status']>) => {
+    if (status === 'on-track') return 'success'
+    if (status === 'at-risk') return 'warning'
+    return 'danger'
+  }
+
   const [query, setQuery] = useState('')
-  const [expandedById, setExpandedById] = useState<Record<string, boolean>>({})
   const [composerById, setComposerById] = useState<Record<string, boolean>>({})
   const [draftById, setDraftById] = useState<Record<string, string>>({})
   const [submittingById, setSubmittingById] = useState<Record<string, boolean>>(
@@ -71,28 +62,20 @@ export function UpdatesTree({
   >({})
 
   const filteredUpdates = useMemo(() => {
-    if (!query.trim()) return updates
-    return updates
+    if (!query.trim()) return safeUpdates
+    return safeUpdates
       .map((u) => filterRecursive(u, query))
       .filter((u): u is UpdateItem => u != null)
-  }, [updates, query])
+  }, [safeUpdates, query])
 
-  const isExpanded = (id: string) => expandedById[id] ?? false
   const isComposerOpen = (id: string) => composerById[id] ?? false
 
-  const toggle = (id: string) => {
-    setExpandedById((prev) => ({ ...prev, [id]: !isExpanded(id) }))
-  }
-
   const openComposer = (id: string) => {
-    setExpandedById((prev) => ({ ...prev, [id]: true }))
     setComposerById((prev) => ({ ...prev, [id]: true }))
   }
 
-  const renderNode = (item: UpdateItem, depth = 0, isComment = false) => {
-    const open = isExpanded(item.id)
+  const toTreeNode = (item: UpdateItem): UpdatesTreeNode => {
     const comments = item.comments ?? []
-    const hasChildren = comments.length > 0
     const preview = firstLine(item.content)
     const allComments = countAllComments(item)
     const existingReactions = item.reactions ?? {}
@@ -140,182 +123,197 @@ export function UpdatesTree({
       }
     }
 
-    return (
-      <TreeNode key={item.id} $depth={depth}>
-        <NodeCard $expanded={open}>
-          <NodeHeader>
-            <LeftMain>
-              <ExpandToggle
-                type="button"
-                $open={open}
-                onClick={() => toggle(item.id)}
-                aria-expanded={open}
-                aria-label={`Toggle ${item.kind} ${item.id}`}
-              >
-                <ChevronRight size={15} />
-              </ExpandToggle>
+    return {
+      id: item.id,
+      label: (
+        <Stack gap="100">
+          <Inline align="center" justify="space-between" fullWidth>
+            <Inline align="center" gap="100" fullWidth>
+              <Avatar name={avatarInitials(item.author)} size="small" />
+              <Stack gap="050" fullWidth>
+                <Text variant="body3" style={{ fontWeight: 600 }}>
+                  {item.author}
+                </Text>
+                <Text variant="body4" color="color.text.subtle" truncate>
+                  {preview || 'No content'}
+                </Text>
+              </Stack>
+            </Inline>
 
-              {!isComment && (
-                <Avatar name={avatarInitials(item.author)} size={22} />
-              )}
-
-              <NodeBody>
-                <HeaderMeta>
-                  <Author>{item.author}</Author>
-                  <MessagePreview title={preview}>
-                    {preview || 'No content'}
-                  </MessagePreview>
-                </HeaderMeta>
-              </NodeBody>
-            </LeftMain>
-
-            <StatusCol>
+            <Inline align="center" gap="100">
               {item.status && (
                 <Badge
-                  variant="light"
-                  color={
-                    item.status === 'on-track'
-                      ? 'green'
-                      : item.status === 'at-risk'
-                        ? 'orange'
-                        : 'red'
-                  }
+                  variant={statusBadgeVariant(item.status)}
                   size="small"
-                >
-                  {STATUS_CONFIG[item.status].label.toUpperCase()}
-                </Badge>
+                  label={STATUS_CONFIG[item.status].label.toUpperCase()}
+                />
               )}
-            </StatusCol>
-
-            <TimeCol>
-              <TimeText>{item.timestamp}</TimeText>
-              <CommentMeta>
+              <Text variant="caption2" color="color.text.subtle">
+                {item.timestamp}
+              </Text>
+              <Inline align="center" gap="050">
                 <MessageSquare size={13} />
-                {allComments}
-              </CommentMeta>
-            </TimeCol>
-          </NodeHeader>
+                <Text variant="caption2" color="color.text.subtle">
+                  {allComments}
+                </Text>
+              </Inline>
+            </Inline>
+          </Inline>
 
-          <Collapsible $open={open}>
-            <CollapsibleInner>
-              <ExpandedBody>
-                <NodeContent>
-                  <MarkdownContent content={item.content} />
-                </NodeContent>
+          <Box>
+            <MarkdownContent content={item.content} />
+          </Box>
 
-                <ActionRow>
-                  <ActionButton
-                    type="button"
-                    onClick={() => openComposer(item.id)}
-                    aria-label={item.kind === 'update' ? 'Comment' : 'Reply'}
-                  >
-                    <MessageCircle size={13} />
-                    {item.kind === 'update' ? 'Comment' : 'Reply'}
-                  </ActionButton>
+          <Inline gap="100" wrap>
+            <Button
+              variant="glass"
+              size="small"
+              icon={<MessageCircle size={13} />}
+              onClick={() => openComposer(item.id)}
+              aria-label={item.kind === 'update' ? 'Comment' : 'Reply'}
+            >
+              {item.kind === 'update' ? 'Comment' : 'Reply'}
+            </Button>
 
-                  <ReactionsRow>
-                    {QUICK_EMOJIS.map((emoji) => (
-                      <ReactionButton
-                        key={`${item.id}-${emoji}`}
-                        type="button"
-                        onClick={() => handleReaction(emoji)}
-                        aria-label={`React ${EMOJI_LABEL[emoji]}`}
-                      >
-                        {EMOJI_ICON[emoji]} {mergedReactions[emoji] ?? 0}
-                      </ReactionButton>
-                    ))}
-                  </ReactionsRow>
+            <Inline gap="050" wrap>
+              {QUICK_EMOJIS.map((emoji) => (
+                <Button
+                  key={`${item.id}-${emoji}`}
+                  buttonType="link"
+                  size="small"
+                  onClick={() => handleReaction(emoji)}
+                  aria-label={`React ${EMOJI_LABEL[emoji]}`}
+                >
+                  {EMOJI_ICON[emoji]} {mergedReactions[emoji] ?? 0}
+                </Button>
+              ))}
+            </Inline>
+          </Inline>
 
-                  <ActionButton
-                    type="button"
-                    onClick={() => toggle(item.id)}
-                    aria-label="Collapse"
-                  >
-                    Collapse
-                  </ActionButton>
-                </ActionRow>
-
-                {(open || isComposerOpen(item.id)) && onAddComment && (
-                  <Composer onSubmit={handleSubmitComposer}>
-                    <ComposerAvatar>
-                      <Avatar name="ME" size={18} />
-                    </ComposerAvatar>
-                    <ComposerInput
-                      value={draftById[item.id] ?? ''}
-                      onChange={(e) =>
-                        setDraftById((prev) => ({
-                          ...prev,
-                          [item.id]: e.target.value,
-                        }))
-                      }
-                      placeholder={
-                        item.kind === 'update'
-                          ? 'Add a comment or reply...'
-                          : 'Reply...'
-                      }
-                      aria-label={`Compose ${item.kind === 'update' ? 'comment' : 'reply'}`}
-                    />
-                    <Button
-                      type="submit"
-                      size="sm"
-                      disabled={
-                        submittingById[item.id] === true ||
-                        !(draftById[item.id] ?? '').trim()
-                      }
-                    >
-                      {submittingById[item.id] === true ? 'Posting...' : 'Post'}
-                    </Button>
-                  </Composer>
-                )}
-
-                {hasChildren && (
-                  <ChildrenWrap>
-                    <TreeList>
-                      {comments.map((child) =>
-                        renderNode(child, depth + 1, child.kind === 'comment')
-                      )}
-                    </TreeList>
-                  </ChildrenWrap>
-                )}
-              </ExpandedBody>
-            </CollapsibleInner>
-          </Collapsible>
-        </NodeCard>
-      </TreeNode>
-    )
+          {isComposerOpen(item.id) && onAddComment && (
+            <form onSubmit={handleSubmitComposer}>
+              <Inline align="center" gap="100" fullWidth>
+                <Box>
+                  <Avatar name="ME" size="small" />
+                </Box>
+                <Input
+                  type="text"
+                  value={draftById[item.id] ?? ''}
+                  onChange={(e) =>
+                    setDraftById((prev) => ({
+                      ...prev,
+                      [item.id]: e.target.value,
+                    }))
+                  }
+                  placeholder={
+                    item.kind === 'update'
+                      ? 'Add a comment or reply...'
+                      : 'Reply...'
+                  }
+                  fullWidth
+                  size="small"
+                  aria-label={`Compose ${item.kind === 'update' ? 'comment' : 'reply'}`}
+                />
+                <Button
+                  size="small"
+                  disabled={
+                    submittingById[item.id] === true ||
+                    !(draftById[item.id] ?? '').trim()
+                  }
+                >
+                  {submittingById[item.id] === true ? 'Posting...' : 'Post'}
+                </Button>
+              </Inline>
+            </form>
+          )}
+        </Stack>
+      ),
+      children: comments.map((child) => toTreeNode(child)),
+    }
   }
 
-  if (updates.length === 0) {
+  if (safeUpdates.length === 0) {
     return (
-      <Text size="sm" muted>
+      <Text variant="body3" color="color.text.subtle">
         No updates yet.
       </Text>
     )
   }
 
   return (
-    <Wrap className={className}>
+    <div
+      className={className}
+      style={{
+        width: '100%',
+        border: '1px solid var(--db-color-border-default)',
+        borderRadius: 12,
+        background: 'var(--db-color-background-neutral)',
+        overflow: 'hidden',
+      }}
+    >
       {enableSearch && (
-        <SearchRow>
+        <div
+          style={{
+            padding: '10px 12px',
+            borderBottom: '1px solid var(--db-color-border-default)',
+          }}
+        >
           <Input
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search updates and comments"
             aria-label="Search updates"
+            fullWidth
           />
-        </SearchRow>
+        </div>
       )}
 
-      <Head>
-        <HeadCol>Contributor & message</HeadCol>
-        <HeadCol>Status</HeadCol>
-        <HeadCol>Timeline</HeadCol>
-      </Head>
+      <div
+        style={{
+          padding: '10px 12px',
+          borderBottom: '1px solid var(--db-color-border-default)',
+          background: 'var(--db-color-background-subtle)',
+        }}
+      >
+        <Inline align="center" justify="space-between" fullWidth wrap>
+          <Text
+            variant="caption2"
+            color="color.text.subtle"
+            style={{
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+            }}
+          >
+            Contributor & message
+          </Text>
+          <Text
+            variant="caption2"
+            color="color.text.subtle"
+            style={{
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+            }}
+          >
+            Status
+          </Text>
+          <Text
+            variant="caption2"
+            color="color.text.subtle"
+            style={{
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+            }}
+          >
+            Timeline
+          </Text>
+        </Inline>
+      </div>
 
-      <TreeList role="tree">
-        {filteredUpdates.map((u) => renderNode(u, 0))}
-      </TreeList>
-    </Wrap>
+      <Tree size="medium" nodes={filteredUpdates.map((u) => toTreeNode(u))} />
+    </div>
   )
 }

@@ -8,7 +8,15 @@ import {
   Send,
 } from 'lucide-react'
 
-import { Avatar } from '@design-system'
+import { Avatar } from '@thedatablitz/avatar'
+import { Badge } from '@thedatablitz/badge'
+import { Box } from '@thedatablitz/box'
+import { Button } from '@thedatablitz/button'
+import { Inline } from '@thedatablitz/inline'
+import { Stack } from '@thedatablitz/stack'
+import { Text } from '@thedatablitz/text'
+import { Card } from '@thedatablitz/card'
+import { TextInput } from '@thedatablitz/text-input'
 
 import { MarkdownContent } from '../MarkdownContent'
 import type { ProjectUpdateHighlightCardProps } from './types'
@@ -19,30 +27,20 @@ import {
 } from './utils/commentHelpers'
 import { getReactionCount, getStatusLabel, getStatusTone } from './utils/status'
 import {
-  Card,
   Inner,
   TopRow,
   AuthorWrap,
   AuthorMeta,
-  AuthorName,
-  Subtitle,
-  StatusPill,
   Body,
   Footer,
   Reactions,
   Reaction,
-  CommentsToggle,
-  ViewThreadButton,
   CommentsSection,
   CommentList,
   CommentItem,
   CommentHeader,
-  CommentAuthor,
-  CommentTime,
   CommentBody,
   Composer,
-  ComposerInput,
-  ComposerSend,
 } from './styles'
 
 export function ProjectUpdateHighlightCard({
@@ -67,6 +65,12 @@ export function ProjectUpdateHighlightCard({
   const statusLabel = getStatusLabel(update)
   const statusTone = getStatusTone(update)
   const reactionCount = getReactionCount(update)
+  const statusBadgeVariant =
+    statusTone === 'success'
+      ? 'success'
+      : statusTone === 'warning'
+        ? 'warning'
+        : 'danger'
 
   const submitComment = async () => {
     const content = draft.trim()
@@ -87,18 +91,30 @@ export function ProjectUpdateHighlightCard({
   }
 
   return (
-    <Card className={className}>
+    <Card border className={className}>
       <Inner>
         <TopRow>
-          <AuthorWrap>
-            <Avatar name={avatarInitials(update.author)} size={32} />
-            <AuthorMeta>
-              <AuthorName>{update.author}</AuthorName>
-              <Subtitle>{update.timestamp} • Project update</Subtitle>
-            </AuthorMeta>
-          </AuthorWrap>
+          <Inline align="center" justify="space-between" fullWidth>
+            <AuthorWrap>
+              <Avatar name={avatarInitials(update.author)} size="medium" />
+              <AuthorMeta>
+                <Stack gap="025">
+                  <Text variant="body3" style={{ fontWeight: 600 }}>
+                    {update.author}
+                  </Text>
+                  <Text variant="caption2" color="color.text.subtle">
+                    {update.timestamp} • Project update
+                  </Text>
+                </Stack>
+              </AuthorMeta>
+            </AuthorWrap>
 
-          <StatusPill $tone={statusTone}>{statusLabel}</StatusPill>
+            <Badge
+              size="small"
+              variant={statusBadgeVariant}
+              label={statusLabel}
+            />
+          </Inline>
         </TopRow>
 
         <Body>
@@ -106,32 +122,41 @@ export function ProjectUpdateHighlightCard({
         </Body>
 
         <Footer>
-          <Reactions>
-            <Reaction>
-              <ThumbsUp size={13} />
-            </Reaction>
-            <Reaction>
-              <Heart size={13} />
-            </Reaction>
-            <Reaction>
-              <Rocket size={13} />
-            </Reaction>
-            <Reaction>
-              <Flame size={13} />
-            </Reaction>
-            <CommentsToggle
-              type="button"
-              onClick={() => setShowComments((prev) => !prev)}
-            >
-              <MessageSquare size={14} />
-              {commentsCount} Comments
-            </CommentsToggle>
-            {reactionCount > 0 && <Reaction>{reactionCount}</Reaction>}
-          </Reactions>
+          <Inline align="center" justify="space-between" fullWidth>
+            <Reactions>
+              <Reaction>
+                <ThumbsUp size={13} />
+              </Reaction>
+              <Reaction>
+                <Heart size={13} />
+              </Reaction>
+              <Reaction>
+                <Rocket size={13} />
+              </Reaction>
+              <Reaction>
+                <Flame size={13} />
+              </Reaction>
+              <Button
+                buttonType="link"
+                size="small"
+                icon={<MessageSquare size={14} />}
+                onClick={() => setShowComments((prev) => !prev)}
+              >
+                {commentsCount} Comments
+              </Button>
+              {reactionCount > 0 && (
+                <Box>
+                  <Text variant="caption2" color="color.text.subtle">
+                    {reactionCount}
+                  </Text>
+                </Box>
+              )}
+            </Reactions>
 
-          <ViewThreadButton type="button" onClick={onViewFullThread}>
-            View Full Thread
-          </ViewThreadButton>
+            <Button buttonType="link" size="small" onClick={onViewFullThread}>
+              View Full Thread
+            </Button>
+          </Inline>
         </Footer>
       </Inner>
 
@@ -142,8 +167,14 @@ export function ProjectUpdateHighlightCard({
               {flattened.map(({ item, depth }) => (
                 <CommentItem key={item.id} $depth={depth}>
                   <CommentHeader>
-                    <CommentAuthor>{item.author}</CommentAuthor>
-                    <CommentTime>{item.timestamp}</CommentTime>
+                    <Inline align="center" gap="100">
+                      <Text variant="caption1" style={{ fontWeight: 600 }}>
+                        {item.author}
+                      </Text>
+                      <Text variant="caption2" color="color.text.subtle">
+                        {item.timestamp}
+                      </Text>
+                    </Inline>
                   </CommentHeader>
                   <CommentBody>
                     <MarkdownContent content={item.content} />
@@ -154,7 +185,7 @@ export function ProjectUpdateHighlightCard({
           )}
 
           <Composer onSubmit={handleSubmit}>
-            <ComposerInput
+            <TextInput
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               placeholder="Add a comment or reply..."
@@ -168,14 +199,15 @@ export function ProjectUpdateHighlightCard({
                 }
               }}
             />
-            <ComposerSend
-              type="submit"
+            <Button
+              buttonType="icon"
+              size="small"
+              icon={<Send size={14} />}
+              onClick={() => void submitComment()}
               aria-label="Send comment"
               title="Send"
               disabled={submitting || !draft.trim()}
-            >
-              <Send size={14} />
-            </ComposerSend>
+            />
           </Composer>
         </CommentsSection>
       )}

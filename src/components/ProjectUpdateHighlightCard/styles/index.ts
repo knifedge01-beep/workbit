@@ -1,8 +1,8 @@
 import styled from 'styled-components'
+import { Box } from '@thedatablitz/box'
 
-export const Card = styled.article`
+export const Container = styled(Box)`
   border: 1px solid ${(p) => p.theme.colors.border};
-  border-left: 3px solid ${(p) => p.theme.colors.primary};
   border-radius: 10px;
   background: ${(p) => p.theme.colors.surface};
   overflow: hidden;

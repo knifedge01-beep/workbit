@@ -1,20 +1,15 @@
-import { useState } from 'react'
-import { ChevronDown, Plus, MoreHorizontal } from 'lucide-react'
+import { useMemo } from 'react'
+import { Plus } from 'lucide-react'
 
-import { Text, IconButton, Flex, Menu } from '@design-system'
+import { Button } from '@thedatablitz/button'
+import { Box } from '@thedatablitz/box'
+import { Dropdown } from '@thedatablitz/dropdown'
+import { Inline } from '@thedatablitz/inline'
+import { Stack } from '@thedatablitz/stack'
+import { Text } from '@thedatablitz/text'
+import { Accordion } from '@thedatablitz/accordion'
 
-import { SectionHeader, CollapsibleContent } from '../CollapsibleSection'
 import { MILESTONE_MENU_ITEMS } from '../milestoneMenuItems'
-import {
-  MilestoneList,
-  MilestoneRow,
-  MilestoneName,
-  ProgressTrack,
-  ProgressFill,
-  ProgressLabel,
-  DueDate,
-  MsActions,
-} from './styles'
 import type { MilestonesSectionProps } from './types'
 import { DEFAULT_MILESTONES } from './utils/defaultMilestones'
 import { getMilestonePercent } from './utils/getMilestonePercent'
@@ -27,75 +22,118 @@ export function MilestonesSection({
   contentOnly = false,
   onAdd,
 }: MilestonesSectionProps) {
-  const [open, setOpen] = useState(defaultOpen)
+  const milestoneActionOptions = useMemo(
+    () =>
+      MILESTONE_MENU_ITEMS.filter((item) => 'id' in item).map((item) => ({
+        value: item.id,
+        label: item.label,
+        icon: item.icon,
+      })),
+    []
+  )
+
+  const handleMilestoneAction = (value: string) => {
+    const menuItem = MILESTONE_MENU_ITEMS.find(
+      (item) => 'id' in item && item.id === value
+    )
+    if (
+      menuItem &&
+      'onClick' in menuItem &&
+      typeof menuItem.onClick === 'function'
+    ) {
+      menuItem.onClick()
+    }
+  }
 
   const content = (
-    <MilestoneList>
-      {milestones.map((milestone, i) => {
+    <Stack gap="0" fullWidth>
+      {milestones.map((milestone) => {
         const pct = getMilestonePercent(milestone.progress, milestone.total)
 
         return (
-          <MilestoneRow
+          <Box
             key={milestone.id}
-            initial={{ opacity: 0, x: -8 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.2, delay: i * 0.06 }}
+            fullWidth
+            padding="100"
+            className="border-b border-border"
           >
-            <MilestoneName>{milestone.name}</MilestoneName>
-            <ProgressTrack>
-              <ProgressFill
-                initial={{ width: '0%' }}
-                animate={{ width: `${pct}%` }}
-                transition={{
-                  duration: 0.7,
-                  delay: i * 0.06 + 0.1,
-                  ease: 'easeOut',
-                }}
+            <Inline align="center" gap="100" fullWidth>
+              <Text variant="body3" truncate style={{ flex: 1, minWidth: 0 }}>
+                {milestone.name}
+              </Text>
+
+              <Box
+                inline
+                className="w-[120px] h-1.5 rounded-full overflow-hidden bg-muted"
+              >
+                <div
+                  style={{
+                    height: '100%',
+                    width: `${pct}%`,
+                    borderRadius: 9999,
+                    background: 'var(--color-background-brand)',
+                    transition: 'width 0.5s ease-out',
+                  }}
+                />
+              </Box>
+
+              <Text
+                variant="caption2"
+                color="color.text.subtle"
+                style={{ minWidth: 28, textAlign: 'right' }}
+              >
+                {pct}%
+              </Text>
+
+              <Text
+                variant="caption2"
+                color="color.text.subtle"
+                style={{ minWidth: 44, textAlign: 'right' }}
+              >
+                {milestone.targetDate}
+              </Text>
+
+              <Dropdown
+                size="small"
+                placeholder="Actions"
+                options={milestoneActionOptions}
+                onChange={handleMilestoneAction}
               />
-            </ProgressTrack>
-            <ProgressLabel>{pct}%</ProgressLabel>
-            <DueDate>{milestone.targetDate}</DueDate>
-            <MsActions className="ms-actions">
-              <Menu
-                trigger={
-                  <IconButton aria-label="More options">
-                    <MoreHorizontal size={14} />
-                  </IconButton>
-                }
-                items={MILESTONE_MENU_ITEMS}
-              />
-            </MsActions>
-          </MilestoneRow>
+            </Inline>
+          </Box>
         )
       })}
-    </MilestoneList>
+    </Stack>
   )
 
   if (contentOnly) return content
 
   return (
-    <div>
-      <SectionHeader type="button" onClick={() => setOpen((o) => !o)}>
-        <Flex align="center" gap={2}>
-          <ChevronDown
-            size={14}
-            style={{
-              transform: open ? 'rotate(0deg)' : 'rotate(-90deg)',
-              transition: 'transform 0.2s',
-            }}
-          />
-          <span style={{ fontSize: 13, fontWeight: 500 }}>Milestones</span>
-          <Text size="xs" muted as="span">
-            ({milestones.length})
-          </Text>
-        </Flex>
-        <IconButton aria-label="Add milestone" onClick={onAdd}>
-          <Plus size={14} />
-        </IconButton>
-      </SectionHeader>
-      <CollapsibleContent $open={open} $maxHeightWhenOpen={2000}>
-        {content}
-      </CollapsibleContent>
-    </div>
+    <Accordion
+      defaultExpandedIds={defaultOpen ? ['milestones'] : []}
+      size="large"
+      variant="primary"
+      items={[
+        {
+          id: 'milestones',
+          title: (
+            <Inline align="center" justify="space-between" fullWidth>
+              <Text variant="body2">Milestones ({milestones.length})</Text>
+              <Button
+                buttonType="icon"
+                size="small"
+                icon={<Plus size={14} />}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onAdd?.()
+                }}
+                aria-label="Add milestone"
+              />
+            </Inline>
+          ),
+          content: <Stack gap="100">{content}</Stack>,
+        },
+      ]}
+    />
   )
 }

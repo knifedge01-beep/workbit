@@ -12,6 +12,7 @@ import {
   CalendarClock,
   Tag,
 } from 'lucide-react'
+import { Text } from '@thedatablitz/text'
 import { Avatar, Select } from '@design-system'
 import {
   StatusSelector,
@@ -205,15 +206,33 @@ export function IssueDetailScreen({
         {/* Sticky top bar */}
         <div className="flex items-center justify-between h-14 px-8 border-b border-border bg-background/95 backdrop-blur-sm sticky top-0 z-10 shrink-0">
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-            <span className="hover:text-foreground cursor-pointer transition-colors">
+            <Text
+              as="span"
+              variant="body2"
+              className="hover:text-foreground cursor-pointer transition-colors"
+            >
               {teamName}
-            </span>
-            <span>/</span>
-            <span className="hover:text-foreground cursor-pointer transition-colors">
+            </Text>
+            <Text as="span" variant="body3">
+              /
+            </Text>
+            <Text
+              as="span"
+              variant="body2"
+              className="hover:text-foreground cursor-pointer transition-colors"
+            >
               {issue.project}
-            </span>
-            <span>/</span>
-            <span className="text-foreground font-medium">{issue.id}</span>
+            </Text>
+            <Text as="span" variant="body3">
+              /
+            </Text>
+            <Text
+              as="span"
+              variant="body2"
+              className="text-foreground font-medium"
+            >
+              {issue.id}
+            </Text>
           </div>
           <div className="flex items-center gap-1">
             <IconBtn>
@@ -279,10 +298,14 @@ export function IssueDetailScreen({
                 Add label
               </button>
 
-              <span className="inline-flex items-center gap-1.5 h-8 text-xs text-muted-foreground md:ml-auto">
+              <Text
+                as="span"
+                variant="body3"
+                className="inline-flex items-center gap-1.5 h-8 text-muted-foreground md:ml-auto"
+              >
                 <CalendarClock size={13} />
                 {issue.createdAt}
-              </span>
+              </Text>
             </div>
           </div>
         </div>
@@ -390,7 +413,9 @@ export function IssueDetailScreen({
                             : 'text-muted-foreground'
                         }
                       />
-                      <span
+                      <Text
+                        as="span"
+                        variant="body2"
                         className={cn(
                           'text-sm truncate',
                           subIssue.completed
@@ -399,7 +424,7 @@ export function IssueDetailScreen({
                         )}
                       >
                         {subIssue.title}
-                      </span>
+                      </Text>
                     </button>
 
                     <button
@@ -437,16 +462,28 @@ export function IssueDetailScreen({
                     <Avatar name={c.author} size={28} />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm font-medium text-foreground">
+                        <Text
+                          as="span"
+                          variant="body2"
+                          className="font-medium text-foreground"
+                        >
                           {c.author}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
+                        </Text>
+                        <Text
+                          as="span"
+                          variant="body3"
+                          className="text-muted-foreground"
+                        >
                           {c.timestamp}
-                        </span>
+                        </Text>
                       </div>
-                      <p className="text-sm text-foreground leading-relaxed">
+                      <Text
+                        as="p"
+                        variant="body2"
+                        className="text-foreground leading-relaxed"
+                      >
                         {c.body}
-                      </p>
+                      </Text>
                     </div>
                   </div>
                 ))}

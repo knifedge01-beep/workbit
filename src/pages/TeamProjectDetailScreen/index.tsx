@@ -1,16 +1,15 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import {
-  Stack,
-  Text,
-  Tabs,
-  Modal,
-  Input,
-  Button,
-  Flex,
-  Avatar,
-} from '@design-system'
-import type { TabItem } from '@design-system'
+import { Box } from '@thedatablitz/box'
+import { Badge } from '@thedatablitz/badge'
+import { Button } from '@thedatablitz/button'
+import { Inline } from '@thedatablitz/inline'
+import { Modal } from '@thedatablitz/modal'
+import { Stack } from '@thedatablitz/stack'
+import { Tabs } from '@thedatablitz/tabs'
+import { Text } from '@thedatablitz/text'
+import { Avatar } from '@thedatablitz/avatar'
+import { TextInput as Input } from '@thedatablitz/text-input'
 import {
   StatusUpdateComposer,
   MilestonesSection,
@@ -62,6 +61,8 @@ import {
   apiUpdateToCard,
   appendChildNode,
 } from './utils/helpers'
+import { Plus } from 'lucide-react'
+import { Banner } from '@thedatablitz/banner'
 
 export function TeamProjectDetailScreen({
   projectName,
@@ -111,7 +112,7 @@ export function TeamProjectDetailScreen({
       : '',
   }))
 
-  const tabs: TabItem[] = [
+  const tabs = [
     { id: 'overview', label: 'Overview' },
     { id: 'updates', label: 'Updates' },
     { id: 'issues', label: 'Issues' },
@@ -356,12 +357,12 @@ export function TeamProjectDetailScreen({
   if (loading) {
     return (
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_330px]">
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
-          <Text size="sm" muted>
+        <Box border padding="400" className="rounded-xl bg-white">
+          <Text variant="body3" color="color.text.subtle">
             Loading project...
           </Text>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-3" />
+        </Box>
+        <Box border padding="300" className="rounded-xl bg-white" />
       </div>
     )
   }
@@ -376,58 +377,36 @@ export function TeamProjectDetailScreen({
             <span className="font-medium text-slate-800">{projectName}</span>
           </div>
 
-          <div className="mb-3 rounded-xl border border-slate-200 bg-white p-3">
-            <Tabs tabs={tabs} activeId={activeTab} onChange={setActiveTab} />
-          </div>
+          <Tabs items={tabs} value={activeTab} onChange={setActiveTab} />
 
           {activeTab === 'overview' && (
-            <div className="rounded-xl border border-slate-200 bg-white p-4">
+            <Box border padding="400">
               <div className="mb-4 flex items-start justify-between gap-4">
-                <div>
-                  <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-700">
-                    {projectName[0]?.toUpperCase() ?? 'P'}
-                  </div>
-                  <h1 className="mb-1 text-2xl font-semibold text-slate-900">
-                    {projectName}
-                  </h1>
-                  <p className="text-sm text-slate-500">
-                    Add a short summary...
-                  </p>
-                </div>
-                <Button
-                  variant="secondary"
-                  onClick={handleGenerateSummary}
-                  disabled={summaryLoading}
-                >
-                  {summaryLoading ? 'Generating…' : 'Generate Summary'}
-                </Button>
-              </div>
-
-              <div className="mb-3 flex flex-wrap items-center gap-3 text-sm text-slate-600">
-                <span className="font-medium text-slate-700">Properties</span>
-                <span>{properties?.status ?? 'Backlog'}</span>
-                <span>{properties?.priority ?? 'No priority'}</span>
-                <span>Lead</span>
-                <span>Target date</span>
-                <span className="rounded bg-slate-100 px-2 py-0.5 text-xs">
-                  {teamId}
-                </span>
-                <button
-                  type="button"
-                  className="text-slate-500 hover:text-slate-700"
-                >
-                  ...
-                </button>
-              </div>
-
-              <div className="mb-4 flex items-center gap-2 text-sm text-slate-600">
-                <span className="font-medium text-slate-700">Resources</span>
-                <button
-                  type="button"
-                  className="text-slate-500 hover:text-slate-700"
-                >
-                  + Add document or link...
-                </button>
+                <Stack gap="200">
+                  <Inline align="center" gap="100">
+                    <Avatar name={projectName[0]?.toUpperCase() ?? 'P'} />
+                    <Text variant="heading4">{projectName}</Text>
+                  </Inline>
+                  <Inline fullWidth>
+                    <Button
+                      icon={<Plus size={16} />}
+                      variant="warning"
+                      size="small"
+                      onClick={noop}
+                    >
+                      Add document or link
+                    </Button>
+                    <Button
+                      variant="info"
+                      size="small"
+                      onClick={handleGenerateSummary}
+                      disabled={summaryLoading}
+                      icon={<Plus size={16} />}
+                    >
+                      {summaryLoading ? 'Generating…' : 'Generate Summary'}
+                    </Button>
+                  </Inline>
+                </Stack>
               </div>
 
               {projectSummary !== null ? (
@@ -459,10 +438,10 @@ export function TeamProjectDetailScreen({
                 </div>
               ) : summaryError ? (
                 <div className="mb-4 rounded-lg border border-rose-200 bg-rose-50 p-3">
-                  <Text size="sm">{summaryError}</Text>
+                  <Text variant="body3">{summaryError}</Text>
                   <div className="mt-2">
                     <Button
-                      variant="secondary"
+                      variant="glass"
                       onClick={handleGenerateSummary}
                       disabled={summaryLoading}
                     >
@@ -473,9 +452,11 @@ export function TeamProjectDetailScreen({
               ) : (
                 <div className="mb-4 space-y-2">
                   {updates.length === 0 ? (
-                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-500">
-                      Write the first project update to get started
-                    </div>
+                    <Banner
+                      size="small"
+                      variant="default"
+                      title="Write the first project update to get started"
+                    />
                   ) : (
                     <>
                       <ProjectUpdateHighlightCard
@@ -522,12 +503,12 @@ export function TeamProjectDetailScreen({
               <div className="mt-6">
                 <ActivitySection items={activity} />
               </div>
-            </div>
+            </Box>
           )}
 
           {activeTab === 'updates' && (
-            <div className="rounded-xl border border-slate-200 bg-white p-4">
-              <Stack gap={3}>
+            <Box border padding="400" className="rounded-xl bg-white">
+              <Stack gap="300">
                 <UpdatesTree
                   updates={updatesTreeItems}
                   enableSearch={false}
@@ -542,18 +523,22 @@ export function TeamProjectDetailScreen({
                   onAddLink={noop}
                 />
               </Stack>
-            </div>
+            </Box>
           )}
 
           {activeTab === 'issues' && (
-            <div className="rounded-xl border border-slate-200 bg-white p-4">
-              <Stack gap={3}>
-                <Flex align="center" justify="space-between">
-                  <Text size="sm" muted>
-                    {issuesLoading
-                      ? 'Loading issues...'
-                      : `${issues.length} issue${issues.length === 1 ? '' : 's'}`}
-                  </Text>
+            <Box border padding="400" className="rounded-xl bg-white">
+              <Stack gap="300">
+                <Inline align="center" justify="space-between" fullWidth>
+                  {issuesLoading ? (
+                    <Text variant="body3" color="color.text.subtle">
+                      Loading issues...
+                    </Text>
+                  ) : (
+                    <Badge size="small" variant="default">
+                      {`${issues.length} issue${issues.length === 1 ? '' : 's'}`}
+                    </Badge>
+                  )}
                   {workspaceId && teamId && (
                     <Button
                       variant="primary"
@@ -567,15 +552,15 @@ export function TeamProjectDetailScreen({
                       Create new issue
                     </Button>
                   )}
-                </Flex>
+                </Inline>
 
                 {issuesLoading ? (
-                  <Text size="sm" muted>
+                  <Text variant="body3" color="color.text.subtle">
                     Loading...
                   </Text>
                 ) : issues.length === 0 ? (
                   <div className="rounded-lg border border-slate-200 bg-slate-50 p-8 text-center">
-                    <Text size="sm" muted>
+                    <Text variant="body3" color="color.text.subtle">
                       No issues in this project yet
                     </Text>
                   </div>
@@ -639,7 +624,7 @@ export function TeamProjectDetailScreen({
                         {issue.assignee ? (
                           <Avatar
                             name={issue.assigneeInitials || issue.assignee.name}
-                            size={20}
+                            size="small"
                           />
                         ) : (
                           <MetaText>-</MetaText>
@@ -649,7 +634,7 @@ export function TeamProjectDetailScreen({
                   </TableWrap>
                 )}
               </Stack>
-            </div>
+            </Box>
           )}
 
           {activeTab === 'decisions' && projectId && (
@@ -668,70 +653,65 @@ export function TeamProjectDetailScreen({
           )}
         </section>
 
-        <aside className="space-y-2">
-          <div className="rounded-xl border border-slate-200 bg-white p-3">
-            <div className="mb-2 flex items-center justify-between text-sm font-semibold text-slate-700">
-              <span>Properties</span>
-              <button
-                type="button"
-                className="text-slate-400 hover:text-slate-600"
-              >
-                +
-              </button>
-            </div>
-            <PropertiesSection
-              key={`${properties?.status}-${properties?.priority}`}
-              contentOnly
-              defaultStatus={properties?.status}
-              defaultPriority={properties?.priority}
-              defaultStartDate={
-                properties?.startDate
-                  ? new Date(properties.startDate)
-                  : undefined
-              }
-              defaultEndDate={
-                properties?.endDate ? new Date(properties.endDate) : undefined
-              }
-              onStatusChange={handleStatusChange}
-              onPriorityChange={handlePriorityChange}
-            />
-          </div>
+        <aside>
+          <Stack gap="100">
+            <Box border padding="300">
+              <Inline align="center" justify="space-between" fullWidth>
+                <Text variant="body3">Properties</Text>
+              </Inline>
+              <PropertiesSection
+                key={`${properties?.status}-${properties?.priority}`}
+                contentOnly
+                defaultStatus={properties?.status}
+                defaultPriority={properties?.priority}
+                defaultStartDate={
+                  properties?.startDate
+                    ? new Date(properties.startDate)
+                    : undefined
+                }
+                defaultEndDate={
+                  properties?.endDate ? new Date(properties.endDate) : undefined
+                }
+                onStatusChange={handleStatusChange}
+                onPriorityChange={handlePriorityChange}
+              />
+            </Box>
 
-          <div className="rounded-xl border border-slate-200 bg-white p-3">
-            <div className="mb-1 flex items-center justify-between text-sm font-semibold text-slate-700">
-              <span>Milestones</span>
-              <button
-                type="button"
-                onClick={handleAddMilestone}
-                className="text-slate-400 hover:text-slate-600"
-              >
-                +
-              </button>
-            </div>
-            <p className="text-xs text-slate-500">
-              Add milestones to organize work into granular stages.
-            </p>
-          </div>
+            <Box border padding="300">
+              <Inline align="center" justify="space-between" fullWidth>
+                <Text variant="heading4">Milestones</Text>
+                <Button
+                  size="small"
+                  onClick={handleAddMilestone}
+                  icon={<Plus size={14} />}
+                >
+                  Create
+                </Button>
+              </Inline>
+              <Text variant="caption2" color="color.text.subtle">
+                Add milestones to organize work into granular stages.
+              </Text>
+            </Box>
 
-          <div className="rounded-xl border border-slate-200 bg-white p-3">
-            <div className="mb-1 flex items-center justify-between text-sm font-semibold text-slate-700">
-              <span>Activity</span>
-              <button
-                type="button"
-                className="text-xs text-slate-500 hover:text-slate-700"
-              >
-                See all
-              </button>
-            </div>
-            {activity.length > 0 ? (
-              <p className="text-sm text-slate-600">
-                {activity.length} recent activit
-                {activity.length === 1 ? 'y' : 'ies'}
-              </p>
-            ) : (
-              <p className="text-sm text-slate-500">No activity yet</p>
-            )}
-          </div>
+            <Box border padding="300">
+              <Inline align="center" justify="space-between" fullWidth>
+                <Text variant="body3">Activity</Text>
+                <Button buttonType="link" size="small" onClick={noop}>
+                  See all
+                </Button>
+              </Inline>
+              {activity.length > 0 ? (
+                <Text variant="body3" color="color.text.subtle">
+                  {activity.length} recent activit
+                  {activity.length === 1 ? 'y' : 'ies'}
+                </Text>
+              ) : (
+                <Text variant="body3" color="color.text.subtle">
+                  No activity yet
+                </Text>
+              )}
+            </Box>
+          </Stack>
         </aside>
       </div>
 
@@ -739,14 +719,24 @@ export function TeamProjectDetailScreen({
         open={showMilestoneModal}
         onClose={() => setShowMilestoneModal(false)}
         title="Create New Milestone"
-        primaryLabel="Create"
-        onPrimary={handleCreateMilestone}
-        secondaryLabel="Cancel"
-        onSecondary={() => setShowMilestoneModal(false)}
+        size="medium"
+        footer={
+          <Inline justify="flex-end" gap="100" fullWidth>
+            <Button
+              variant="glass"
+              onClick={() => setShowMilestoneModal(false)}
+            >
+              Cancel
+            </Button>
+            <Button variant="primary" onClick={handleCreateMilestone}>
+              Create
+            </Button>
+          </Inline>
+        }
       >
-        <Stack gap={3}>
+        <Stack gap="300">
           <div>
-            <Text as="div" size="sm" className="block mb-2">
+            <Text as="div" variant="body3" style={{ marginBottom: 8 }}>
               Milestone Name
             </Text>
             <Input
@@ -756,7 +746,7 @@ export function TeamProjectDetailScreen({
             />
           </div>
           <div>
-            <Text as="div" size="sm" className="block mb-2">
+            <Text as="div" variant="body3" style={{ marginBottom: 8 }}>
               Target Date
             </Text>
             <Input

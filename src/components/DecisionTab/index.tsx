@@ -1,6 +1,21 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ChangeEvent,
+} from 'react'
 
-import { Button, Flex, Input, Modal, Stack, Text } from '@design-system'
+import { Button } from '@thedatablitz/button'
+import { Accordion } from '@thedatablitz/accordion'
+import { Dropdown } from '@thedatablitz/dropdown'
+import { Inline } from '@thedatablitz/inline'
+import { Modal } from '@thedatablitz/modal'
+import { Stack } from '@thedatablitz/stack'
+import { Text } from '@thedatablitz/text'
+import { Badge } from '@thedatablitz/badge'
+import { TextInput as Input } from '@thedatablitz/text-input'
+import { Box } from '@thedatablitz/box'
 
 import {
   createProjectDecision,
@@ -14,15 +29,9 @@ import type {
 } from '../../api/client'
 import { logError } from '../../utils/errorHandling'
 import { formatDateTime } from '../../utils/format'
-import { decisionTabClasses } from './styles/classes'
 import type { DecisionForm, DecisionTabProps } from './types'
-import {
-  csvToArray,
-  EMPTY_FORM,
-  statusBadgeClass,
-  toCsv,
-  typeBadgeClass,
-} from './utils/helpers'
+import { csvToArray, EMPTY_FORM, toCsv } from './utils/helpers'
+import { Plus } from 'lucide-react'
 
 export function DecisionTab({
   projectId,
@@ -43,6 +52,52 @@ export function DecisionTab({
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState<DecisionForm>(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
+
+  const typeOptions = [
+    { value: 'all', label: 'All' },
+    { value: 'major', label: 'Major' },
+    { value: 'minor', label: 'Minor' },
+  ] as const
+
+  const statusOptions = [
+    { value: 'all', label: 'All' },
+    { value: 'proposed', label: 'Proposed' },
+    { value: 'approved', label: 'Approved' },
+    { value: 'rejected', label: 'Rejected' },
+    { value: 'superseded', label: 'Superseded' },
+  ] as const
+
+  const modeOptions = [
+    { value: 'mixed', label: 'Mixed (decision date + created at)' },
+    { value: 'sequential', label: 'Sequential (created at)' },
+  ] as const
+
+  const orderOptions = [
+    { value: 'desc', label: 'Newest first' },
+    { value: 'asc', label: 'Oldest first' },
+  ] as const
+
+  const decisionTypeOptions = [
+    { value: 'major', label: 'Major' },
+    { value: 'minor', label: 'Minor' },
+  ] as const
+
+  const decisionStatusOptions = [
+    { value: 'proposed', label: 'Proposed' },
+    { value: 'approved', label: 'Approved' },
+    { value: 'rejected', label: 'Rejected' },
+    { value: 'superseded', label: 'Superseded' },
+  ] as const
+
+  const badgeVariantForType = (type: ApiDecisionType) =>
+    type === 'major' ? 'warning' : 'info'
+
+  const badgeVariantForStatus = (status: ApiDecisionStatus) => {
+    if (status === 'approved') return 'success'
+    if (status === 'rejected') return 'danger'
+    if (status === 'superseded') return 'default'
+    return 'info'
+  }
 
   const issueMap = useMemo(() => {
     return new Map(issues.map((issue) => [issue.id, issue.title]))
@@ -143,190 +198,229 @@ export function DecisionTab({
   }
 
   return (
-    <div className={decisionTabClasses.container}>
-      <Stack gap={3}>
-        <Flex align="center" justify="space-between" gap={2}>
-          <Text size="sm" muted>
+    <Box>
+      <Stack gap="300">
+        <Inline align="center" justify="space-between" gap="100" fullWidth>
+          <Text variant="body3" color="color.text.subtle">
             Decisions log for roadmap changes and rationale
           </Text>
-          <Button variant="primary" onClick={openCreate} disabled={!projectId}>
+          <Button
+            size="small"
+            icon={<Plus size={12} />}
+            variant="primary"
+            onClick={openCreate}
+            disabled={!projectId}
+          >
             Add decision
           </Button>
-        </Flex>
+        </Inline>
 
-        <div className="grid grid-cols-1 gap-2 md:grid-cols-4">
-          <label className={decisionTabClasses.label}>
-            Type
-            <select
+        <Inline gap="100" wrap fullWidth>
+          <Stack gap="050">
+            <Text variant="caption2" color="color.text.subtle">
+              Type
+            </Text>
+            <Dropdown
+              size="small"
               value={typeFilter}
-              onChange={(e) =>
-                setTypeFilter(e.target.value as 'all' | ApiDecisionType)
+              options={[...typeOptions]}
+              onChange={(value) =>
+                setTypeFilter(value as 'all' | ApiDecisionType)
               }
-              className={decisionTabClasses.select}
-            >
-              <option value="all">All</option>
-              <option value="major">Major</option>
-              <option value="minor">Minor</option>
-            </select>
-          </label>
+            />
+          </Stack>
 
-          <label className={decisionTabClasses.label}>
-            Status
-            <select
+          <Stack gap="050">
+            <Text variant="caption2" color="color.text.subtle">
+              Status
+            </Text>
+            <Dropdown
+              size="small"
               value={statusFilter}
-              onChange={(e) =>
-                setStatusFilter(e.target.value as 'all' | ApiDecisionStatus)
+              options={[...statusOptions]}
+              onChange={(value) =>
+                setStatusFilter(value as 'all' | ApiDecisionStatus)
               }
-              className={decisionTabClasses.select}
-            >
-              <option value="all">All</option>
-              <option value="proposed">Proposed</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
-              <option value="superseded">Superseded</option>
-            </select>
-          </label>
+            />
+          </Stack>
 
-          <label className={decisionTabClasses.label}>
-            View mode
-            <select
+          <Stack gap="050">
+            <Text variant="caption2" color="color.text.subtle">
+              View mode
+            </Text>
+            <Dropdown
+              size="small"
               value={mode}
-              onChange={(e) =>
-                setMode(e.target.value as 'mixed' | 'sequential')
-              }
-              className={decisionTabClasses.select}
-            >
-              <option value="mixed">Mixed (decision date + created at)</option>
-              <option value="sequential">Sequential (created at)</option>
-            </select>
-          </label>
+              options={[...modeOptions]}
+              onChange={(value) => setMode(value as 'mixed' | 'sequential')}
+            />
+          </Stack>
 
-          <label className={decisionTabClasses.label}>
-            Sort
-            <select
+          <Stack gap="050">
+            <Text variant="caption2" color="color.text.subtle">
+              Sort
+            </Text>
+            <Dropdown
+              size="small"
               value={order}
-              onChange={(e) => setOrder(e.target.value as 'asc' | 'desc')}
-              className={decisionTabClasses.select}
-            >
-              <option value="desc">Newest first</option>
-              <option value="asc">Oldest first</option>
-            </select>
-          </label>
-        </div>
+              options={[...orderOptions]}
+              onChange={(value) => setOrder(value as 'asc' | 'desc')}
+            />
+          </Stack>
+        </Inline>
 
         {loading ? (
-          <Text size="sm" muted>
+          <Text variant="body3" color="color.text.subtle">
             Loading decisions...
           </Text>
         ) : error ? (
-          <div className={decisionTabClasses.errorPanel}>
-            <Text size="sm">{error}</Text>
+          <div
+            style={{
+              border: '1px solid #fecdd3',
+              background: '#fff1f2',
+              borderRadius: 8,
+              padding: 12,
+            }}
+          >
+            <Text variant="body3">{error}</Text>
           </div>
         ) : items.length === 0 ? (
-          <div className={decisionTabClasses.emptyPanel}>
-            <Text size="sm" muted>
+          <div
+            style={{
+              border: '1px solid #e2e8f0',
+              background: '#f8fafc',
+              borderRadius: 8,
+              padding: 20,
+              textAlign: 'center',
+            }}
+          >
+            <Text variant="body3" color="color.text.subtle">
               No decisions logged yet
             </Text>
           </div>
         ) : (
-          <div className="space-y-2">
-            {items.map((decision) => (
-              <div key={decision.id} className={decisionTabClasses.itemCard}>
-                <Flex align="center" justify="space-between" gap={2}>
-                  <div className="min-w-0">
-                    <p className={decisionTabClasses.itemTitle}>
+          <Accordion
+            size="medium"
+            items={items.map((decision) => ({
+              id: decision.id,
+              title: (
+                <Stack gap="050" fullWidth>
+                  <div style={{ minWidth: 0 }}>
+                    <Text
+                      variant="body3"
+                      style={{
+                        fontWeight: 600,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
                       {decision.title}
-                    </p>
-                    <p className={decisionTabClasses.meta}>
+                    </Text>
+                    <Text variant="caption2" color="color.text.subtle">
                       By {decision.createdBy.name} •{' '}
                       {formatDateTime(decision.createdAt)}
-                    </p>
+                    </Text>
                   </div>
                   <Button
-                    variant="secondary"
-                    onClick={() => openEdit(decision)}
+                    size="small"
+                    variant="glass"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      openEdit(decision)
+                    }}
                   >
                     Edit
                   </Button>
-                </Flex>
+                </Stack>
+              ),
+              content: (
+                <Stack gap="100">
+                  <Inline gap="100" wrap>
+                    <Badge
+                      size="small"
+                      variant={badgeVariantForType(decision.type)}
+                      label={decision.type}
+                    />
+                    <Badge
+                      size="small"
+                      variant={badgeVariantForStatus(decision.status)}
+                      label={decision.status}
+                    />
+                    <Badge
+                      size="small"
+                      variant="default"
+                      label={`Decision date: ${decision.decisionDate ?? 'Not set'}`}
+                      outlined
+                    />
+                  </Inline>
 
-                <div className="mt-2 flex flex-wrap gap-2">
-                  <span
-                    className={`${decisionTabClasses.badge} ${typeBadgeClass(decision.type)}`}
-                  >
-                    {decision.type}
-                  </span>
-                  <span
-                    className={`${decisionTabClasses.badge} ${statusBadgeClass(decision.status)}`}
-                  >
-                    {decision.status}
-                  </span>
-                  <span className={decisionTabClasses.subtleBadge}>
-                    Decision date: {decision.decisionDate ?? 'Not set'}
-                  </span>
-                </div>
+                  <Text variant="body3" style={{ whiteSpace: 'pre-wrap' }}>
+                    {decision.rationale}
+                  </Text>
+                  {decision.impact ? (
+                    <Text variant="body3" color="color.text.subtle">
+                      Impact: {decision.impact}
+                    </Text>
+                  ) : null}
 
-                <p className={decisionTabClasses.rationale}>
-                  {decision.rationale}
-                </p>
-                {decision.impact ? (
-                  <p className={decisionTabClasses.impact}>
-                    Impact: {decision.impact}
-                  </p>
-                ) : null}
+                  {decision.tags.length > 0 ? (
+                    <Inline gap="050" wrap>
+                      {decision.tags.map((tag) => (
+                        <Badge
+                          key={`${decision.id}:tag:${tag}`}
+                          size="small"
+                          variant="default"
+                          label={`#${tag}`}
+                        />
+                      ))}
+                    </Inline>
+                  ) : null}
 
-                {decision.tags.length > 0 ? (
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    {decision.tags.map((tag) => (
-                      <span
-                        key={`${decision.id}:tag:${tag}`}
-                        className={decisionTabClasses.tag}
-                      >
-                        #{tag}
-                      </span>
-                    ))}
-                  </div>
-                ) : null}
-
-                {(decision.linkedIssueIds.length > 0 ||
-                  decision.linkedMilestoneIds.length > 0) && (
-                  <div className={decisionTabClasses.links}>
-                    {decision.linkedIssueIds.length > 0 ? (
-                      <p>
-                        Issues:{' '}
-                        {decision.linkedIssueIds
-                          .map((id) => issueMap.get(id) ?? id)
-                          .join(', ')}
-                      </p>
-                    ) : null}
-                    {decision.linkedMilestoneIds.length > 0 ? (
-                      <p>
-                        Milestones:{' '}
-                        {decision.linkedMilestoneIds
-                          .map((id) => milestoneMap.get(id) ?? id)
-                          .join(', ')}
-                      </p>
-                    ) : null}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
+                  {(decision.linkedIssueIds.length > 0 ||
+                    decision.linkedMilestoneIds.length > 0) && (
+                    <Stack gap="050">
+                      {decision.linkedIssueIds.length > 0 ? (
+                        <Text variant="caption2" color="color.text.subtle">
+                          Issues:{' '}
+                          {decision.linkedIssueIds
+                            .map((id) => issueMap.get(id) ?? id)
+                            .join(', ')}
+                        </Text>
+                      ) : null}
+                      {decision.linkedMilestoneIds.length > 0 ? (
+                        <Text variant="caption2" color="color.text.subtle">
+                          Milestones:{' '}
+                          {decision.linkedMilestoneIds
+                            .map((id) => milestoneMap.get(id) ?? id)
+                            .join(', ')}
+                        </Text>
+                      ) : null}
+                    </Stack>
+                  )}
+                </Stack>
+              ),
+            }))}
+          />
         )}
       </Stack>
-
       <Modal
         open={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={editingId ? 'Edit decision' : 'Add decision'}
-        primaryLabel={
-          saving ? 'Saving...' : editingId ? 'Save changes' : 'Create'
+        size="large"
+        footer={
+          <Inline justify="flex-end" gap="100" fullWidth>
+            <Button variant="glass" onClick={() => setIsModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="primary" onClick={handleSave} disabled={saving}>
+              {saving ? 'Saving...' : editingId ? 'Save changes' : 'Create'}
+            </Button>
+          </Inline>
         }
-        onPrimary={handleSave}
-        secondaryLabel="Cancel"
-        onSecondary={() => setIsModalOpen(false)}
       >
-        <Stack gap={3}>
+        <Stack gap="300">
           <Input
             value={form.title}
             onChange={(e) =>
@@ -334,43 +428,43 @@ export function DecisionTab({
             }
             placeholder="Decision title"
           />
-          <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
-            <label className={decisionTabClasses.label}>
-              Type
-              <select
+          <Inline gap="100" wrap fullWidth>
+            <Stack gap="050">
+              <Text variant="caption2" color="color.text.subtle">
+                Type
+              </Text>
+              <Dropdown
+                size="small"
                 value={form.type}
-                onChange={(e) =>
+                options={[...decisionTypeOptions]}
+                onChange={(value) =>
                   setForm((prev) => ({
                     ...prev,
-                    type: e.target.value as ApiDecisionType,
+                    type: value as ApiDecisionType,
                   }))
                 }
-                className={decisionTabClasses.select}
-              >
-                <option value="major">Major</option>
-                <option value="minor">Minor</option>
-              </select>
-            </label>
-            <label className={decisionTabClasses.label}>
-              Status
-              <select
+              />
+            </Stack>
+            <Stack gap="050">
+              <Text variant="caption2" color="color.text.subtle">
+                Status
+              </Text>
+              <Dropdown
+                size="small"
                 value={form.status}
-                onChange={(e) =>
+                options={[...decisionStatusOptions]}
+                onChange={(value) =>
                   setForm((prev) => ({
                     ...prev,
-                    status: e.target.value as ApiDecisionStatus,
+                    status: value as ApiDecisionStatus,
                   }))
                 }
-                className={decisionTabClasses.select}
-              >
-                <option value="proposed">Proposed</option>
-                <option value="approved">Approved</option>
-                <option value="rejected">Rejected</option>
-                <option value="superseded">Superseded</option>
-              </select>
-            </label>
-            <label className={decisionTabClasses.label}>
-              Decision date
+              />
+            </Stack>
+            <Stack gap="050">
+              <Text variant="caption2" color="color.text.subtle">
+                Decision date
+              </Text>
               <Input
                 value={form.decisionDate}
                 onChange={(e) =>
@@ -378,8 +472,8 @@ export function DecisionTab({
                 }
                 placeholder="YYYY-MM-DD"
               />
-            </label>
-          </div>
+            </Stack>
+          </Inline>
 
           <Input
             value={form.impact}
@@ -390,11 +484,18 @@ export function DecisionTab({
           />
           <textarea
             value={form.rationale}
-            onChange={(e) =>
+            onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
               setForm((prev) => ({ ...prev, rationale: e.target.value }))
             }
             placeholder="Rationale"
-            className={decisionTabClasses.textarea}
+            style={{
+              minHeight: 96,
+              border: '1px solid #e2e8f0',
+              borderRadius: 8,
+              padding: 10,
+              width: '100%',
+              fontSize: 14,
+            }}
           />
           <Input
             value={form.tagsCsv}
@@ -425,6 +526,6 @@ export function DecisionTab({
           />
         </Stack>
       </Modal>
-    </div>
+    </Box>
   )
 }

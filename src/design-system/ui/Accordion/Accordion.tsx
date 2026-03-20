@@ -70,6 +70,7 @@ export type AccordionItem = {
 type Props = {
   items: AccordionItem[]
   size?: AccordionSize
+  defaultExpandedIds?: string[]
   /** If set, only one item can be open at a time */
   singleOpen?: boolean
   className?: string
@@ -78,10 +79,13 @@ type Props = {
 export function Accordion({
   items,
   size = 'medium',
+  defaultExpandedIds,
   singleOpen = true,
   className,
 }: Props) {
-  const [openId, setOpenId] = useState<string | null>(null)
+  const [openId, setOpenId] = useState<string | null>(
+    defaultExpandedIds?.[0] ?? null
+  )
 
   const toggle = (id: string) => {
     setOpenId((prev) => {

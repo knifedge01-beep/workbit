@@ -1,4 +1,5 @@
 import type { Issue, IssueComment } from './types.js'
+import { GoogleGenAI } from '@google/genai'
 import { generateId } from './store.js'
 import * as db from '../db/issues.js'
 import * as dbIssueComments from '../db/issueComments.js'
@@ -14,6 +15,18 @@ export type IssueListItemApi = {
   status: string
 }
 
+export type SubIssueApi = {
+  id: string
+  title: string
+  status: string
+  date: string
+}
+
+export type GeneratedSubIssueDraft = {
+  title: string
+  description?: string
+}
+
 export type IssueDetailApi = {
   id: string
   title: string
@@ -24,6 +37,7 @@ export type IssueDetailApi = {
   teamId: string | null
   team: { id: string; name: string } | null
   project: { id: string; name: string } | null
+  parentIssueId?: string | null
 }
 
 export async function getTeamIssues(
@@ -46,6 +60,84 @@ export async function getProjectIssues(
 
 export async function getMyIssues(assigneeId: string): Promise<Issue[]> {
   return db.getIssuesByAssigneeId(assigneeId)
+}
+
+export async function getSubIssues(parentIssueId: string): Promise<Issue[]> {
+  return db.getIssuesByParentIssueId(parentIssueId)
+}
+
+export async function getSubIssuesForApi(
+  parentIssueId: string
+): Promise<SubIssueApi[]> {
+  const issues = await getSubIssues(parentIssueId)
+  return issues.map((i) => ({
+    id: i.id,
+    title: i.title,
+    status: i.status,
+    date: i.date,
+  }))
+}
+
+const DEFAULT_MODEL = 'gemini-2.0-flash'
+
+export async function generateSubIssuesDraftForIssue(
+  issueId: string
+): Promise<GeneratedSubIssueDraft[]> {
+  const issue = await getIssueById(issueId)
+  if (!issue) throw new Error('Issue not found')
+
+  const apiKey = process.env.GEMINI_API_KEY ?? process.env.GOOGLE_API_KEY ?? ''
+  if (!apiKey.trim()) {
+    throw new Error('GEMINI_API_KEY (or GOOGLE_API_KEY) is required')
+  }
+
+  const ai = new GoogleGenAI({ apiKey })
+  const prompt = `Break down the following issue into 4 to 8 actionable sub-issues.
+Return ONLY valid JSON in this shape:
+{"subIssues":[{"title":"string","description":"string"}]}
+
+Issue:
+- id: ${issue.id}
+- title: ${issue.title}
+- description: ${issue.description ?? ''}
+- status: ${issue.status}
+
+Rules:
+- Keep each title short and actionable.
+- description is optional, max 1 short sentence.
+- No markdown, no code fences, JSON only.`
+
+  const response = await ai.models.generateContent({
+    model: process.env.GEMINI_MODEL ?? DEFAULT_MODEL,
+    contents: prompt,
+  })
+
+  const raw = response.text?.trim() ?? ''
+  if (!raw) throw new Error('AI returned an empty response')
+
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(raw)
+  } catch {
+    throw new Error('AI returned invalid JSON')
+  }
+
+  const obj = parsed as {
+    subIssues?: Array<{ title?: string; description?: string }>
+  }
+  const items = Array.isArray(obj.subIssues) ? obj.subIssues : []
+  const normalized = items
+    .map((it) => ({
+      title: (it.title ?? '').trim(),
+      description: (it.description ?? '').trim() || undefined,
+    }))
+    .filter((it) => it.title.length > 0)
+
+  if (normalized.length === 0) {
+    throw new Error('AI did not return valid sub-issues')
+  }
+
+  return normalized
 }
 
 export async function updateIssue(
@@ -85,17 +177,29 @@ export async function getIssueComments(
 export async function addIssueComment(
   issueId: string,
   content: string,
-  author: { name: string; avatarSrc?: string }
+  author: { name: string; avatarSrc?: string },
+  options?: { parentCommentId?: string | null }
 ): Promise<IssueComment> {
   const issue = await db.getIssueById(issueId)
   if (!issue) throw new Error('Issue not found')
+  const parentCommentId = options?.parentCommentId ?? null
+  if (parentCommentId) {
+    const parent = await dbIssueComments.getIssueCommentById(parentCommentId)
+    if (!parent || parent.entityId !== issueId) {
+      throw new Error('Parent comment not found')
+    }
+  }
   const comment: IssueComment = {
     id: generateId(),
-    issueId,
+    entityId: issueId,
     authorName: author.name,
     authorAvatarSrc: author.avatarSrc,
     content,
     createdAt: new Date().toISOString(),
+    parentCommentId,
+    likes: 0,
+    mentionAuthorIds: [],
+    commentOptions: { hideReplies: false, hideLikes: false },
   }
   await dbIssueComments.insertIssueComment(comment)
   return comment
@@ -155,6 +259,7 @@ export async function createIssue(input: {
   assigneeId?: string
   status?: string
   description?: string
+  parentIssueId?: string
 }): Promise<Issue> {
   if (input.teamId) {
     const team = await getTeamById(input.teamId)
@@ -172,6 +277,7 @@ export async function createIssue(input: {
     status: input.status ?? 'todo',
     date: new Date().toISOString(),
     description: input.description,
+    parentIssueId: input.parentIssueId,
   }
 
   await db.insertIssue(issue)
@@ -248,6 +354,7 @@ export async function getIssueDetailForApi(
     teamId: issue.teamId ?? null,
     team: team ? { id: team.id, name: team.name } : null,
     project: project ? { id: project.id, name: project.name } : null,
+    parentIssueId: issue.parentIssueId ?? null,
   }
 }
 
@@ -257,6 +364,7 @@ export async function createIssueForApi(input: {
   title: string
   description?: string
   status?: string
+  parentIssueId?: string
 }): Promise<{ issue: Issue; team: { id: string; name: string } | null }> {
   let teamRecord: Awaited<ReturnType<typeof getTeamById>> = null
   if (input.teamId) {
@@ -276,12 +384,27 @@ export async function createIssueForApi(input: {
     }
   }
 
+  if (input.parentIssueId) {
+    const parentIssue = await getIssueById(input.parentIssueId)
+    if (!parentIssue) {
+      throw new Error('Parent issue not found: ' + input.parentIssueId)
+    }
+    if (
+      input.teamId &&
+      parentIssue.teamId &&
+      input.teamId !== parentIssue.teamId
+    ) {
+      throw new Error('Parent issue does not belong to this team')
+    }
+  }
+
   const issue = await createIssue({
     teamId: input.teamId,
     projectId,
     title: input.title.trim(),
     description: input.description,
     status: input.status,
+    parentIssueId: input.parentIssueId,
   })
   const team = teamRecord ? { id: teamRecord.id, name: teamRecord.name } : null
   return { issue, team }

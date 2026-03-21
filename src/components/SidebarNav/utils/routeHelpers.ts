@@ -29,3 +29,25 @@ export function isTeamLogs(base: string, teamId: string, pathname: string) {
 export function initExpandedTeams(teams: Team[]): Record<string, boolean> {
   return Object.fromEntries(teams.map((team) => [team.id, true]))
 }
+
+/** Tree node id for the expanded sidebar `Tree` (controlled selection). */
+export function getSelectedNavTreeId(
+  pathname: string,
+  base: string,
+  teams: Team[]
+): string | null {
+  if (pathname === `${base}/inbox`) return 'nav-inbox'
+  if (pathname === `${base}/my-issues`) return 'nav-my-issues'
+  if (pathname === `${base}/workspace/projects`) return 'ws-projects'
+  if (pathname === `${base}/workspace/views`) return 'ws-views'
+  if (pathname === `${base}/workspace/member`) return 'ws-members'
+  if (pathname === `${base}/workspace/teams`) return 'ws-teams'
+  if (pathname === `${base}/workspace/roles`) return 'ws-roles'
+  for (const team of teams) {
+    if (isTeamIssues(base, team.id, pathname)) return `team:${team.id}:i`
+    if (isTeamProjects(base, team.id, pathname)) return `team:${team.id}:p`
+    if (isTeamViews(base, team.id, pathname)) return `team:${team.id}:v`
+    if (isTeamLogs(base, team.id, pathname)) return `team:${team.id}:l`
+  }
+  return null
+}

@@ -74,6 +74,19 @@ export interface ApiIssueDetail {
   teamId: string
   team?: { id: string; name: string } | null
   project?: { id: string; name: string } | null
+  parentIssueId?: string | null
+}
+
+export interface ApiSubIssue {
+  id: string
+  title: string
+  status: string
+  date: string
+}
+
+export interface ApiGeneratedSubIssue {
+  title: string
+  description?: string
 }
 
 export type ProjectStatus = 'on-track' | 'at-risk' | 'off-track'
@@ -654,6 +667,7 @@ export async function createIssue(
     status?: string
     description?: string
     projectId?: string
+    parentIssueId?: string
   }
 ): Promise<ApiIssueDetail> {
   const payload: {
@@ -662,6 +676,7 @@ export async function createIssue(
     projectId?: string
     teamId?: string
     status?: string
+    parentIssueId?: string
   } = {
     title: body.title,
     description: body.description,
@@ -672,6 +687,9 @@ export async function createIssue(
   }
   if (teamId) {
     payload.teamId = teamId
+  }
+  if (body.parentIssueId != null && body.parentIssueId !== '') {
+    payload.parentIssueId = body.parentIssueId
   }
   const url = teamId ? `/teams/${teamId}/issues` : '/issues'
   return authFetch(url, {
@@ -738,12 +756,29 @@ export async function fetchIssue(issueId: string): Promise<ApiIssueDetail> {
   return authFetch(`/issues/${issueId}`) as Promise<ApiIssueDetail>
 }
 
+export async function fetchSubIssues(issueId: string): Promise<ApiSubIssue[]> {
+  return authFetch(`/issues/${issueId}/sub-issues`) as Promise<ApiSubIssue[]>
+}
+
+export async function generateSubIssues(
+  issueId: string
+): Promise<{ issueId: string; subIssues: ApiGeneratedSubIssue[] }> {
+  return authFetch(`/issues/${issueId}/sub-issues/generate`, {
+    method: 'POST',
+  }) as Promise<{ issueId: string; subIssues: ApiGeneratedSubIssue[] }>
+}
+
 export type ApiIssueComment = {
   id: string
+  entityId: string
   authorName: string
   authorAvatarSrc?: string
   content: string
   createdAt: string
+  parentCommentId: string | null
+  likes: number
+  mentionAuthorIds: string[]
+  commentOptions: { hideReplies: boolean; hideLikes: boolean }
 }
 
 export async function fetchIssueComments(
@@ -754,11 +789,16 @@ export async function fetchIssueComments(
 
 export async function postIssueComment(
   issueId: string,
-  content: string
+  content: string,
+  options?: { parentCommentId?: string | null }
 ): Promise<ApiIssueComment> {
+  const body =
+    options === undefined
+      ? { content }
+      : { content, parentCommentId: options.parentCommentId ?? null }
   return authFetch(`/issues/${issueId}/comments`, {
     method: 'POST',
-    body: JSON.stringify({ content }),
+    body: JSON.stringify(body),
   }) as Promise<ApiIssueComment>
 }
 

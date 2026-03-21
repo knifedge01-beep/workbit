@@ -1,12 +1,11 @@
-import { useState } from 'react'
-import { Link, useLocation, useParams } from 'react-router-dom'
+import { useMemo, useState } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   Mail,
   FileText,
   Folder,
   Eye,
   ArrowLeft,
-  ChevronDown,
   KeyRound,
   User,
   Settings,
@@ -19,36 +18,62 @@ import {
   GitBranch,
 } from 'lucide-react'
 
-import { Avatar } from '@design-system'
+import { Avatar } from '@thedatablitz/avatar'
+import { Box } from '@thedatablitz/box'
+import { Button } from '@thedatablitz/button'
+import { Inline } from '@thedatablitz/inline'
+import { Stack } from '@thedatablitz/stack'
+import { Text } from '@thedatablitz/text'
+import { Tree, type TreeNode } from '@thedatablitz/tree'
 import { cn } from '@design-system-v2/lib/utils'
 
 import { navClasses } from './styles/classes'
 import type { NavItemProps, SidebarFooterProps, SidebarNavProps } from './types'
 import {
   getActiveProfileTab,
+  getSelectedNavTreeId,
   initExpandedTeams,
   isTeamIssues,
-  isTeamLogs,
-  isTeamProjects,
-  isTeamViews,
 } from './utils/routeHelpers'
 
 function NavItem({ to, active, children, collapsed, shortcut }: NavItemProps) {
+  const linkClass = cn(
+    navClasses.navItemBase,
+    collapsed && navClasses.navItemCollapsed,
+    active ? navClasses.navItemActive : navClasses.navItemInactive
+  )
+
+  if (collapsed) {
+    return (
+      <Link
+        to={to}
+        className={linkClass}
+        aria-current={active ? 'page' : undefined}
+      >
+        {children}
+      </Link>
+    )
+  }
+
   return (
     <Link
       to={to}
-      className={cn(
-        navClasses.navItemBase,
-        collapsed && navClasses.navItemCollapsed,
-        active ? navClasses.navItemActive : navClasses.navItemInactive
-      )}
+      className={linkClass}
+      aria-current={active ? 'page' : undefined}
     >
-      {children}
-      {!collapsed && shortcut && (
-        <span className="ml-auto rounded-md bg-slate-200 px-1.5 py-0.5 text-[11px] text-slate-600">
-          {shortcut}
-        </span>
-      )}
+      <Inline align="center" gap="100" fullWidth className="min-w-0 w-full">
+        {children}
+        {shortcut ? (
+          <Text
+            as="span"
+            variant="caption2"
+            color="color.text.subtle"
+            className="ml-auto shrink-0 rounded-md bg-slate-200 px-1.5 py-0.5"
+          >
+            {shortcut}
+          </Text>
+        ) : null}
+      </Inline>
     </Link>
   )
 }
@@ -59,7 +84,7 @@ export function SidebarNav({
   collapsed = false,
 }: SidebarNavProps) {
   const location = useLocation()
-  useParams<{ workspaceId: string; teamId: string }>()
+  const navigate = useNavigate()
   const base = `/workspace/${workspaceId}`
   const isProfileRoute = location.pathname.startsWith(`${base}/profile`)
   const activeProfileTab = getActiveProfileTab(location.search)
@@ -69,68 +94,405 @@ export function SidebarNav({
     () => initExpandedTeams(teams)
   )
 
+  const navPaths = useMemo(() => {
+    const paths: Record<string, string> = {
+      'nav-inbox': `${base}/inbox`,
+      'nav-my-issues': `${base}/my-issues`,
+      'ws-projects': `${base}/workspace/projects`,
+      'ws-views': `${base}/workspace/views`,
+      'ws-members': `${base}/workspace/member`,
+      'ws-teams': `${base}/workspace/teams`,
+      'ws-roles': `${base}/workspace/roles`,
+    }
+    for (const t of teams) {
+      paths[`team:${t.id}:i`] = `${base}/team/${t.id}/issues/active`
+      paths[`team:${t.id}:p`] = `${base}/team/${t.id}/projects`
+      paths[`team:${t.id}:v`] = `${base}/team/${t.id}/views`
+      paths[`team:${t.id}:l`] = `${base}/team/${t.id}/logs`
+    }
+    return paths
+  }, [base, teams])
+
+  const sidebarTreeNodes = useMemo((): TreeNode[] => {
+    const workspaceChildren: TreeNode[] = [
+      {
+        id: 'ws-projects',
+        label: (
+          <Inline align="center" gap="100" fullWidth className="min-w-0">
+            <Folder size={15} className="shrink-0" />
+            <Text as="span" variant="body3" truncate className="min-w-0 flex-1">
+              Projects
+            </Text>
+          </Inline>
+        ),
+      },
+      {
+        id: 'ws-views',
+        label: (
+          <Inline align="center" gap="100" fullWidth className="min-w-0">
+            <Eye size={15} className="shrink-0" />
+            <Text as="span" variant="body3" truncate className="min-w-0 flex-1">
+              Views
+            </Text>
+          </Inline>
+        ),
+      },
+      {
+        id: 'ws-members',
+        label: (
+          <Inline align="center" gap="100" fullWidth className="min-w-0">
+            <Users size={15} className="shrink-0" />
+            <Text as="span" variant="body3" truncate className="min-w-0 flex-1">
+              Members
+            </Text>
+          </Inline>
+        ),
+      },
+      {
+        id: 'ws-teams',
+        label: (
+          <Inline align="center" gap="100" fullWidth className="min-w-0">
+            <UsersRound size={15} className="shrink-0" />
+            <Text as="span" variant="body3" truncate className="min-w-0 flex-1">
+              Teams
+            </Text>
+          </Inline>
+        ),
+      },
+      {
+        id: 'ws-roles',
+        label: (
+          <Inline align="center" gap="100" fullWidth className="min-w-0">
+            <Shield size={15} className="shrink-0" />
+            <Text as="span" variant="body3" truncate className="min-w-0 flex-1">
+              Roles
+            </Text>
+          </Inline>
+        ),
+      },
+    ]
+
+    const teamNodes: TreeNode[] = teams.map((team) => ({
+      id: `team:${team.id}`,
+      label: (
+        <Inline align="center" gap="100" fullWidth className="min-w-0">
+          <Avatar name={team.name} size="small" />
+          <Text
+            as="span"
+            variant="body3"
+            truncate
+            className="min-w-0 flex-1 text-left"
+          >
+            {team.name}
+          </Text>
+        </Inline>
+      ),
+      children: [
+        {
+          id: `team:${team.id}:i`,
+          label: (
+            <Inline align="center" gap="100" fullWidth className="min-w-0">
+              <FileText size={13} className="shrink-0" />
+              <Text
+                as="span"
+                variant="body3"
+                truncate
+                className="min-w-0 flex-1"
+              >
+                Issues
+              </Text>
+            </Inline>
+          ),
+        },
+        {
+          id: `team:${team.id}:p`,
+          label: (
+            <Inline align="center" gap="100" fullWidth className="min-w-0">
+              <Folder size={13} className="shrink-0" />
+              <Text
+                as="span"
+                variant="body3"
+                truncate
+                className="min-w-0 flex-1"
+              >
+                Projects
+              </Text>
+            </Inline>
+          ),
+        },
+        {
+          id: `team:${team.id}:v`,
+          label: (
+            <Inline align="center" gap="100" fullWidth className="min-w-0">
+              <Eye size={13} className="shrink-0" />
+              <Text
+                as="span"
+                variant="body3"
+                truncate
+                className="min-w-0 flex-1"
+              >
+                Views
+              </Text>
+            </Inline>
+          ),
+        },
+        {
+          id: `team:${team.id}:l`,
+          label: (
+            <Inline align="center" gap="100" fullWidth className="min-w-0">
+              <GitBranch size={13} className="shrink-0" />
+              <Text
+                as="span"
+                variant="body3"
+                truncate
+                className="min-w-0 flex-1"
+              >
+                Logs
+              </Text>
+            </Inline>
+          ),
+        },
+      ],
+    }))
+
+    const roots: TreeNode[] = [
+      {
+        id: 'nav-inbox',
+        label: (
+          <Inline align="center" gap="100" fullWidth className="min-w-0">
+            <Mail size={15} className="shrink-0" />
+            <Text as="span" variant="body3" truncate className="min-w-0 flex-1">
+              Inbox
+            </Text>
+            <Text
+              as="span"
+              variant="caption2"
+              color="color.text.subtle"
+              className="shrink-0 rounded-md bg-slate-200 px-1.5 py-0.5"
+            >
+              ⌘2
+            </Text>
+          </Inline>
+        ),
+      },
+      {
+        id: 'nav-my-issues',
+        label: (
+          <Inline align="center" gap="100" fullWidth className="min-w-0">
+            <FileText size={15} className="shrink-0" />
+            <Text as="span" variant="body3" truncate className="min-w-0 flex-1">
+              My issues
+            </Text>
+            <Text
+              as="span"
+              variant="caption2"
+              color="color.text.subtle"
+              className="shrink-0 rounded-md bg-slate-200 px-1.5 py-0.5"
+            >
+              ⌘3
+            </Text>
+          </Inline>
+        ),
+      },
+      {
+        id: 'sec-workspace',
+        label: (
+          <Box className="mt-2 w-full border-t border-slate-200 pt-2">
+            <Text
+              as="span"
+              variant="caption1"
+              color="color.text.subtle"
+              className="font-semibold uppercase tracking-wide"
+            >
+              Workspace
+            </Text>
+          </Box>
+        ),
+        children: workspaceChildren,
+      },
+    ]
+
+    if (teams.length > 0) {
+      roots.push({
+        id: 'sec-teams',
+        label: (
+          <Text
+            as="span"
+            variant="caption1"
+            color="color.text.subtle"
+            className="mt-2 font-semibold uppercase tracking-wide"
+          >
+            Your teams
+          </Text>
+        ),
+        children: teamNodes,
+      })
+    }
+
+    return roots
+  }, [teams])
+
+  const expandedTreeIds = useMemo(() => {
+    const ids: string[] = []
+    if (workspaceOpen) ids.push('sec-workspace')
+    if (teams.length > 0 && teamsOpen) ids.push('sec-teams')
+    for (const t of teams) {
+      if (expandedTeams[t.id] !== false) ids.push(`team:${t.id}`)
+    }
+    return ids
+  }, [workspaceOpen, teamsOpen, teams, expandedTeams])
+
+  const selectedTreeId = getSelectedNavTreeId(location.pathname, base, teams)
+  const selectedTreeIds = selectedTreeId ? [selectedTreeId] : []
+
+  const handleTreeToggle = (id: string, expanded: boolean) => {
+    if (id === 'sec-workspace') setWorkspaceOpen(expanded)
+    else if (id === 'sec-teams') setTeamsOpen(expanded)
+    else {
+      const m = /^team:([^:]+)$/.exec(id)
+      if (m) {
+        setExpandedTeams((prev) => ({ ...prev, [m[1]]: expanded }))
+      }
+    }
+  }
+
+  const handleTreeSelect = (id: string) => {
+    if (id === 'sec-workspace') {
+      setWorkspaceOpen((o) => !o)
+      return
+    }
+    if (id === 'sec-teams') {
+      setTeamsOpen((o) => !o)
+      return
+    }
+    const parentMatch = /^team:([^:]+)$/.exec(id)
+    if (parentMatch) {
+      const tid = parentMatch[1]
+      setExpandedTeams((prev) => ({
+        ...prev,
+        [tid]: !(prev[tid] ?? true),
+      }))
+      return
+    }
+    const path = navPaths[id]
+    if (path) navigate(path)
+  }
+
   if (isProfileRoute && collapsed) {
     return (
-      <div className="flex flex-col gap-1 px-1">
-        <NavItem to={`${base}/inbox`} collapsed>
+      <Stack gap="050" padding="050" className="px-1">
+        <Link
+          to={`${base}/inbox`}
+          className={cn(
+            navClasses.navItemBase,
+            navClasses.navItemCollapsed,
+            navClasses.navItemInactive
+          )}
+        >
           <ArrowLeft size={15} className="shrink-0" />
           <span>Back</span>
-        </NavItem>
-        <NavItem
+        </Link>
+        <Link
           to={`${base}/profile?tab=profile`}
-          active={activeProfileTab === 'profile'}
-          collapsed
+          className={cn(
+            navClasses.navItemBase,
+            navClasses.navItemCollapsed,
+            activeProfileTab === 'profile'
+              ? navClasses.navItemActive
+              : navClasses.navItemInactive
+          )}
+          aria-current={activeProfileTab === 'profile' ? 'page' : undefined}
         >
           <User size={15} className="shrink-0" />
           <span>Profile</span>
-        </NavItem>
-        <NavItem
+        </Link>
+        <Link
           to={`${base}/profile?tab=api-keys`}
-          active={activeProfileTab === 'api-keys'}
-          collapsed
+          className={cn(
+            navClasses.navItemBase,
+            navClasses.navItemCollapsed,
+            activeProfileTab === 'api-keys'
+              ? navClasses.navItemActive
+              : navClasses.navItemInactive
+          )}
+          aria-current={activeProfileTab === 'api-keys' ? 'page' : undefined}
         >
           <KeyRound size={15} className="shrink-0" />
           <span>API keys</span>
-        </NavItem>
-      </div>
+        </Link>
+      </Stack>
     )
   }
 
   if (collapsed) {
     return (
-      <div className="flex flex-col gap-1 px-1">
-        <NavItem
+      <Stack gap="050" padding="050" className="px-1">
+        <Link
           to={`${base}/inbox`}
-          active={location.pathname === `${base}/inbox`}
-          collapsed
+          className={cn(
+            navClasses.navItemBase,
+            navClasses.navItemCollapsed,
+            location.pathname === `${base}/inbox`
+              ? navClasses.navItemActive
+              : navClasses.navItemInactive
+          )}
+          aria-current={
+            location.pathname === `${base}/inbox` ? 'page' : undefined
+          }
         >
           <Mail size={15} className="shrink-0" />
           <span>Inbox</span>
-        </NavItem>
-        <NavItem
+        </Link>
+        <Link
           to={`${base}/my-issues`}
-          active={location.pathname === `${base}/my-issues`}
-          collapsed
+          className={cn(
+            navClasses.navItemBase,
+            navClasses.navItemCollapsed,
+            location.pathname === `${base}/my-issues`
+              ? navClasses.navItemActive
+              : navClasses.navItemInactive
+          )}
+          aria-current={
+            location.pathname === `${base}/my-issues` ? 'page' : undefined
+          }
         >
           <FileText size={15} className="shrink-0" />
           <span>My issues</span>
-        </NavItem>
-        <NavItem
+        </Link>
+        <Link
           to={`${base}/workspace/projects`}
-          active={location.pathname === `${base}/workspace/projects`}
-          collapsed
+          className={cn(
+            navClasses.navItemBase,
+            navClasses.navItemCollapsed,
+            location.pathname === `${base}/workspace/projects`
+              ? navClasses.navItemActive
+              : navClasses.navItemInactive
+          )}
+          aria-current={
+            location.pathname === `${base}/workspace/projects`
+              ? 'page'
+              : undefined
+          }
         >
           <Folder size={15} className="shrink-0" />
           <span>Projects</span>
-        </NavItem>
-        <NavItem
+        </Link>
+        <Link
           to={`${base}/workspace/views`}
-          active={location.pathname === `${base}/workspace/views`}
-          collapsed
+          className={cn(
+            navClasses.navItemBase,
+            navClasses.navItemCollapsed,
+            location.pathname === `${base}/workspace/views`
+              ? navClasses.navItemActive
+              : navClasses.navItemInactive
+          )}
+          aria-current={
+            location.pathname === `${base}/workspace/views` ? 'page' : undefined
+          }
         >
           <Eye size={15} className="shrink-0" />
           <span>Views</span>
-        </NavItem>
+        </Link>
         {teams.map((team) => (
           <Link
             key={team.id}
@@ -144,224 +506,82 @@ export function SidebarNav({
             aria-label={team.name}
             title={team.name}
           >
-            <Avatar name={team.name.slice(0, 2).toUpperCase()} size={18} />
+            <Avatar name={team.name} size="small" />
           </Link>
         ))}
-      </div>
+      </Stack>
     )
   }
 
   if (isProfileRoute) {
     return (
-      <div className="flex flex-col gap-2 px-2">
+      <Stack gap="200" className="px-2">
         <Link
           to={`${base}/inbox`}
           className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-[13px] text-slate-700 transition-colors hover:bg-slate-100 hover:text-slate-900"
         >
           <ArrowLeft size={15} className="shrink-0" />
-          <span>Back to workspace</span>
+          <Text as="span" variant="body3" color="color.text.DEFAULT">
+            Back to workspace
+          </Text>
         </Link>
 
-        <div className="my-1 border-t border-slate-200" />
+        <Box className="my-1 border-t border-slate-200" />
 
-        <div className="px-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+        <Text
+          as="div"
+          variant="caption1"
+          color="color.text.subtle"
+          className="px-1 font-semibold uppercase tracking-wide"
+        >
           Profile
-        </div>
+        </Text>
 
-        <div className="space-y-0.5">
+        <Stack gap="050">
           <NavItem
             to={`${base}/profile?tab=profile`}
             active={activeProfileTab === 'profile'}
           >
             <User size={15} className="shrink-0" />
-            <span>Account details</span>
+            <Text as="span" variant="body3" truncate className="min-w-0 flex-1">
+              Account details
+            </Text>
           </NavItem>
           <NavItem
             to={`${base}/profile?tab=api-keys`}
             active={activeProfileTab === 'api-keys'}
           >
             <KeyRound size={15} className="shrink-0" />
-            <span>API keys</span>
+            <Text as="span" variant="body3" truncate className="min-w-0 flex-1">
+              API keys
+            </Text>
           </NavItem>
-        </div>
-      </div>
+        </Stack>
+      </Stack>
     )
   }
 
   return (
-    <div className="flex flex-col gap-2 px-2">
-      <div className="space-y-0.5">
-        <NavItem
-          to={`${base}/inbox`}
-          active={location.pathname === `${base}/inbox`}
-          shortcut="⌘2"
-        >
-          <Mail size={15} className="shrink-0" />
-          <span>Inbox</span>
-        </NavItem>
-        <NavItem
-          to={`${base}/my-issues`}
-          active={location.pathname === `${base}/my-issues`}
-          shortcut="⌘3"
-        >
-          <FileText size={15} className="shrink-0" />
-          <span>My issues</span>
-        </NavItem>
-      </div>
-
-      <div className="my-2 border-t border-slate-200" />
-
-      <button
-        type="button"
-        onClick={() => setWorkspaceOpen((v) => !v)}
-        className={navClasses.sectionLabel}
-      >
-        <span>Workspace</span>
-        <ChevronDown
-          size={13}
-          className={cn('transition-transform', !workspaceOpen && '-rotate-90')}
-        />
-      </button>
-      {workspaceOpen && (
-        <div className="space-y-0.5">
-          <NavItem
-            to={`${base}/workspace/projects`}
-            active={location.pathname === `${base}/workspace/projects`}
-          >
-            <Folder size={15} className="shrink-0" />
-            <span>Projects</span>
-          </NavItem>
-          <NavItem
-            to={`${base}/workspace/views`}
-            active={location.pathname === `${base}/workspace/views`}
-          >
-            <Eye size={15} className="shrink-0" />
-            <span>Views</span>
-          </NavItem>
-          <NavItem
-            to={`${base}/workspace/member`}
-            active={location.pathname === `${base}/workspace/member`}
-          >
-            <Users size={15} className="shrink-0" />
-            <span>Members</span>
-          </NavItem>
-          <NavItem
-            to={`${base}/workspace/teams`}
-            active={location.pathname === `${base}/workspace/teams`}
-          >
-            <UsersRound size={15} className="shrink-0" />
-            <span>Teams</span>
-          </NavItem>
-          <NavItem
-            to={`${base}/workspace/roles`}
-            active={location.pathname === `${base}/workspace/roles`}
-          >
-            <Shield size={15} className="shrink-0" />
-            <span>Roles</span>
-          </NavItem>
-        </div>
-      )}
-
-      {teams.length > 0 && (
-        <>
-          <button
-            type="button"
-            onClick={() => setTeamsOpen((v) => !v)}
-            className={`${navClasses.sectionLabel} mt-2`}
-          >
-            <span>Your teams</span>
-            <ChevronDown
-              size={13}
-              className={cn('transition-transform', !teamsOpen && '-rotate-90')}
-            />
-          </button>
-          {teamsOpen && (
-            <div className="space-y-1">
-              {teams.map((team) => {
-                const expanded = expandedTeams[team.id] ?? true
-                return (
-                  <div key={team.id} className="rounded-lg">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setExpandedTeams((prev) => ({
-                          ...prev,
-                          [team.id]: !expanded,
-                        }))
-                      }
-                      className={cn(
-                        navClasses.navItemBase,
-                        isTeamIssues(base, team.id, location.pathname) ||
-                          isTeamProjects(base, team.id, location.pathname) ||
-                          isTeamViews(base, team.id, location.pathname) ||
-                          isTeamLogs(base, team.id, location.pathname)
-                          ? navClasses.navItemActive
-                          : navClasses.navItemInactive
-                      )}
-                    >
-                      <Avatar
-                        name={team.name.slice(0, 2).toUpperCase()}
-                        size={18}
-                      />
-                      <span className="flex-1 text-left">{team.name}</span>
-                      <ChevronDown
-                        size={13}
-                        className={cn(
-                          'transition-transform',
-                          !expanded && '-rotate-90'
-                        )}
-                      />
-                    </button>
-
-                    {expanded && (
-                      <div className="ml-7 mt-0.5 space-y-0.5 border-l border-slate-200 pl-2">
-                        <NavItem
-                          to={`${base}/team/${team.id}/issues/active`}
-                          active={isTeamIssues(
-                            base,
-                            team.id,
-                            location.pathname
-                          )}
-                        >
-                          <FileText size={13} className="shrink-0" />
-                          <span>Issues</span>
-                        </NavItem>
-                        <NavItem
-                          to={`${base}/team/${team.id}/projects`}
-                          active={isTeamProjects(
-                            base,
-                            team.id,
-                            location.pathname
-                          )}
-                        >
-                          <Folder size={13} className="shrink-0" />
-                          <span>Projects</span>
-                        </NavItem>
-                        <NavItem
-                          to={`${base}/team/${team.id}/views`}
-                          active={isTeamViews(base, team.id, location.pathname)}
-                        >
-                          <Eye size={13} className="shrink-0" />
-                          <span>Views</span>
-                        </NavItem>
-                        <NavItem
-                          to={`${base}/team/${team.id}/logs`}
-                          active={isTeamLogs(base, team.id, location.pathname)}
-                        >
-                          <GitBranch size={13} className="shrink-0" />
-                          <span>Logs</span>
-                        </NavItem>
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </>
-      )}
-    </div>
+    <Stack gap="200" className="px-2">
+      <Tree
+        size="small"
+        variant="primary"
+        className="min-w-0 w-full"
+        style={{ minWidth: 0 }}
+        nodes={sidebarTreeNodes}
+        expandedIds={expandedTreeIds}
+        selectedIds={selectedTreeIds}
+        onToggle={handleTreeToggle}
+        onSelect={handleTreeSelect}
+      />
+    </Stack>
   )
+}
+
+function footerLinkClass(collapsed: boolean) {
+  return collapsed
+    ? 'flex items-center justify-center px-1 py-2 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors'
+    : 'flex items-center gap-2 px-2 py-1.5 rounded-md text-[13px] text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors'
 }
 
 export function SidebarFooter({
@@ -373,83 +593,89 @@ export function SidebarFooter({
   const isProfileRoute = location.pathname.startsWith(
     `/workspace/${workspaceId}/profile`
   )
+  const linkCls = footerLinkClass(collapsed)
 
   if (collapsed) {
     return (
-      <div className="flex flex-col gap-1 px-1 pb-2">
-        {!isProfileRoute && (
+      <Stack gap="050" padding="050" className="px-1 pb-2">
+        {!isProfileRoute ? (
           <Link
             to={`/workspace/${workspaceId}/profile`}
-            className="flex items-center justify-center px-1 py-2 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+            className={linkCls}
             aria-label="Settings"
           >
             <Settings size={15} className="shrink-0" />
           </Link>
-        )}
-        <Link
-          to="/help"
-          className="flex items-center justify-center px-1 py-2 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
-          aria-label="Help center"
-        >
+        ) : null}
+        <Link to="/help" className={linkCls} aria-label="Help center">
           <HelpCircle size={15} className="shrink-0" />
         </Link>
-        {!isProfileRoute && (
+        {!isProfileRoute ? (
           <Link
             to="/notifications"
-            className="flex items-center justify-center px-1 py-2 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+            className={linkCls}
             aria-label="Notifications"
           >
             <Bell size={15} className="shrink-0" />
           </Link>
-        )}
-        <button
-          type="button"
+        ) : null}
+        <Button
+          buttonType="link"
+          size="small"
           onClick={onLogout}
-          className="flex items-center justify-center px-1 py-2 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+          className={cn(linkCls, 'h-auto w-full font-inherit')}
           aria-label="Log out"
         >
           <LogOut size={15} className="shrink-0" />
-        </button>
-      </div>
+        </Button>
+      </Stack>
     )
   }
 
   return (
-    <div className="flex flex-col gap-0.5 px-2 pb-2">
-      {!isProfileRoute && (
-        <Link
-          to={`/workspace/${workspaceId}/profile`}
-          className="flex items-center gap-2 px-2 py-1.5 rounded-md text-[13px] text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
-        >
-          <Settings size={15} className="shrink-0" />
-          <span>Settings</span>
+    <Stack gap="050" className="px-2 pb-2">
+      {!isProfileRoute ? (
+        <Link to={`/workspace/${workspaceId}/profile`} className={linkCls}>
+          <Inline align="center" gap="100">
+            <Settings size={15} className="shrink-0" />
+            <Text as="span" variant="body3" color="color.text.DEFAULT">
+              Settings
+            </Text>
+          </Inline>
         </Link>
-      )}
-      <Link
-        to="/help"
-        className="flex items-center gap-2 px-2 py-1.5 rounded-md text-[13px] text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
-      >
-        <HelpCircle size={15} className="shrink-0" />
-        <span>Help center</span>
+      ) : null}
+      <Link to="/help" className={linkCls}>
+        <Inline align="center" gap="100">
+          <HelpCircle size={15} className="shrink-0" />
+          <Text as="span" variant="body3" color="color.text.DEFAULT">
+            Help center
+          </Text>
+        </Inline>
       </Link>
-      {!isProfileRoute && (
-        <Link
-          to="/notifications"
-          className="flex items-center gap-2 px-2 py-1.5 rounded-md text-[13px] text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
-        >
-          <Bell size={15} className="shrink-0" />
-          <span>Notifications</span>
+      {!isProfileRoute ? (
+        <Link to="/notifications" className={linkCls}>
+          <Inline align="center" gap="100">
+            <Bell size={15} className="shrink-0" />
+            <Text as="span" variant="body3" color="color.text.DEFAULT">
+              Notifications
+            </Text>
+          </Inline>
         </Link>
-      )}
-      <button
-        type="button"
+      ) : null}
+      <Button
+        buttonType="link"
+        size="small"
         onClick={onLogout}
-        className="flex items-center gap-2 px-2 py-1.5 rounded-md text-[13px] text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+        className={cn(linkCls, 'h-auto w-full justify-start font-inherit')}
         aria-label="Log out"
       >
-        <LogOut size={15} className="shrink-0" />
-        <span>Log out</span>
-      </button>
-    </div>
+        <Inline align="center" gap="100">
+          <LogOut size={15} className="shrink-0" />
+          <Text as="span" variant="body3" color="color.text.DEFAULT">
+            Log out
+          </Text>
+        </Inline>
+      </Button>
+    </Stack>
   )
 }

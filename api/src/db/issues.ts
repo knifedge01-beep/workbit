@@ -66,6 +66,18 @@ export async function getIssuesByAssigneeId(
   return (data ?? []).map((r) => rowToIssue(r as DbRow))
 }
 
+export async function getIssuesByParentIssueId(
+  parentIssueId: string
+): Promise<Issue[]> {
+  const { data, error } = await getClient()
+    .from('issues')
+    .select('*')
+    .eq('parent_issue_id', parentIssueId)
+    .order('date', { ascending: true })
+  if (error) throw error
+  return (data ?? []).map((r) => rowToIssue(r as DbRow))
+}
+
 export async function insertIssue(issue: Issue): Promise<void> {
   const row = issueToRow(issue)
   const { error } = await getClient()

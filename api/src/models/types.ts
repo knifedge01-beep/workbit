@@ -98,11 +98,16 @@ export interface StatusUpdateComment {
 
 export interface IssueComment {
   id: string
-  issueId: string
+  /** Stored as `comments.entity_id` (e.g. issue id). */
+  entityId: string
   authorName: string
   authorAvatarSrc?: string
   content: string
   createdAt: string
+  parentCommentId: string | null
+  likes: number
+  mentionAuthorIds: string[]
+  commentOptions: { hideReplies: boolean; hideLikes: boolean }
 }
 
 export interface ProjectProperties {
@@ -146,6 +151,7 @@ export interface Issue {
   teamId?: string
   projectId?: string
   description?: string
+  parentIssueId?: string
 }
 
 // Project decisions

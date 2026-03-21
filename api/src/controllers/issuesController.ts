@@ -43,6 +43,40 @@ export async function getIssue(req: Request, res: Response) {
   }
 }
 
+export async function getSubIssues(req: Request, res: Response) {
+  try {
+    const { issueId } = req.params
+    const parentIssue = await issuesModel.getIssueById(issueId)
+    if (!parentIssue) {
+      res.status(404).json({ error: 'Issue not found' })
+      return
+    }
+    const list = await issuesModel.getSubIssuesForApi(issueId)
+    res.json(list)
+  } catch (e) {
+    logApiError(e, 'issues.getSubIssues', { issueId: req.params.issueId })
+    res.status(500).json({ error: (e as Error).message })
+  }
+}
+
+export async function generateSubIssues(req: Request, res: Response) {
+  try {
+    const { issueId } = req.params
+    const subIssues = await issuesModel.generateSubIssuesDraftForIssue(issueId)
+    res.json({ issueId, subIssues })
+  } catch (e) {
+    logApiError(e, 'issues.generateSubIssues', {
+      issueId: req.params.issueId,
+    })
+    const err = e as Error
+    if (err.message === 'Issue not found') {
+      res.status(404).json({ error: err.message })
+      return
+    }
+    res.status(500).json({ error: err.message })
+  }
+}
+
 export async function createIssue(req: Request, res: Response) {
   try {
     const teamIdFromParams = (req.params as { teamId?: string }).teamId
@@ -52,6 +86,7 @@ export async function createIssue(req: Request, res: Response) {
       title?: string
       description?: string
       status?: string
+      parentIssueId?: string
       body?: string
     }
     const teamId =
@@ -60,6 +95,7 @@ export async function createIssue(req: Request, res: Response) {
     const title = body.title
     const description = body.description
     const status = body.status
+    const parentIssueId = body.parentIssueId
 
     if (!title || !title.trim()) {
       res.status(400).json({ error: 'title is required' })
@@ -71,6 +107,8 @@ export async function createIssue(req: Request, res: Response) {
       title: title.trim(),
       description,
       status,
+      parentIssueId:
+        parentIssueId && parentIssueId !== '' ? parentIssueId : undefined,
     })
     const detail = await issuesModel.getIssueDetailForApi(issue.id)
     if (!detail) {
@@ -84,6 +122,7 @@ export async function createIssue(req: Request, res: Response) {
         teamId: issue.teamId ?? null,
         team: team ? { id: team.id, name: team.name } : null,
         project_id: issue.projectId ?? null,
+        parentIssueId: issue.parentIssueId ?? null,
       })
       return
     }
@@ -97,9 +136,14 @@ export async function createIssue(req: Request, res: Response) {
     })
     if (
       msg.startsWith('Team not found:') ||
-      msg.startsWith('Project not found:')
+      msg.startsWith('Project not found:') ||
+      msg.startsWith('Parent issue not found:')
     ) {
       res.status(404).json({ error: msg })
+      return
+    }
+    if (msg === 'Parent issue does not belong to this team') {
+      res.status(400).json({ error: msg })
       return
     }
     res.status(500).json({ error: msg })
@@ -113,10 +157,15 @@ export async function getIssueComments(req: Request, res: Response) {
     res.json(
       comments.map((c) => ({
         id: c.id,
+        entityId: c.entityId,
         authorName: c.authorName,
         authorAvatarSrc: c.authorAvatarSrc,
         content: c.content,
         createdAt: c.createdAt,
+        parentCommentId: c.parentCommentId,
+        likes: c.likes,
+        mentionAuthorIds: c.mentionAuthorIds,
+        commentOptions: c.commentOptions,
       }))
     )
   } catch (e) {
@@ -130,22 +179,40 @@ export async function getIssueComments(req: Request, res: Response) {
 export async function postIssueComment(req: Request, res: Response) {
   try {
     const { issueId } = req.params
-    const { content } = req.body as { content?: string }
+    const { content, parentCommentId } = req.body as {
+      content?: string
+      parentCommentId?: string | null
+    }
     if (!content || typeof content !== 'string') {
       res.status(400).json({ error: 'content is required' })
       return
     }
     const authorName = req.user?.email ?? DEFAULT_AUTHOR_NAME
-    const comment = await issuesModel.addIssueComment(issueId, content, {
-      name: authorName,
-      avatarSrc: undefined,
-    })
+    const comment = await issuesModel.addIssueComment(
+      issueId,
+      content,
+      {
+        name: authorName,
+        avatarSrc: undefined,
+      },
+      {
+        parentCommentId:
+          parentCommentId === undefined || parentCommentId === ''
+            ? null
+            : parentCommentId,
+      }
+    )
     res.status(201).json({
       id: comment.id,
+      entityId: comment.entityId,
       authorName: comment.authorName,
       authorAvatarSrc: comment.authorAvatarSrc,
       content: comment.content,
       createdAt: comment.createdAt,
+      parentCommentId: comment.parentCommentId,
+      likes: comment.likes,
+      mentionAuthorIds: comment.mentionAuthorIds,
+      commentOptions: comment.commentOptions,
     })
   } catch (e) {
     logApiError(e, 'issues.postIssueComment', {
@@ -154,6 +221,10 @@ export async function postIssueComment(req: Request, res: Response) {
     const err = e as Error
     if (err.message === 'Issue not found') {
       res.status(404).json({ error: err.message })
+      return
+    }
+    if (err.message === 'Parent comment not found') {
+      res.status(400).json({ error: err.message })
       return
     }
     res.status(500).json({ error: err.message })

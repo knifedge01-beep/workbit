@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import { Container, Stack, PageHeader, Text, Input, Flex } from '@design-system'
@@ -21,8 +21,7 @@ export function CreateTeamScreen() {
 
   const isTeamScoped = Boolean(teamIdFromUrl)
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = async () => {
     if (!workspaceId || !name.trim()) return
 
     setError(null)
@@ -59,7 +58,12 @@ export function CreateTeamScreen() {
           title="New team"
           summary={getSummary(currentWorkspace.name)}
         />
-        <form onSubmit={handleSubmit}>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            void handleSubmit()
+          }}
+        >
           <Stack gap={4}>
             <div>
               <label style={labelStyle}>
@@ -80,13 +84,13 @@ export function CreateTeamScreen() {
             )}
             <Flex gap={2} justify="flex-start">
               <Button
-                type="submit"
                 variant="primary"
                 disabled={!name.trim() || submitting}
+                onClick={() => void handleSubmit()}
               >
                 {submitting ? 'Creating…' : 'Create team'}
               </Button>
-              <Button type="button" variant="secondary" onClick={handleCancel}>
+              <Button variant="glass" onClick={handleCancel}>
                 Cancel
               </Button>
             </Flex>

@@ -173,6 +173,7 @@ export function rowToIssue(r: DbRow): Issue {
     teamId: (r.team_id as string) || undefined,
     projectId: r.project_id as string | undefined,
     description: r.description as string | undefined,
+    parentIssueId: r.parent_issue_id as string | undefined,
   }
 }
 
@@ -212,6 +213,7 @@ export function issueToRow(i: Issue): Record<string, unknown> {
     team_id: i.teamId ?? null,
     project_id: i.projectId ?? null,
     description: i.description ?? null,
+    parent_issue_id: i.parentIssueId ?? null,
   }
 }
 

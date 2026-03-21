@@ -5,19 +5,6 @@ export type IssueDetailScreenProps = {
   projectName?: string
 }
 
-export type SubIssue = {
-  id: string
-  title: string
-  completed: boolean
-}
-
-export type IssueComment = {
-  id: string
-  author: string
-  timestamp: string
-  body: string
-}
-
 export type WorkspaceProjectLite = {
   id: string
   name: string

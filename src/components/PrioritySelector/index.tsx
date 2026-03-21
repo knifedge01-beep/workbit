@@ -11,18 +11,12 @@ export function PrioritySelector({
   placeholder = 'Priority',
   options = DEFAULT_PRIORITIES,
   triggerVariant,
-  className,
-  triggerClassName,
 }: PrioritySelectorProps) {
   const dropdownOptions = options.map((opt: PriorityOption) => ({
     value: opt.id,
     label: opt.label,
     icon: opt.icon,
   }))
-
-  const mergedClassName = [className, triggerClassName]
-    .filter(Boolean)
-    .join(' ')
 
   void triggerVariant
 
@@ -31,8 +25,7 @@ export function PrioritySelector({
       options={dropdownOptions}
       value={value}
       placeholder={placeholder}
-      size="small"
-      className={mergedClassName || undefined}
+      size="medium"
       onChange={(nextValue) => {
         if (typeof nextValue === 'string') {
           onChange?.(nextValue)

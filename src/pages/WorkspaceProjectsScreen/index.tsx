@@ -1,9 +1,9 @@
 import { useNavigate, useParams } from 'react-router-dom'
 import { Plus } from 'lucide-react'
 
+import { PageHeader, Stack as View } from '@design-system'
 import { Button } from '@thedatablitz/button'
 import { Inline } from '@thedatablitz/inline'
-import { Stack } from '@thedatablitz/stack'
 import { Text } from '@thedatablitz/text'
 
 import { ProjectsTable } from '../../components'
@@ -33,19 +33,24 @@ export function WorkspaceProjectsScreen() {
   }
 
   return (
-    <Stack gap="300" fullWidth>
-      <Inline align="center" justify="space-between" fullWidth>
-        <Stack gap="050">
-          <Text as="h1" variant="heading4">
-            {workspaceProjectsText.title}
-          </Text>
-          <Text variant="body3" color="color.text.subtle">
-            {workspaceProjectsText.summary}
-          </Text>
-        </Stack>
+    <View gap={4} className="flex w-full flex-col">
+      <Inline
+        align="flex-start"
+        justify="space-between"
+        gap="200"
+        fullWidth
+        wrap
+      >
+        <div className="min-w-0 flex-1">
+          <PageHeader
+            title={workspaceProjectsText.title}
+            summary={workspaceProjectsText.summary}
+          />
+        </div>
         {workspaceId ? (
           <Button
             variant="glass"
+            className="shrink-0"
             onClick={() => navigate(getNewProjectPath(workspaceId))}
           >
             <Plus size={16} />
@@ -61,6 +66,6 @@ export function WorkspaceProjectsScreen() {
       {!loading ? (
         <ProjectsTable projects={projects} onRowClick={handleRowClick} />
       ) : null}
-    </Stack>
+    </View>
   )
 }

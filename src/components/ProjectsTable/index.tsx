@@ -1,62 +1,30 @@
-import { useState } from 'react'
-import { Search, SortAsc } from 'lucide-react'
-
 import { Table } from '@thedatablitz/table'
-
-import {
-  Toolbar,
-  SearchBox,
-  FilterBtn,
-  SectionHeader,
-  TitleBlock,
-  Title,
-  Count,
-} from './styles'
 import type { ProjectTableRow, ProjectsTableProps } from './types'
 import { createColumns } from './utils/createColumns'
-import { filterProjects } from './utils/filterProjects'
+import { Text } from '@thedatablitz/text'
+import { Inline } from '@thedatablitz/inline'
+import { Badge } from '@thedatablitz/badge'
+import { Stack } from '@thedatablitz/stack'
 
 export type { ProjectTableRow } from './types'
 
 const columns = createColumns()
 
-export function ProjectsTable({
-  projects,
-  className,
-  onRowClick,
-}: ProjectsTableProps) {
-  const [query, setQuery] = useState('')
-  const filtered = filterProjects(projects, query)
-
+export function ProjectsTable({ projects, className }: ProjectsTableProps) {
   return (
-    <section className={className}>
-      <SectionHeader>
-        <TitleBlock>
-          <Title>Projects</Title>
-          <Count>{projects.length}</Count>
-        </TitleBlock>
-      </SectionHeader>
-      <Toolbar>
-        <SearchBox>
-          <Search size={13} />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Filter projects..."
-          />
-        </SearchBox>
-        <FilterBtn>
-          <SortAsc size={13} />
-          Sort
-        </FilterBtn>
-      </Toolbar>
+    <Stack gap="100" className={className}>
+      <Inline gap="050">
+        <Text variant="heading6">Projects</Text>
+        <Badge variant="warning" size="small">
+          {projects.length}
+        </Badge>
+      </Inline>
       <Table<ProjectTableRow>
         columns={columns}
-        data={filtered}
-        enableSorting
-        onRowClick={onRowClick}
-        initialState={{ sorting: [{ id: 'name', desc: false }] }}
+        searchable={false}
+        columnFilterable={false}
+        data={projects}
       />
-    </section>
+    </Stack>
   )
 }

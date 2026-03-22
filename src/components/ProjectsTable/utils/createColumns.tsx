@@ -1,11 +1,10 @@
 import { Folder } from 'lucide-react'
-
-import { Badge, Text } from '@design-system'
+import { Badge } from '@thedatablitz/badge'
+import { Text } from '@thedatablitz/text'
 import type { ColumnDef } from '@design-system'
 
 import { ProjectNameCell } from '../styles'
 import type { ProjectTableRow } from '../types'
-import { statusColorMap } from './statusColorMap'
 
 export function createColumns(): ColumnDef<ProjectTableRow, unknown>[] {
   return [
@@ -18,7 +17,7 @@ export function createColumns(): ColumnDef<ProjectTableRow, unknown>[] {
       cell: ({ row }) => (
         <ProjectNameCell>
           <Folder size={14} className="proj-icon" />
-          <Text size="sm" as="span">
+          <Text variant="body2" as="span">
             {row.original.name}
           </Text>
         </ProjectNameCell>
@@ -31,7 +30,7 @@ export function createColumns(): ColumnDef<ProjectTableRow, unknown>[] {
       enableSorting: true,
       meta: { flex: 1 },
       cell: ({ row }) => (
-        <Text size="sm" muted as="span">
+        <Text variant="body2" as="span">
           {row.original.team}
         </Text>
       ),
@@ -43,11 +42,10 @@ export function createColumns(): ColumnDef<ProjectTableRow, unknown>[] {
       enableSorting: true,
       meta: { flex: 0.8 },
       cell: ({ row }) => {
-        const color =
-          statusColorMap[row.original.status.toLowerCase()] ?? 'grey'
         return (
-          <Badge variant="light" color={color} size="small">
-            {row.original.status}
+          <Badge variant="success" size="small">
+            {row.original.status.charAt(0).toUpperCase() +
+              row.original.status.slice(1)}
           </Badge>
         )
       },

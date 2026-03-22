@@ -1,8 +1,17 @@
-import { useState, type FormEvent } from 'react'
+import { useRef, useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { X } from 'lucide-react'
 
-import { Input, Select, RichText } from '@design-system'
-import { cn } from '@design-system-v2/lib/utils'
+import { PageHeader, Stack as View } from '@design-system'
+import { Banner } from '@thedatablitz/banner'
+import { Box } from '@thedatablitz/box'
+import { Button } from '@thedatablitz/button'
+import { Dropdown } from '@thedatablitz/dropdown'
+import { Inline } from '@thedatablitz/inline'
+import { MarkdownEditor } from '@thedatablitz/markdown-editor'
+import { Stack } from '@thedatablitz/stack'
+import { Text } from '@thedatablitz/text'
+import { TextInput } from '@thedatablitz/text-input'
 
 import { createIssue, fetchWorkspaceTeams } from '../../api/client'
 import { useWorkspace } from '../../contexts/WorkspaceContext'
@@ -14,11 +23,9 @@ import {
   getCancelPath,
   getIssueDetailPath,
   getSummary,
-  getTeamBadge,
   ISSUE_PROPERTY_CHIPS,
   toTeamOptions,
 } from './utils/helpers'
-import { Button } from '@thedatablitz/button'
 
 export function CreateIssueScreen() {
   const { workspaceId, teamId: teamIdFromUrl } = useParams<RouteParams>()
@@ -29,6 +36,7 @@ export function CreateIssueScreen() {
   const [description, setDescription] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const formRef = useRef<HTMLFormElement>(null)
 
   const isTeamScoped = Boolean(teamIdFromUrl)
   const effectiveTeamId = teamIdFromUrl ?? teamId
@@ -81,55 +89,62 @@ export function CreateIssueScreen() {
   if (!workspaceId || !currentWorkspace) return <div>Workspace not found.</div>
 
   const summary = getSummary(isTeamScoped, teamName, currentWorkspace.name)
+  const teamOptions = toTeamOptions(teamsList ?? [])
 
   return (
-    <div className={classes.root}>
-      <div className={classes.card}>
-        <div className={classes.cardHeader}>
-          <div className={classes.headerLeft}>
-            <span className={classes.teamBadge}>{getTeamBadge(teamName)}</span>
-            <span>&gt;</span>
-            <span className={classes.headerTitle}>New issue</span>
-          </div>
-          <button
-            type="button"
-            onClick={handleCancel}
-            className={classes.closeButton}
-            aria-label="Close"
-          >
-            x
-          </button>
+    <View gap={4} className="mx-auto w-full max-w-5xl px-4 py-6 md:px-6">
+      <Inline align="flex-start" justify="space-between" gap="200" fullWidth>
+        <div className="min-w-0 flex-1">
+          <PageHeader title="New issue" summary={summary} />
         </div>
+        <Button
+          variant="glass"
+          buttonType="icon"
+          onClick={handleCancel}
+          aria-label="Close"
+          className="shrink-0 rounded-none"
+        >
+          <X size={18} strokeWidth={2} aria-hidden />
+        </Button>
+      </Inline>
 
-        <form onSubmit={handleSubmit} className={classes.form}>
-          {!isTeamScoped && (
-            <div className={classes.teamSelectWrap}>
-              <Select
-                value={teamId}
-                onChange={setTeamId}
-                options={toTeamOptions(teamsList ?? [])}
-              />
-              <p className={classes.teamSelectHint}>
-                The team must have a project; the issue will be created under
-                that project.
-              </p>
-            </div>
-          )}
+      <Box border fullWidth className="rounded-none">
+        <form ref={formRef} onSubmit={handleSubmit} noValidate>
+          <Stack gap="400" padding="400">
+            {!isTeamScoped && (
+              <Stack gap="100" fullWidth>
+                <div className="w-full min-w-0">
+                  <Dropdown
+                    options={teamOptions}
+                    value={teamId}
+                    onChange={(v) => setTeamId(v)}
+                    placeholder="Select a team"
+                    size="medium"
+                    disabled={submitting}
+                  />
+                </div>
+                <Text variant="caption2" color="color.text.subtle">
+                  The team must have a project; the issue will be created under
+                  that project.
+                </Text>
+              </Stack>
+            )}
 
-          <div className={classes.stack}>
-            <Input
+            <TextInput
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key !== 'Enter') return
+                e.preventDefault()
+                if (!title.trim() || submitting) return
+                formRef.current?.requestSubmit()
+              }}
               placeholder="Issue title"
               disabled={submitting}
               autoFocus
-              className={classes.titleInput}
-            />
-
-            <Input
-              placeholder={summary}
-              disabled={submitting}
-              className={classes.summaryInput}
+              size="large"
+              fullWidth
+              aria-label="Issue title"
             />
 
             <div className={classes.chipsWrap}>
@@ -140,38 +155,47 @@ export function CreateIssueScreen() {
               ))}
             </div>
 
-            <div className={classes.editorWrap}>
-              <RichText
+            <Box
+              border
+              padding="200"
+              fullWidth
+              className="rounded-none min-w-0"
+            >
+              <MarkdownEditor
                 value={description}
                 onChange={setDescription}
                 placeholder="Write a description, acceptance criteria, or notes..."
-                disabled={submitting}
                 minHeight={220}
+                aria-label="Issue description"
               />
-            </div>
+            </Box>
 
-            {error && (
-              <div role="alert" className={classes.error}>
-                {error}
-              </div>
-            )}
-          </div>
+            {error ? (
+              <Banner variant="danger" size="small" message={error} />
+            ) : null}
 
-          <div className={classes.formFooter}>
-            <Button type="button" variant="secondary" onClick={handleCancel}>
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              variant="primary"
-              disabled={!title.trim() || submitting}
-              className={cn(!title.trim() ? 'opacity-70' : '')}
-            >
-              {submitting ? 'Creating…' : 'Create issue'}
-            </Button>
-          </div>
+            <Inline justify="flex-end" gap="100" fullWidth wrap>
+              <Button
+                variant="glass"
+                onClick={handleCancel}
+                disabled={submitting}
+                className="rounded-none"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                disabled={!title.trim() || submitting}
+                loading={submitting}
+                className="rounded-none"
+                onClick={() => formRef.current?.requestSubmit()}
+              >
+                Create issue
+              </Button>
+            </Inline>
+          </Stack>
         </form>
-      </div>
-    </div>
+      </Box>
+    </View>
   )
 }

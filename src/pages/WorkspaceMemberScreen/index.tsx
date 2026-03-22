@@ -1,10 +1,9 @@
 import { useNavigate, useParams } from 'react-router-dom'
-import { Container, Stack, Heading, Text } from '@design-system'
+import { Container, Flex, PageHeader, Stack, Text } from '@design-system'
 import { MembersTable } from '../../components'
 import { fetchMembers } from '../../api/client'
 import { useFetch } from '../../hooks/useFetch'
 import { UserPlus } from 'lucide-react'
-import { Header, HeaderContent } from './styles'
 import type { WorkspaceMemberScreenRouteParams } from './types'
 import { mapMembersToRows } from './utils'
 import { Button } from '@thedatablitz/button'
@@ -18,19 +17,18 @@ export function WorkspaceMemberScreen() {
 
   return (
     <Container maxWidth="1100px">
-      <Stack gap={0}>
-        <Header>
-          <HeaderContent>
-            <Heading level={1} as="h1">
-              Members
-            </Heading>
-            <Text size="md" muted>
-              Workspace members and invitations.
-            </Text>
-          </HeaderContent>
-          {workspaceId && (
+      <Stack gap={6}>
+        <Flex align="flex-start" justify="space-between" gap={4} wrap>
+          <div className="min-w-0 flex-1">
+            <PageHeader
+              title="Members"
+              summary="Workspace members and invitations."
+            />
+          </div>
+          {workspaceId ? (
             <Button
               variant="primary"
+              className="shrink-0"
               onClick={() =>
                 navigate(`/workspace/${workspaceId}/workspace/member/new`)
               }
@@ -38,14 +36,14 @@ export function WorkspaceMemberScreen() {
               <UserPlus size={16} />
               New Member
             </Button>
-          )}
-        </Header>
-        {error && (
+          ) : null}
+        </Flex>
+        {error ? (
           <Text size="sm" muted>
             Failed to load members: {error}
           </Text>
-        )}
-        {!loading && <MembersTable members={memberRows} />}
+        ) : null}
+        {!loading ? <MembersTable members={memberRows} /> : null}
       </Stack>
     </Container>
   )

@@ -1,9 +1,8 @@
 import { generateId } from './store.js'
-import type { Project, Team, Member, View, Role, Invitation } from './types.js'
+import type { Project, Team, Member, Role, Invitation } from './types.js'
 import * as dbProjects from '../db/projects.js'
 import * as dbTeams from '../db/teams.js'
 import * as dbMembers from '../db/members.js'
-import * as dbViews from '../db/views.js'
 import * as dbRoles from '../db/roles.js'
 import * as dbInvitations from '../db/invitations.js'
 import { insertTeam } from '../db/teams.js'
@@ -18,10 +17,6 @@ export async function getTeams(): Promise<Team[]> {
 
 export async function getMembers(): Promise<Member[]> {
   return dbMembers.getMembers()
-}
-
-export async function getViews(): Promise<View[]> {
-  return dbViews.getViewsWithoutTeamId()
 }
 
 export type ProjectListItemApi = {
@@ -111,30 +106,6 @@ export async function getMembersForApi(): Promise<MemberListItemApi[]> {
       teams: teamNames.length ? teamNames.join(', ') : '—',
     }
   })
-}
-
-export type ViewListItemApi = {
-  id: string
-  name: string
-  type: string
-  owner: { id: string; name: string }
-}
-
-export async function getViewsForApi(): Promise<ViewListItemApi[]> {
-  const views = await dbViews.getViewsWithoutTeamId()
-  return Promise.all(
-    views.map(async (v) => {
-      const owner = await dbMembers.getMemberById(v.ownerId)
-      return {
-        id: v.id,
-        name: v.name,
-        type: v.type,
-        owner: owner
-          ? { id: owner.id, name: owner.name }
-          : { id: v.ownerId, name: v.ownerId },
-      }
-    })
-  )
 }
 
 export async function getRoles(): Promise<Role[]> {

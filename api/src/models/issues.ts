@@ -58,10 +58,6 @@ export async function getProjectIssues(
   return db.getIssuesByProjectId(projectId, filter)
 }
 
-export async function getMyIssues(assigneeId: string): Promise<Issue[]> {
-  return db.getIssuesByAssigneeId(assigneeId)
-}
-
 export async function getSubIssues(parentIssueId: string): Promise<Issue[]> {
   return db.getIssuesByParentIssueId(parentIssueId)
 }
@@ -451,37 +447,4 @@ export async function updateIssueForApi(
   const issue = await updateIssue(issueId, updatePayload)
   if (!issue) return null
   return getIssueDetailForApi(issue.id)
-}
-
-export async function getMyIssuesForApi(userId: string): Promise<
-  Array<{
-    id: string
-    title: string
-    assignee: { id: string; name: string } | null
-    date: string
-    status: string
-    team: { id: string; name: string } | null
-    project: { id: string; name: string } | null
-  }>
-> {
-  const issues = await getMyIssues(userId)
-  return Promise.all(
-    issues.map(async (i) => {
-      const [team, project] = await Promise.all([
-        i.teamId ? getTeamById(i.teamId) : null,
-        i.projectId ? getProjectById(i.projectId) : null,
-      ])
-      return {
-        id: i.id,
-        title: i.title,
-        assignee: i.assigneeName
-          ? { id: i.assigneeId ?? '', name: i.assigneeName }
-          : null,
-        date: i.date,
-        status: i.status,
-        team: team ? { id: team.id, name: team.name } : null,
-        project: project ? { id: project.id, name: project.name } : null,
-      }
-    })
-  )
 }

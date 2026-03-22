@@ -4,7 +4,6 @@ import {
   Mail,
   FileText,
   Folder,
-  Eye,
   ArrowLeft,
   KeyRound,
   User,
@@ -15,7 +14,6 @@ import {
   HelpCircle,
   Bell,
   LogOut,
-  GitBranch,
 } from 'lucide-react'
 
 import { Avatar } from '@thedatablitz/avatar'
@@ -25,6 +23,7 @@ import { Inline } from '@thedatablitz/inline'
 import { Stack } from '@thedatablitz/stack'
 import { Text } from '@thedatablitz/text'
 import { Tree, type TreeNode } from '@thedatablitz/tree'
+import { getToken } from '@thedatablitz/tokens'
 import { cn } from '@design-system-v2/lib/utils'
 
 import { navClasses } from './styles/classes'
@@ -35,6 +34,12 @@ import {
   initExpandedTeams,
   isTeamIssues,
 } from './utils/routeHelpers'
+
+/** Glass trigger with danger semantic color (no separate `danger+glass` variant in Button). */
+const logoutDangerGlassStyle = {
+  color: getToken('color.icon.danger'),
+  borderColor: getToken('color.border.danger'),
+} as const
 
 function NavItem({ to, active, children, collapsed, shortcut }: NavItemProps) {
   const linkClass = cn(
@@ -97,9 +102,7 @@ export function SidebarNav({
   const navPaths = useMemo(() => {
     const paths: Record<string, string> = {
       'nav-inbox': `${base}/inbox`,
-      'nav-my-issues': `${base}/my-issues`,
       'ws-projects': `${base}/workspace/projects`,
-      'ws-views': `${base}/workspace/views`,
       'ws-members': `${base}/workspace/member`,
       'ws-teams': `${base}/workspace/teams`,
       'ws-roles': `${base}/workspace/roles`,
@@ -107,8 +110,6 @@ export function SidebarNav({
     for (const t of teams) {
       paths[`team:${t.id}:i`] = `${base}/team/${t.id}/issues/active`
       paths[`team:${t.id}:p`] = `${base}/team/${t.id}/projects`
-      paths[`team:${t.id}:v`] = `${base}/team/${t.id}/views`
-      paths[`team:${t.id}:l`] = `${base}/team/${t.id}/logs`
     }
     return paths
   }, [base, teams])
@@ -122,17 +123,6 @@ export function SidebarNav({
             <Folder size={15} className="shrink-0" />
             <Text as="span" variant="body3" truncate className="min-w-0 flex-1">
               Projects
-            </Text>
-          </Inline>
-        ),
-      },
-      {
-        id: 'ws-views',
-        label: (
-          <Inline align="center" gap="100" fullWidth className="min-w-0">
-            <Eye size={15} className="shrink-0" />
-            <Text as="span" variant="body3" truncate className="min-w-0 flex-1">
-              Views
             </Text>
           </Inline>
         ),
@@ -220,38 +210,6 @@ export function SidebarNav({
             </Inline>
           ),
         },
-        {
-          id: `team:${team.id}:v`,
-          label: (
-            <Inline align="center" gap="100" fullWidth className="min-w-0">
-              <Eye size={13} className="shrink-0" />
-              <Text
-                as="span"
-                variant="body3"
-                truncate
-                className="min-w-0 flex-1"
-              >
-                Views
-              </Text>
-            </Inline>
-          ),
-        },
-        {
-          id: `team:${team.id}:l`,
-          label: (
-            <Inline align="center" gap="100" fullWidth className="min-w-0">
-              <GitBranch size={13} className="shrink-0" />
-              <Text
-                as="span"
-                variant="body3"
-                truncate
-                className="min-w-0 flex-1"
-              >
-                Logs
-              </Text>
-            </Inline>
-          ),
-        },
       ],
     }))
 
@@ -271,25 +229,6 @@ export function SidebarNav({
               className="shrink-0 rounded-md bg-slate-200 px-1.5 py-0.5"
             >
               ⌘2
-            </Text>
-          </Inline>
-        ),
-      },
-      {
-        id: 'nav-my-issues',
-        label: (
-          <Inline align="center" gap="100" fullWidth className="min-w-0">
-            <FileText size={15} className="shrink-0" />
-            <Text as="span" variant="body3" truncate className="min-w-0 flex-1">
-              My issues
-            </Text>
-            <Text
-              as="span"
-              variant="caption2"
-              color="color.text.subtle"
-              className="shrink-0 rounded-md bg-slate-200 px-1.5 py-0.5"
-            >
-              ⌘3
             </Text>
           </Inline>
         ),
@@ -444,22 +383,6 @@ export function SidebarNav({
           <span>Inbox</span>
         </Link>
         <Link
-          to={`${base}/my-issues`}
-          className={cn(
-            navClasses.navItemBase,
-            navClasses.navItemCollapsed,
-            location.pathname === `${base}/my-issues`
-              ? navClasses.navItemActive
-              : navClasses.navItemInactive
-          )}
-          aria-current={
-            location.pathname === `${base}/my-issues` ? 'page' : undefined
-          }
-        >
-          <FileText size={15} className="shrink-0" />
-          <span>My issues</span>
-        </Link>
-        <Link
           to={`${base}/workspace/projects`}
           className={cn(
             navClasses.navItemBase,
@@ -476,22 +399,6 @@ export function SidebarNav({
         >
           <Folder size={15} className="shrink-0" />
           <span>Projects</span>
-        </Link>
-        <Link
-          to={`${base}/workspace/views`}
-          className={cn(
-            navClasses.navItemBase,
-            navClasses.navItemCollapsed,
-            location.pathname === `${base}/workspace/views`
-              ? navClasses.navItemActive
-              : navClasses.navItemInactive
-          )}
-          aria-current={
-            location.pathname === `${base}/workspace/views` ? 'page' : undefined
-          }
-        >
-          <Eye size={15} className="shrink-0" />
-          <span>Views</span>
         </Link>
         {teams.map((team) => (
           <Link
@@ -578,56 +485,61 @@ export function SidebarNav({
   )
 }
 
-function footerLinkClass(collapsed: boolean) {
-  return collapsed
-    ? 'flex items-center justify-center px-1 py-2 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors'
-    : 'flex items-center gap-2 px-2 py-1.5 rounded-md text-[13px] text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors'
-}
-
 export function SidebarFooter({
   workspaceId,
   collapsed = false,
   onLogout,
 }: SidebarFooterProps) {
+  const navigate = useNavigate()
   const location = useLocation()
   const isProfileRoute = location.pathname.startsWith(
     `/workspace/${workspaceId}/profile`
   )
-  const linkCls = footerLinkClass(collapsed)
 
   if (collapsed) {
     return (
       <Stack gap="050" padding="050" className="px-1 pb-2">
         {!isProfileRoute ? (
-          <Link
-            to={`/workspace/${workspaceId}/profile`}
-            className={linkCls}
+          <Button
+            variant="glass"
+            buttonType="icon"
+            size="small"
+            icon={<Settings size={15} />}
+            onClick={() => navigate(`/workspace/${workspaceId}/profile`)}
             aria-label="Settings"
-          >
-            <Settings size={15} className="shrink-0" />
-          </Link>
-        ) : null}
-        <Link to="/help" className={linkCls} aria-label="Help center">
-          <HelpCircle size={15} className="shrink-0" />
-        </Link>
-        {!isProfileRoute ? (
-          <Link
-            to="/notifications"
-            className={linkCls}
-            aria-label="Notifications"
-          >
-            <Bell size={15} className="shrink-0" />
-          </Link>
+            className="w-full"
+          />
         ) : null}
         <Button
-          buttonType="link"
+          variant="glass"
+          buttonType="icon"
           size="small"
+          icon={<HelpCircle size={15} />}
+          onClick={() => navigate('/help')}
+          aria-label="Help center"
+          className="w-full"
+        />
+        {!isProfileRoute ? (
+          <Button
+            variant="glass"
+            buttonType="icon"
+            size="small"
+            icon={<Bell size={15} />}
+            onClick={() => navigate('/notifications')}
+            aria-label="Notifications"
+            className="w-full"
+          />
+        ) : null}
+        <Button
+          variant="glass"
+          buttonType="icon"
+          size="small"
+          icon={<LogOut size={15} />}
           onClick={onLogout}
-          className={cn(linkCls, 'h-auto w-full font-inherit')}
           aria-label="Log out"
-        >
-          <LogOut size={15} className="shrink-0" />
-        </Button>
+          className="w-full"
+          style={logoutDangerGlassStyle}
+        />
       </Stack>
     )
   }
@@ -635,43 +547,59 @@ export function SidebarFooter({
   return (
     <Stack gap="050" className="px-2 pb-2">
       {!isProfileRoute ? (
-        <Link to={`/workspace/${workspaceId}/profile`} className={linkCls}>
+        <Button
+          variant="glass"
+          size="small"
+          onClick={() => navigate(`/workspace/${workspaceId}/profile`)}
+          className="w-full justify-start"
+        >
           <Inline align="center" gap="100">
-            <Settings size={15} className="shrink-0" />
+            <Settings size={15} className="shrink-0" aria-hidden />
             <Text as="span" variant="body3" color="color.text.DEFAULT">
               Settings
             </Text>
           </Inline>
-        </Link>
+        </Button>
       ) : null}
-      <Link to="/help" className={linkCls}>
+      <Button
+        variant="glass"
+        size="small"
+        onClick={() => navigate('/help')}
+        className="w-full justify-start"
+      >
         <Inline align="center" gap="100">
-          <HelpCircle size={15} className="shrink-0" />
+          <HelpCircle size={15} className="shrink-0" aria-hidden />
           <Text as="span" variant="body3" color="color.text.DEFAULT">
             Help center
           </Text>
         </Inline>
-      </Link>
+      </Button>
       {!isProfileRoute ? (
-        <Link to="/notifications" className={linkCls}>
+        <Button
+          variant="glass"
+          size="small"
+          onClick={() => navigate('/notifications')}
+          className="w-full justify-start"
+        >
           <Inline align="center" gap="100">
-            <Bell size={15} className="shrink-0" />
+            <Bell size={15} className="shrink-0" aria-hidden />
             <Text as="span" variant="body3" color="color.text.DEFAULT">
               Notifications
             </Text>
           </Inline>
-        </Link>
+        </Button>
       ) : null}
       <Button
-        buttonType="link"
+        variant="glass"
         size="small"
         onClick={onLogout}
-        className={cn(linkCls, 'h-auto w-full justify-start font-inherit')}
+        className="w-full justify-start"
+        style={logoutDangerGlassStyle}
         aria-label="Log out"
       >
         <Inline align="center" gap="100">
-          <LogOut size={15} className="shrink-0" />
-          <Text as="span" variant="body3" color="color.text.DEFAULT">
+          <LogOut size={15} className="shrink-0" aria-hidden />
+          <Text as="span" variant="body3" color="color.icon.danger">
             Log out
           </Text>
         </Inline>

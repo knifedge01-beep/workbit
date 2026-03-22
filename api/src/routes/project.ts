@@ -1,16 +1,24 @@
 import { Router } from 'express'
 import * as ctrl from '../controllers/issuesController.js'
 import * as decisionsCtrl from '../controllers/decisionsController.js'
-import * as docsCtrl from '../controllers/projectDocumentationController.js'
+import * as projectDocsCtrl from '../controllers/projectDocumentsController.js'
 
 export const projectRoutes = Router()
 
-projectRoutes.get('/:id', ctrl.getProjectIssues)
-projectRoutes.get('/:projectId/documentation', docsCtrl.getProjectDocumentation)
-projectRoutes.patch(
-  '/:projectId/documentation',
-  docsCtrl.patchProjectDocumentation
+projectRoutes.get('/:projectId/documents', projectDocsCtrl.listProjectDocuments)
+projectRoutes.post(
+  '/:projectId/documents',
+  projectDocsCtrl.createProjectDocument
 )
+projectRoutes.get(
+  '/:projectId/documents/:documentId',
+  projectDocsCtrl.getProjectDocument
+)
+projectRoutes.patch(
+  '/:projectId/documents/:documentId',
+  projectDocsCtrl.patchProjectDocument
+)
+projectRoutes.get('/:id', ctrl.getProjectIssues)
 projectRoutes.get('/:projectId/decisions', decisionsCtrl.listProjectDecisions)
 projectRoutes.post('/:projectId/decisions', decisionsCtrl.createProjectDecision)
 projectRoutes.patch(

@@ -8,13 +8,13 @@ import type {
   Project,
   Team,
   Member,
-  View,
   Role,
   Invitation,
   StatusUpdate,
   StatusUpdateComment,
   ProjectProperties,
-  ProjectDocumentation,
+  ProjectDocument,
+  ProjectDocumentSummary,
   Milestone,
   ActivityItem,
   Issue,
@@ -70,16 +70,6 @@ export function rowToMember(r: DbRow): Member {
     provisioned: (r.provisioned as boolean) ?? false,
     uid: authId,
     userAuthId: authId,
-  }
-}
-
-export function rowToView(r: DbRow): View {
-  return {
-    id: r.id as string,
-    name: r.name as string,
-    type: r.type as string,
-    ownerId: r.owner_id as string,
-    teamId: r.team_id as string | undefined,
   }
 }
 
@@ -141,10 +131,23 @@ export function rowToProjectProperties(r: DbRow): ProjectProperties {
   }
 }
 
-export function rowToProjectDocumentation(r: DbRow): ProjectDocumentation {
+export function rowToProjectDocument(r: DbRow): ProjectDocument {
   return {
+    id: r.id as string,
     projectId: r.project_id as string,
+    title: (r.title as string) ?? '',
     content: (r.content as string) ?? '',
+    createdAt: r.created_at as string,
+    updatedAt: r.updated_at as string,
+    updatedBy: (r.updated_by as string | null | undefined) ?? undefined,
+  }
+}
+
+export function rowToProjectDocumentSummary(r: DbRow): ProjectDocumentSummary {
+  return {
+    id: r.id as string,
+    projectId: r.project_id as string,
+    title: (r.title as string) ?? '',
     updatedAt: r.updated_at as string,
     updatedBy: (r.updated_by as string | null | undefined) ?? undefined,
   }
@@ -285,16 +288,6 @@ function memberToRow(m: Member): Record<string, unknown> {
   }
 }
 
-function viewToRow(v: View): Record<string, unknown> {
-  return {
-    id: v.id,
-    name: v.name,
-    type: v.type,
-    owner_id: v.ownerId,
-    team_id: v.teamId ?? null,
-  }
-}
-
 function roleToRow(r: Role): Record<string, unknown> {
   return {
     id: r.id,
@@ -359,17 +352,6 @@ function projectPropertiesToRow(
   }
 }
 
-export function projectDocumentationToRow(
-  p: ProjectDocumentation
-): Record<string, unknown> {
-  return {
-    project_id: p.projectId,
-    content: p.content,
-    updated_at: p.updatedAt,
-    updated_by: p.updatedBy ?? null,
-  }
-}
-
 function milestoneToRow(m: Milestone): Record<string, unknown> {
   return {
     id: m.id,
@@ -426,7 +408,6 @@ export function storeToRows(store: Store) {
     projects: store.projects.map((p) => projectToRow(p)),
     teams: store.teams.map((t) => teamToRow(t)),
     members: store.members.map((m) => memberToRow(m)),
-    views: store.views.map((v) => viewToRow(v)),
     roles: store.roles.map((r) => roleToRow(r)),
     invitations: store.invitations.map((i) => invitationToRow(i)),
     status_updates: store.statusUpdates.map((u) => statusUpdateToRow(u)),

@@ -12,10 +12,8 @@ export {
   getAccessToken,
 } from './auth'
 export { InboxScreen } from './InboxScreen'
-export { MyIssuesScreen } from './MyIssuesScreen'
 export { IssueDetailScreen } from './IssueDetailScreen'
 export { WorkspaceProjectsScreen } from './WorkspaceProjectsScreen'
-export { WorkspaceViewsScreen } from './WorkspaceViewsScreen'
 export { WorkspaceMemberScreen } from './WorkspaceMemberScreen'
 export { WorkspaceTeamsScreen } from './WorkspaceTeamsScreen'
 export { WorkspaceRolesScreen } from './WorkspaceRolesScreen'
@@ -29,8 +27,8 @@ export {
   TeamProjectsScreenWrapper,
   TeamProjectDetailScreenWrapper,
   TeamProjectDocumentationScreenWrapper,
-  TeamViewsScreenWrapper,
-  TeamLogsScreenWrapper,
+  TeamProjectNewDocumentScreenWrapper,
+  TeamProjectEditDocumentScreenWrapper,
   IssueDetailScreenWrapper,
 } from './TeamRouteWrappers'
 export { ProfilePage } from './ProfilePage'

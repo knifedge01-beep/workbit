@@ -23,7 +23,5 @@ teamsRoutes.patch(
   teamsCtrl.patchMilestone
 )
 teamsRoutes.post('/:teamId/project/summary', teamsCtrl.postProjectSummary)
-teamsRoutes.get('/:teamId/views', teamsCtrl.getTeamViews)
-teamsRoutes.get('/:teamId/logs', teamsCtrl.getTeamLogs)
 teamsRoutes.get('/:teamId/issues', issuesCtrl.getTeamIssues)
 teamsRoutes.post('/:teamId/issues', issuesCtrl.createIssue)

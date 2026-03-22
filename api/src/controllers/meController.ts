@@ -1,6 +1,5 @@
 import type { Request, Response } from 'express'
 import * as meModel from '../models/me.js'
-import * as issuesModel from '../models/issues.js'
 import { getUserId } from '../middleware/auth.js'
 import { logApiError } from '../utils/log.js'
 
@@ -31,20 +30,6 @@ export async function getTeams(_req: Request, res: Response) {
     res.json(teams.map((t) => ({ id: t.id, name: t.name })))
   } catch (e) {
     logApiError(e, 'me.getTeams')
-    res.status(500).json({ error: (e as Error).message })
-  }
-}
-
-export async function getMyIssues(req: Request, res: Response) {
-  try {
-    const userId = getUserId(
-      req,
-      (req.headers['x-user-id'] as string) ?? DEFAULT_USER_ID
-    )
-    const list = await issuesModel.getMyIssuesForApi(userId)
-    res.json(list)
-  } catch (e) {
-    logApiError(e, 'me.getMyIssues')
     res.status(500).json({ error: (e as Error).message })
   }
 }

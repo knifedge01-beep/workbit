@@ -49,5 +49,5 @@ export function getCancelPath(
     return `/workspace/${workspaceId}/team/${teamIdFromUrl}/issues/active`
   }
 
-  return `/workspace/${workspaceId}/my-issues`
+  return `/workspace/${workspaceId}/inbox`
 }

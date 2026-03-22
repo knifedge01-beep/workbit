@@ -188,16 +188,6 @@ export async function provisionMember(req: Request, res: Response) {
   }
 }
 
-export async function getViews(_req: Request, res: Response) {
-  try {
-    const list = await workspaceModel.getViewsForApi()
-    res.json(list)
-  } catch (e) {
-    logApiError(e, 'workspace.getViews')
-    sendError(res, e)
-  }
-}
-
 export async function getRoles(_req: Request, res: Response) {
   try {
     const roles = await workspaceModel.getRoles()

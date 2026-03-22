@@ -10,7 +10,6 @@ import { Tabs } from '@thedatablitz/tabs'
 import { Text } from '@thedatablitz/text'
 import { Avatar } from '@thedatablitz/avatar'
 import { TextInput as Input } from '@thedatablitz/text-input'
-import { TextEditor } from '@thedatablitz/text-editor'
 import {
   StatusUpdateComposer,
   MilestonesSection,
@@ -40,10 +39,12 @@ import {
   patchProject,
   generateProjectSummary,
   updateIssue as apiUpdateIssue,
-  fetchProjectDocumentation,
-  updateProjectDocumentation,
+  fetchProjectDocuments,
 } from '../../api/client'
-import type { ApiProjectProperties } from '../../api/client'
+import type {
+  ApiProjectProperties,
+  ApiProjectDocumentSummary,
+} from '../../api/client'
 import { useFetch } from '../../hooks/useFetch'
 import {
   TableWrap,
@@ -72,6 +73,7 @@ export function TeamProjectDetailScreen({
   projectName,
   teamId,
   initialTab = 'overview',
+  documentationMode,
 }: TeamProjectDetailScreenProps) {
   type ProjectDetailTab =
     | 'overview'
@@ -96,15 +98,9 @@ export function TeamProjectDetailScreen({
   >({})
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<ProjectDetailTab>(initialTab)
-  const [docContent, setDocContent] = useState('')
-  const [savedDocContent, setSavedDocContent] = useState('')
-  const [docLoading, setDocLoading] = useState(false)
-  const [docSaving, setDocSaving] = useState(false)
-  const [docError, setDocError] = useState<string | null>(null)
-  const [docLastUpdatedAt, setDocLastUpdatedAt] = useState<string | null>(null)
-  const [docLastUpdatedBy, setDocLastUpdatedBy] = useState<string | null>(null)
-  /** Bump to remount TextEditor after load so `defaultEditorState` applies cleanly. */
-  const [docEditorMountKey, setDocEditorMountKey] = useState(0)
+  const [documents, setDocuments] = useState<ApiProjectDocumentSummary[]>([])
+  const [docsLoading, setDocsLoading] = useState(false)
+  const [docsError, setDocsError] = useState<string | null>(null)
   const [showMilestoneModal, setShowMilestoneModal] = useState(false)
   const [milestoneName, setMilestoneName] = useState('')
   const [milestoneDate, setMilestoneDate] = useState('')
@@ -224,47 +220,17 @@ export function TeamProjectDetailScreen({
   }, [teamId])
 
   useEffect(() => {
-    if (!projectId) return
-    setDocLoading(true)
-    setDocError(null)
-    fetchProjectDocumentation(projectId)
-      .then((doc) => {
-        const content = doc.content ?? ''
-        setDocContent(content)
-        setSavedDocContent(content)
-        setDocLastUpdatedAt(doc.updatedAt)
-        setDocLastUpdatedBy(doc.updatedBy)
-      })
+    if (!projectId || documentationMode !== 'list') return
+    setDocsLoading(true)
+    setDocsError(null)
+    fetchProjectDocuments(projectId)
+      .then(setDocuments)
       .catch((e) => {
-        logError(e, 'TeamProjectDetail.fetchProjectDocumentation')
-        setDocError((e as Error).message)
+        logError(e, 'TeamProjectDetail.fetchProjectDocuments')
+        setDocsError((e as Error).message)
       })
-      .finally(() => {
-        setDocLoading(false)
-        setDocEditorMountKey((k) => k + 1)
-      })
-  }, [projectId])
-
-  const hasDocChanges = docContent !== savedDocContent
-
-  const handleSaveDocumentation = () => {
-    if (!projectId || docSaving || !hasDocChanges) return
-    setDocSaving(true)
-    setDocError(null)
-    updateProjectDocumentation(projectId, docContent)
-      .then((doc) => {
-        const content = doc.content ?? ''
-        setDocContent(content)
-        setSavedDocContent(content)
-        setDocLastUpdatedAt(doc.updatedAt)
-        setDocLastUpdatedBy(doc.updatedBy)
-      })
-      .catch((e) => {
-        logError(e, 'TeamProjectDetail.updateProjectDocumentation')
-        setDocError((e as Error).message)
-      })
-      .finally(() => setDocSaving(false))
-  }
+      .finally(() => setDocsLoading(false))
+  }, [projectId, documentationMode])
 
   const handlePostUpdate = (content: string, status: ProjectStatus) => {
     if (!teamId) return
@@ -474,7 +440,13 @@ export function TeamProjectDetailScreen({
                       icon={<Plus size={16} />}
                       variant="warning"
                       size="small"
-                      onClick={noop}
+                      onClick={() => {
+                        if (workspaceId && teamId && projectId) {
+                          navigate(
+                            `/workspace/${workspaceId}/team/${teamId}/projects/${projectId}/documentation/new`
+                          )
+                        }
+                      }}
                     >
                       Add document or link
                     </Button>
@@ -719,60 +691,69 @@ export function TeamProjectDetailScreen({
             </Box>
           )}
 
-          {activeTab === 'documentation' && (
+          {activeTab === 'documentation' && documentationMode === 'list' && (
             <Box border padding="400">
-              <Stack gap="200">
+              <Stack gap="300">
                 <Inline align="center" justify="space-between" fullWidth>
                   <Text variant="heading5">Project documentation</Text>
-                  <Button
-                    variant="primary"
-                    size="small"
-                    onClick={handleSaveDocumentation}
-                    disabled={docSaving || !hasDocChanges}
-                  >
-                    {docSaving ? 'Saving...' : 'Save'}
-                  </Button>
+                  {workspaceId && teamId && projectId ? (
+                    <Button
+                      variant="primary"
+                      size="small"
+                      icon={<Plus size={16} />}
+                      onClick={() =>
+                        navigate(
+                          `/workspace/${workspaceId}/team/${teamId}/projects/${projectId}/documentation/new`
+                        )
+                      }
+                    >
+                      Add document
+                    </Button>
+                  ) : null}
                 </Inline>
 
-                {docLastUpdatedAt ? (
-                  <Text variant="caption2" color="color.text.subtle">
-                    Updated {formatDateTime(docLastUpdatedAt)}
-                    {docLastUpdatedBy ? ` by ${docLastUpdatedBy}` : ''}
-                  </Text>
-                ) : (
-                  <Text variant="caption2" color="color.text.subtle">
-                    No documentation saved yet.
-                  </Text>
-                )}
-
-                {docError ? (
-                  <Stack gap="100">
-                    <Banner variant="danger" size="small" title={docError} />
-                    <Inline>
-                      <Button
-                        variant="glass"
-                        size="small"
-                        onClick={handleSaveDocumentation}
-                        disabled={docSaving || !hasDocChanges}
-                      >
-                        Retry
-                      </Button>
-                    </Inline>
-                  </Stack>
+                {docsError ? (
+                  <Banner variant="danger" size="small" title={docsError} />
                 ) : null}
 
-                {docLoading ? (
+                {docsLoading ? (
                   <Text variant="body3" color="color.text.subtle">
-                    Loading documentation...
+                    Loading documents...
                   </Text>
-                ) : (
-                  <div className="min-w-0 overflow-visible">
-                    <TextEditor
-                      key={`doc-editor-${docEditorMountKey}`}
-                      onChange={setDocContent}
-                      autoFocus={false}
-                    />
+                ) : documents.length === 0 ? (
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-8 text-center">
+                    <Text variant="body3" color="color.text.subtle">
+                      No documents yet. Add one to get started.
+                    </Text>
                   </div>
+                ) : (
+                  <TableWrap>
+                    <HeadRow>
+                      <span>Title</span>
+                      <span>Updated</span>
+                      <span>Updated by</span>
+                    </HeadRow>
+                    {documents.map((doc) => (
+                      <DataRow
+                        key={doc.id}
+                        onClick={() => {
+                          if (workspaceId && teamId && projectId) {
+                            navigate(
+                              `/workspace/${workspaceId}/team/${teamId}/projects/${projectId}/documentation/${doc.id}`
+                            )
+                          }
+                        }}
+                      >
+                        <NameCol>
+                          <IssueTitle>{doc.title || 'Untitled'}</IssueTitle>
+                        </NameCol>
+                        <MetaText>
+                          {doc.updatedAt ? formatDateTime(doc.updatedAt) : '—'}
+                        </MetaText>
+                        <MetaText>{doc.updatedBy ?? '—'}</MetaText>
+                      </DataRow>
+                    ))}
+                  </TableWrap>
                 )}
               </Stack>
             </Box>

@@ -50,7 +50,7 @@ export function InboxScreen() {
             <div style={{ display: 'flex', gap: 8 }}>
               <Button
                 variant="primary"
-                onClick={() => navigate(`${base}/my-issues`)}
+                onClick={() => navigate(`${base}/issues/new`)}
               >
                 <Plus size={16} />
                 Create Issue

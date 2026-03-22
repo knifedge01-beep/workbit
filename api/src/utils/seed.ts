@@ -106,43 +106,6 @@ export function getDummyStore(): Store {
         userAuthId: null,
       },
     ],
-    views: [
-      {
-        id: 'view-1',
-        name: 'Active issues',
-        type: 'List',
-        ownerId: '1',
-        teamId: undefined,
-      },
-      {
-        id: 'view-2',
-        name: 'My backlog',
-        type: 'Board',
-        ownerId: '1',
-        teamId: undefined,
-      },
-      {
-        id: 'view-3',
-        name: 'Product roadmap',
-        type: 'Roadmap',
-        ownerId: '1',
-        teamId: 'team-product',
-      },
-      {
-        id: 'view-4',
-        name: 'Design board',
-        type: 'Board',
-        ownerId: '2',
-        teamId: 'team-design',
-      },
-      {
-        id: 'view-5',
-        name: 'Platform sprint',
-        type: 'List',
-        ownerId: '3',
-        teamId: 'team-platform',
-      },
-    ],
     roles: [
       {
         id: 'role-workspace-admin',

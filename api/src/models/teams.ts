@@ -5,7 +5,6 @@ import type {
   StatusUpdateComment,
   ProjectProperties,
   Milestone,
-  View,
 } from './types.js'
 import * as dbTeams from '../db/teams.js'
 import * as dbStatusUpdates from '../db/statusUpdates.js'
@@ -13,7 +12,6 @@ import * as dbStatusUpdateComments from '../db/statusUpdateComments.js'
 import * as dbProjectProperties from '../db/projectProperties.js'
 import * as dbMilestones from '../db/milestones.js'
 import * as dbActivity from '../db/activity.js'
-import * as dbViews from '../db/views.js'
 import * as dbProjects from '../db/projects.js'
 
 export async function getTeamById(teamId: string): Promise<Team | null> {
@@ -174,21 +172,4 @@ export async function updateMilestone(
   if (!m) return null
   await dbMilestones.updateMilestone(milestoneId, patch)
   return { ...m, ...patch }
-}
-
-export async function getTeamViews(teamId: string): Promise<View[]> {
-  return dbViews.getViewsByTeamId(teamId)
-}
-
-export async function getTeamLogs(teamId: string, first = 50) {
-  const activity = await dbActivity.getActivityByTeamId(teamId, first)
-  return {
-    nodes: activity.map((a) => ({
-      id: a.id,
-      action: a.icon,
-      actor: { id: '1', name: a.message.split(' ')[0] ?? 'System' },
-      timestamp: a.date,
-      details: a.message,
-    })),
-  }
 }

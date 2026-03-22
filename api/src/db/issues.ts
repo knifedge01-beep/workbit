@@ -54,18 +54,6 @@ export async function getIssuesByProjectId(
   return list
 }
 
-export async function getIssuesByAssigneeId(
-  assigneeId: string
-): Promise<Issue[]> {
-  const { data, error } = await getClient()
-    .from('issues')
-    .select('*')
-    .eq('assignee_id', assigneeId)
-    .order('id')
-  if (error) throw error
-  return (data ?? []).map((r) => rowToIssue(r as DbRow))
-}
-
 export async function getIssuesByParentIssueId(
   parentIssueId: string
 ): Promise<Issue[]> {

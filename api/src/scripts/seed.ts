@@ -3,7 +3,7 @@
  *
  * - File store: writes one data.json.
  * - Supabase: writes to separate tables in dependency order (roles → members → teams
- *   → projects → views → invitations → project_properties → status_updates →
+ *   → projects → invitations → project_properties → status_updates →
  *   status_update_comments → milestones → activity → issues → notifications).
  *   Run api/scripts/create-separate-tables.sql in Supabase first if tables are missing.
  */

@@ -255,43 +255,6 @@ export async function patchMilestone(req: Request, res: Response) {
   }
 }
 
-export async function getTeamViews(req: Request, res: Response) {
-  try {
-    const { teamId } = req.params
-    const views = await teamsModel.getTeamViews(teamId)
-    const { getMemberById } = await import('../db/members.js')
-    const list = await Promise.all(
-      views.map(async (v) => {
-        const owner = await getMemberById(v.ownerId)
-        return {
-          id: v.id,
-          name: v.name,
-          type: v.type,
-          owner: owner
-            ? { id: owner.id, name: owner.name }
-            : { id: v.ownerId, name: v.ownerId },
-        }
-      })
-    )
-    res.json(list)
-  } catch (e) {
-    logApiError(e, 'teams.getTeamViews', { teamId: req.params.teamId })
-    res.status(500).json({ error: (e as Error).message })
-  }
-}
-
-export async function getTeamLogs(req: Request, res: Response) {
-  try {
-    const { teamId } = req.params
-    const first = req.query.first ? Number(req.query.first) : 50
-    const data = await teamsModel.getTeamLogs(teamId, first)
-    res.json(data)
-  } catch (e) {
-    logApiError(e, 'teams.getTeamLogs', { teamId: req.params.teamId })
-    res.status(500).json({ error: (e as Error).message })
-  }
-}
-
 const AI_AUTHOR_ID = 'ai'
 const AI_AUTHOR_NAME = 'AI'
 const AI_SUMMARY_PREFIX = '[ai-generated]'

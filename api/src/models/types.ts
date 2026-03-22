@@ -47,14 +47,6 @@ export interface Member {
   userAuthId?: string | null
 }
 
-export interface View {
-  id: string
-  name: string
-  type: string
-  ownerId: string
-  teamId?: string
-}
-
 export interface Role {
   id: string
   role: string
@@ -120,9 +112,21 @@ export interface ProjectProperties {
   labelIds: string[]
 }
 
-export interface ProjectDocumentation {
+export interface ProjectDocument {
+  id: string
   projectId: string
+  title: string
   content: string
+  createdAt: string
+  updatedAt: string
+  updatedBy?: string
+}
+
+/** List row without full body content. */
+export interface ProjectDocumentSummary {
+  id: string
+  projectId: string
+  title: string
   updatedAt: string
   updatedBy?: string
 }
@@ -201,7 +205,6 @@ export interface Store {
   projects: Project[]
   teams: Team[]
   members: Member[]
-  views: View[]
   roles: Role[]
   invitations: Invitation[]
   statusUpdates: StatusUpdate[]
@@ -219,7 +222,6 @@ export const EMPTY_STORE: Store = {
   projects: [],
   teams: [],
   members: [],
-  views: [],
   roles: [],
   invitations: [],
   statusUpdates: [],

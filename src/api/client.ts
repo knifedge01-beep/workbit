@@ -108,11 +108,17 @@ export interface ApiProjectProperties {
   [key: string]: unknown
 }
 
-export interface ApiProjectDocumentation {
+export interface ApiProjectDocumentSummary {
+  id: string
   projectId: string
-  content: string
+  title: string
   updatedAt: string | null
   updatedBy: string | null
+}
+
+export interface ApiProjectDocument extends ApiProjectDocumentSummary {
+  content: string
+  createdAt: string | null
 }
 
 export type ApiDecisionType = 'major' | 'minor'
@@ -283,24 +289,6 @@ export async function createTeam(body: {
     memberCount: number
     project: { id: string; name: string } | null
   }>
-}
-
-export async function fetchWorkspaceViews(): Promise<
-  {
-    id: string
-    name: string
-    type: string
-    owner?: { id: string; name: string }
-  }[]
-> {
-  return authFetch('/workspace/views') as Promise<
-    {
-      id: string
-      name: string
-      type: string
-      owner?: { id: string; name: string }
-    }[]
-  >
 }
 
 export async function fetchRoles(): Promise<
@@ -504,44 +492,6 @@ export async function generateProjectSummary(
   }
 }
 
-export async function fetchTeamViews(teamId: string): Promise<
-  {
-    id: string
-    name: string
-    type: string
-    owner?: { id: string; name: string }
-  }[]
-> {
-  return authFetch(`/teams/${teamId}/views`) as Promise<
-    {
-      id: string
-      name: string
-      type: string
-      owner?: { id: string; name: string }
-    }[]
-  >
-}
-
-export interface ApiTeamLog {
-  id: string
-  action: string
-  actor: { id: string; name: string }
-  timestamp: string
-  details: string
-}
-
-export interface ApiTeamLogsResponse {
-  nodes: ApiTeamLog[]
-}
-
-export async function fetchTeamLogs(
-  teamId: string,
-  first?: number
-): Promise<ApiTeamLogsResponse> {
-  const q = first != null ? `?first=${first}` : ''
-  return authFetch(`/teams/${teamId}/logs${q}`) as Promise<ApiTeamLogsResponse>
-}
-
 // --- Team issues ---
 
 export async function fetchTeamIssues(
@@ -667,22 +617,42 @@ export async function updateProjectDecision(
   }) as Promise<ApiDecision>
 }
 
-export async function fetchProjectDocumentation(
+export async function fetchProjectDocuments(
   projectId: string
-): Promise<ApiProjectDocumentation> {
-  return authFetch(
-    `/projects/${projectId}/documentation`
-  ) as Promise<ApiProjectDocumentation>
+): Promise<ApiProjectDocumentSummary[]> {
+  return authFetch(`/projects/${projectId}/documents`) as Promise<
+    ApiProjectDocumentSummary[]
+  >
 }
 
-export async function updateProjectDocumentation(
+export async function createProjectDocument(
   projectId: string,
-  content: string
-): Promise<ApiProjectDocumentation> {
-  return authFetch(`/projects/${projectId}/documentation`, {
+  body: { title: string; content: string }
+): Promise<ApiProjectDocument> {
+  return authFetch(`/projects/${projectId}/documents`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  }) as Promise<ApiProjectDocument>
+}
+
+export async function fetchProjectDocument(
+  projectId: string,
+  documentId: string
+): Promise<ApiProjectDocument> {
+  return authFetch(
+    `/projects/${projectId}/documents/${documentId}`
+  ) as Promise<ApiProjectDocument>
+}
+
+export async function updateProjectDocument(
+  projectId: string,
+  documentId: string,
+  body: { title?: string; content?: string }
+): Promise<ApiProjectDocument> {
+  return authFetch(`/projects/${projectId}/documents/${documentId}`, {
     method: 'PATCH',
-    body: JSON.stringify({ content }),
-  }) as Promise<ApiProjectDocumentation>
+    body: JSON.stringify(body),
+  }) as Promise<ApiProjectDocument>
 }
 
 export async function createIssue(
@@ -724,30 +694,6 @@ export async function createIssue(
 }
 
 // --- Me ---
-
-export async function fetchMyIssues(): Promise<
-  {
-    id: string
-    title: string
-    assignee: { id: string; name: string } | null
-    date: string
-    status: string
-    team: { id: string; name: string } | null
-    project: { id: string; name: string } | null
-  }[]
-> {
-  return authFetch('/me/issues') as Promise<
-    {
-      id: string
-      title: string
-      assignee: { id: string; name: string } | null
-      date: string
-      status: string
-      team: { id: string; name: string } | null
-      project: { id: string; name: string } | null
-    }[]
-  >
-}
 
 export async function fetchNotifications(): Promise<
   {

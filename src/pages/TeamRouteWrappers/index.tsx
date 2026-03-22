@@ -4,11 +4,11 @@ import { useWorkspace } from '../../contexts/WorkspaceContext'
 import { TeamIssuesScreen } from '../TeamIssuesScreen'
 import { TeamProjectsScreen } from '../TeamProjectsScreen'
 import { TeamProjectDetailScreen } from '../TeamProjectDetailScreen'
-import { TeamViewsScreen } from '../TeamViewsScreen'
-import { TeamLogsScreen } from '../TeamLogsScreen'
 import { IssueDetailScreen } from '../IssueDetailScreen'
+import { ProjectDocumentEditorScreen } from '../ProjectDocumentEditorScreen'
 import type {
   TeamIssueRouteParams,
+  TeamProjectDocumentRouteParams,
   TeamProjectRouteParams,
   TeamRouteParams,
 } from './types'
@@ -97,22 +97,41 @@ export function TeamProjectDocumentationScreenWrapper() {
       projectName={projectName}
       teamId={teamId ?? ''}
       initialTab="documentation"
+      documentationMode="list"
     />
   )
 }
 
-export function TeamViewsScreenWrapper() {
-  const { teamId } = useParams<TeamRouteParams>()
+export function TeamProjectNewDocumentScreenWrapper() {
+  const { teamId, projectId } = useParams<TeamProjectRouteParams>()
   useRedirectIfInvalidTeam()
-  const teamName = useTeamName(teamId)
-  return <TeamViewsScreen teamName={teamName} />
+  const { projects } = useWorkspace()
+  const projectName =
+    (teamId &&
+      projectId &&
+      projects.find(
+        (project) => project.team.id === teamId && project.id === projectId
+      )?.name) ??
+    projectId ??
+    'Project'
+
+  return <ProjectDocumentEditorScreen projectName={projectName} mode="new" />
 }
 
-export function TeamLogsScreenWrapper() {
-  const { teamId } = useParams<TeamRouteParams>()
+export function TeamProjectEditDocumentScreenWrapper() {
+  const { teamId, projectId } = useParams<TeamProjectDocumentRouteParams>()
   useRedirectIfInvalidTeam()
-  const teamName = useTeamName(teamId)
-  return <TeamLogsScreen teamName={teamName} />
+  const { projects } = useWorkspace()
+  const projectName =
+    (teamId &&
+      projectId &&
+      projects.find(
+        (project) => project.team.id === teamId && project.id === projectId
+      )?.name) ??
+    projectId ??
+    'Project'
+
+  return <ProjectDocumentEditorScreen projectName={projectName} mode="edit" />
 }
 
 export function IssueDetailScreenWrapper() {

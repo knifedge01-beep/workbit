@@ -4,8 +4,13 @@ export type TeamRouteParams = {
 }
 
 export type TeamProjectRouteParams = {
+  workspaceId: string
   teamId: string
   projectId: string
+}
+
+export type TeamProjectDocumentRouteParams = TeamProjectRouteParams & {
+  documentId: string
 }
 
 export type TeamIssueRouteParams = {

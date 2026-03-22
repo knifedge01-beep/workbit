@@ -1,7 +1,10 @@
 import { useNavigate, useParams } from 'react-router-dom'
 import { Plus } from 'lucide-react'
 
-import { Flex, PageHeader, Stack, Text } from '@design-system'
+import { Button } from '@thedatablitz/button'
+import { Inline } from '@thedatablitz/inline'
+import { Stack } from '@thedatablitz/stack'
+import { Text } from '@thedatablitz/text'
 
 import { ProjectsTable } from '../../components'
 import { fetchProjects } from '../../api/client'
@@ -14,7 +17,6 @@ import {
   resolveTeamId,
   toProjectRows,
 } from './utils/helpers'
-import { Button } from '@thedatablitz/button'
 
 export function WorkspaceProjectsScreen() {
   const navigate = useNavigate()
@@ -31,13 +33,17 @@ export function WorkspaceProjectsScreen() {
   }
 
   return (
-    <Stack gap={4}>
-      <Flex align="center" justify="space-between">
-        <PageHeader
-          title={workspaceProjectsText.title}
-          summary={workspaceProjectsText.summary}
-        />
-        {workspaceId && (
+    <Stack gap="300" fullWidth>
+      <Inline align="center" justify="space-between" fullWidth>
+        <Stack gap="050">
+          <Text as="h1" variant="heading4">
+            {workspaceProjectsText.title}
+          </Text>
+          <Text variant="body3" color="color.text.subtle">
+            {workspaceProjectsText.summary}
+          </Text>
+        </Stack>
+        {workspaceId ? (
           <Button
             variant="glass"
             onClick={() => navigate(getNewProjectPath(workspaceId))}
@@ -45,16 +51,16 @@ export function WorkspaceProjectsScreen() {
             <Plus size={16} />
             {workspaceProjectsText.newProject}
           </Button>
-        )}
-      </Flex>
-      {error && (
-        <Text size="sm" muted>
+        ) : null}
+      </Inline>
+      {error ? (
+        <Text variant="body3" color="color.text.subtle">
           Failed to load projects: {error}
         </Text>
-      )}
-      {!loading && (
+      ) : null}
+      {!loading ? (
         <ProjectsTable projects={projects} onRowClick={handleRowClick} />
-      )}
+      ) : null}
     </Stack>
   )
 }

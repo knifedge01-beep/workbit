@@ -5,9 +5,7 @@ import {
   LoginScreen,
   SignupScreen,
   InboxScreen,
-  MyIssuesScreen,
   WorkspaceProjectsScreen,
-  WorkspaceViewsScreen,
   WorkspaceMemberScreen,
   WorkspaceTeamsScreen,
   WorkspaceRolesScreen,
@@ -20,8 +18,8 @@ import {
   TeamProjectsScreenWrapper,
   TeamProjectDetailScreenWrapper,
   TeamProjectDocumentationScreenWrapper,
-  TeamViewsScreenWrapper,
-  TeamLogsScreenWrapper,
+  TeamProjectNewDocumentScreenWrapper,
+  TeamProjectEditDocumentScreenWrapper,
   IssueDetailScreenWrapper,
   ProfilePage,
 } from '../pages'
@@ -65,13 +63,11 @@ export function AppRoutes() {
       >
         <Route index element={<Navigate to="/workspaces" replace />} />
         <Route path="inbox" element={<InboxScreen />} />
-        <Route path="my-issues" element={<MyIssuesScreen />} />
         <Route path="profile" element={<ProfilePage />} />
         <Route
           path="workspace/projects"
           element={<WorkspaceProjectsScreen />}
         />
-        <Route path="workspace/views" element={<WorkspaceViewsScreen />} />
         <Route path="workspace/member" element={<WorkspaceMemberScreen />} />
         <Route path="workspace/member/new" element={<CreateMemberScreen />} />
         <Route path="workspace/teams" element={<WorkspaceTeamsScreen />} />
@@ -104,6 +100,14 @@ export function AppRoutes() {
           element={<TeamProjectDetailScreenWrapper />}
         />
         <Route
+          path="team/:teamId/projects/:projectId/documentation/new"
+          element={<TeamProjectNewDocumentScreenWrapper />}
+        />
+        <Route
+          path="team/:teamId/projects/:projectId/documentation/:documentId"
+          element={<TeamProjectEditDocumentScreenWrapper />}
+        />
+        <Route
           path="team/:teamId/projects/:projectId/documentation"
           element={<TeamProjectDocumentationScreenWrapper />}
         />
@@ -113,8 +117,6 @@ export function AppRoutes() {
           element={<CreateMemberScreen />}
         />
         <Route path="team/:teamId/teams/new" element={<CreateTeamScreen />} />
-        <Route path="team/:teamId/views" element={<TeamViewsScreenWrapper />} />
-        <Route path="team/:teamId/logs" element={<TeamLogsScreenWrapper />} />
       </Route>
     </Routes>
   )

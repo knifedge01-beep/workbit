@@ -62,7 +62,7 @@ export function CreateIssueScreen() {
         if (teamIdOptional) {
           navigate(getIssueDetailPath(workspaceId, teamIdOptional, issue.id))
         } else {
-          navigate(`/workspace/${workspaceId}/my-issues`)
+          navigate(`/workspace/${workspaceId}/inbox`)
         }
       }
     } catch (err) {

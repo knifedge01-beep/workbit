@@ -30,7 +30,6 @@ export async function writeStoreSupabase(store: Store): Promise<void> {
     { table: 'members', rows: rows.members, idColumn: 'id' as const },
     { table: 'teams', rows: rows.teams, idColumn: 'id' as const },
     { table: 'projects', rows: rows.projects, idColumn: 'id' as const },
-    { table: 'views', rows: rows.views, idColumn: 'id' as const },
     { table: 'invitations', rows: rows.invitations, idColumn: 'id' as const },
     {
       table: 'project_properties',

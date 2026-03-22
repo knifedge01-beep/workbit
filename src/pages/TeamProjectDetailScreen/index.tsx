@@ -1,11 +1,16 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import type { Row, Table as TanStackTable } from '@tanstack/react-table'
 import { Box } from '@thedatablitz/box'
 import { Badge } from '@thedatablitz/badge'
-
+import { Banner } from '@thedatablitz/banner'
+import { Breadcrumbs, BreadcrumbsItem } from '@thedatablitz/breadcrumb'
+import { Button } from '@thedatablitz/button'
+import { Card, CardContent, CardFooter } from '@thedatablitz/card'
 import { Inline } from '@thedatablitz/inline'
 import { Modal } from '@thedatablitz/modal'
 import { Stack } from '@thedatablitz/stack'
+import { Table, type ColumnDef } from '@thedatablitz/table'
 import { Tabs } from '@thedatablitz/tabs'
 import { Text } from '@thedatablitz/text'
 import { Avatar } from '@thedatablitz/avatar'
@@ -18,6 +23,8 @@ import {
   ProjectUpdateHighlightCard,
   UpdatesTree,
   DecisionTab,
+  PrioritySelector,
+  StatusSelector,
 } from '../../components'
 import type {
   StatusUpdateCardData,
@@ -30,6 +37,7 @@ import { noop } from '../../utils/noop'
 import { formatDateTime } from '../../utils/format'
 import { logError } from '../../utils/errorHandling'
 import {
+  fetchSubIssues,
   fetchTeamProject,
   fetchTeamProjectIssues,
   fetchStatusUpdateComments,
@@ -44,30 +52,41 @@ import {
 import type {
   ApiProjectProperties,
   ApiProjectDocumentSummary,
+  ApiSubIssue,
 } from '../../api/client'
 import { useFetch } from '../../hooks/useFetch'
-import {
-  TableWrap,
-  HeadRow,
-  DataRow,
-  NameCol,
-  IssueId,
-  IssueTitle,
-  MetaText,
-  PriorityInline,
-  StatusInline,
-} from './styles'
-import type { TeamProjectDetailScreenProps } from './types'
+import type {
+  ProjectDetailDocumentRow,
+  ProjectDetailIssueRow,
+  TeamProjectDetailScreenProps,
+} from './types'
 import {
   DEFAULT_STATUS,
   DEFAULT_PRIORITY,
   INLINE_PRIORITY_OPTIONS,
   apiUpdateToCard,
   appendChildNode,
+  buildProjectIssueTreeData,
 } from './utils/helpers'
 import { Plus } from 'lucide-react'
-import { Banner } from '@thedatablitz/banner'
-import { Button } from '@thedatablitz/button'
+
+function walkExpandedProjectIssueParents(
+  table: TanStackTable<ProjectDetailIssueRow>,
+  visit: (issueId: string) => void
+) {
+  const rec = (rows: Row<ProjectDetailIssueRow>[]) => {
+    for (const row of rows) {
+      const o = row.original
+      if (!o.isSubtaskRow && !o.__placeholder && row.getIsExpanded()) {
+        visit(o.id)
+      }
+      if (row.subRows?.length) {
+        rec(row.subRows)
+      }
+    }
+  }
+  rec(table.getRowModel().rows)
+}
 
 export function TeamProjectDetailScreen({
   projectName,
@@ -118,15 +137,109 @@ export function TeamProjectDetailScreen({
         : Promise.resolve([]),
     [teamId, projectId]
   )
-  const issues = (projectIssues ?? []).map((issue) => ({
-    ...issue,
-    status: issueOverrides[issue.id]?.status ?? issue.status ?? DEFAULT_STATUS,
-    priority: issueOverrides[issue.id]?.priority ?? DEFAULT_PRIORITY,
-    dateLabel: formatDateTime(issue.date),
-    assigneeInitials: issue.assignee?.name
-      ? issue.assignee.name.slice(0, 2).toUpperCase()
-      : '',
-  }))
+  const allProjectIssues: ProjectDetailIssueRow[] = useMemo(
+    () =>
+      (projectIssues ?? []).map((issue) => ({
+        ...issue,
+        status:
+          issueOverrides[issue.id]?.status ?? issue.status ?? DEFAULT_STATUS,
+        priority: issueOverrides[issue.id]?.priority ?? DEFAULT_PRIORITY,
+        dateLabel: formatDateTime(issue.date),
+        assigneeInitials: issue.assignee?.name
+          ? issue.assignee.name.slice(0, 2).toUpperCase()
+          : '',
+        subIssueCount: issue.subIssueCount ?? 0,
+        depth: 0,
+        isSubtaskRow: false,
+      })),
+    [projectIssues, issueOverrides]
+  )
+
+  const rootProjectIssues = useMemo(
+    () => allProjectIssues.filter((r) => !r.parentIssueId),
+    [allProjectIssues]
+  )
+
+  const [subtasksRawByParent, setSubtasksRawByParent] = useState<
+    Record<string, ApiSubIssue[]>
+  >({})
+  const [subtasksLoadingByParent, setSubtasksLoadingByParent] = useState<
+    Record<string, boolean>
+  >({})
+  const [subtasksErrorByParent, setSubtasksErrorByParent] = useState<
+    Record<string, string | null>
+  >({})
+
+  const issuesTableRef = useRef<TanStackTable<ProjectDetailIssueRow> | null>(
+    null
+  )
+  const issuesExpandedJsonRef = useRef('')
+  const [issuesExpandPulse, setIssuesExpandPulse] = useState(0)
+
+  useEffect(() => {
+    setSubtasksRawByParent({})
+    setSubtasksLoadingByParent({})
+    setSubtasksErrorByParent({})
+  }, [projectId])
+
+  const issueTreeData = useMemo(
+    () =>
+      buildProjectIssueTreeData(
+        rootProjectIssues,
+        subtasksRawByParent,
+        issueOverrides
+      ),
+    [rootProjectIssues, subtasksRawByParent, issueOverrides]
+  )
+
+  const subtasksRawRef = useRef(subtasksRawByParent)
+  const subtasksLoadingRef = useRef(subtasksLoadingByParent)
+  subtasksRawRef.current = subtasksRawByParent
+  subtasksLoadingRef.current = subtasksLoadingByParent
+
+  const requestProjectSubtasks = useCallback((parentId: string) => {
+    if (subtasksRawRef.current[parentId] !== undefined) return
+    if (subtasksLoadingRef.current[parentId]) return
+    setSubtasksLoadingByParent((l) => ({ ...l, [parentId]: true }))
+    setSubtasksErrorByParent((e) => ({ ...e, [parentId]: null }))
+    fetchSubIssues(parentId)
+      .then((list) => {
+        setSubtasksRawByParent((s) => ({ ...s, [parentId]: list }))
+      })
+      .catch((err) => {
+        logError(err, 'TeamProjectDetail.fetchSubIssues')
+        setSubtasksErrorByParent((e) => ({
+          ...e,
+          [parentId]:
+            err instanceof Error ? err.message : 'Failed to load subtasks',
+        }))
+        setSubtasksRawByParent((s) => ({ ...s, [parentId]: [] }))
+      })
+      .finally(() => {
+        setSubtasksLoadingByParent((l) => ({ ...l, [parentId]: false }))
+      })
+  }, [])
+
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      const t = issuesTableRef.current
+      if (!t) return
+      const next = JSON.stringify(t.getState().expanded)
+      if (next !== issuesExpandedJsonRef.current) {
+        issuesExpandedJsonRef.current = next
+        setIssuesExpandPulse((p) => p + 1)
+      }
+    }, 120)
+    return () => window.clearInterval(id)
+  }, [])
+
+  useEffect(() => {
+    const t = issuesTableRef.current
+    if (!t) return
+    walkExpandedProjectIssueParents(t, (issueId) => {
+      requestProjectSubtasks(issueId)
+    })
+  }, [issuesExpandPulse, issueTreeData, requestProjectSubtasks])
 
   const tabs = [
     { id: 'overview', label: 'Overview' },
@@ -367,14 +480,17 @@ export function TeamProjectDetailScreen({
       .finally(() => setSummaryLoading(false))
   }
 
-  const updateIssuePriority = (issueId: string, priority: string) => {
-    setIssueOverrides((prev) => ({
-      ...prev,
-      [issueId]: { ...prev[issueId], priority },
-    }))
-  }
+  const updateIssuePriority = useCallback(
+    (issueId: string, priority: string) => {
+      setIssueOverrides((prev) => ({
+        ...prev,
+        [issueId]: { ...prev[issueId], priority },
+      }))
+    },
+    []
+  )
 
-  const updateIssueStatus = (issueId: string, status: string) => {
+  const updateIssueStatus = useCallback((issueId: string, status: string) => {
     setIssueOverrides((prev) => ({
       ...prev,
       [issueId]: { ...prev[issueId], status },
@@ -382,30 +498,214 @@ export function TeamProjectDetailScreen({
     void apiUpdateIssue(issueId, { status }).catch((e) =>
       logError(e, 'TeamProjectDetail.updateIssueStatus')
     )
-  }
+  }, [])
+
+  const documentRows: ProjectDetailDocumentRow[] = useMemo(
+    () =>
+      documents.map((doc) => ({
+        id: doc.id,
+        title: doc.title || 'Untitled',
+        updatedLabel: doc.updatedAt ? formatDateTime(doc.updatedAt) : '—',
+        updatedBy: doc.updatedBy ?? '—',
+      })),
+    [documents]
+  )
+
+  const issueColumns = useMemo<ColumnDef<ProjectDetailIssueRow, unknown>[]>(
+    () => [
+      {
+        id: 'name',
+        accessorKey: 'title',
+        header: 'Name',
+        cell: ({ row }) => {
+          const o = row.original
+          if (o.__placeholder && o.parentIssueId) {
+            const err = subtasksErrorByParent[o.parentIssueId]
+            const loading = subtasksLoadingByParent[o.parentIssueId]
+            return (
+              <Text
+                variant="body3"
+                color="color.text.subtle"
+                style={{ paddingLeft: row.depth * 16 }}
+              >
+                {err ?? (loading ? 'Loading…' : '—')}
+              </Text>
+            )
+          }
+          return (
+            <Button
+              buttonType="link"
+              style={{ paddingLeft: row.depth * 16 }}
+              onClick={() => {
+                if (workspaceId && teamId) {
+                  navigate(
+                    `/workspace/${workspaceId}/team/${teamId}/issue/${row.original.id}`
+                  )
+                }
+              }}
+            >
+              <Inline gap="100" align="center" fullWidth>
+                {row.original.parentIssueId ? (
+                  <Badge variant="default" size="small">
+                    Subtask · {row.original.id}
+                  </Badge>
+                ) : (
+                  <Text variant="caption1" color="color.text.subtle">
+                    {row.original.id}
+                  </Text>
+                )}
+                <Text variant="body2" truncate>
+                  {row.original.title}
+                </Text>
+              </Inline>
+            </Button>
+          )
+        },
+      },
+      {
+        id: 'priority',
+        accessorKey: 'priority',
+        header: 'Priority',
+        cell: ({ row }) =>
+          row.original.__placeholder ? null : (
+            <div onClick={(e) => e.stopPropagation()}>
+              <PrioritySelector
+                value={row.original.priority}
+                onChange={(priority) =>
+                  updateIssuePriority(row.original.id, priority)
+                }
+                options={INLINE_PRIORITY_OPTIONS}
+                placeholder="Not set"
+              />
+            </div>
+          ),
+      },
+      {
+        id: 'status',
+        accessorKey: 'status',
+        header: 'List',
+        cell: ({ row }) =>
+          row.original.__placeholder ? null : (
+            <div onClick={(e) => e.stopPropagation()}>
+              <StatusSelector
+                value={row.original.status}
+                onChange={(status) =>
+                  updateIssueStatus(row.original.id, status)
+                }
+                placeholder="Set status"
+              />
+            </div>
+          ),
+      },
+      {
+        id: 'date',
+        accessorKey: 'dateLabel',
+        header: 'Due date',
+        cell: ({ row }) =>
+          row.original.__placeholder ? null : (
+            <Text variant="body3" color="color.text.subtle">
+              {row.original.dateLabel}
+            </Text>
+          ),
+      },
+      {
+        id: 'assignee',
+        accessorKey: 'assignee',
+        header: 'Assignee',
+        cell: ({ row }) =>
+          row.original.__placeholder ? null : row.original.assignee ? (
+            <Avatar
+              name={row.original.assigneeInitials || row.original.assignee.name}
+              size="small"
+            />
+          ) : (
+            <Text variant="body3" color="color.text.subtle">
+              —
+            </Text>
+          ),
+      },
+    ],
+    [
+      workspaceId,
+      teamId,
+      navigate,
+      updateIssuePriority,
+      updateIssueStatus,
+      subtasksErrorByParent,
+      subtasksLoadingByParent,
+    ]
+  )
+
+  const documentColumns = useMemo<
+    ColumnDef<ProjectDetailDocumentRow, unknown>[]
+  >(
+    () => [
+      {
+        id: 'title',
+        accessorKey: 'title',
+        header: 'Title',
+        cell: ({ row }) => (
+          <Button
+            buttonType="link"
+            onClick={() => {
+              if (workspaceId && teamId && projectId) {
+                navigate(
+                  `/workspace/${workspaceId}/team/${teamId}/projects/${projectId}/documentation/${row.original.id}`
+                )
+              }
+            }}
+          >
+            <Text variant="body2" truncate>
+              {row.original.title}
+            </Text>
+          </Button>
+        ),
+      },
+      {
+        id: 'updated',
+        accessorKey: 'updatedLabel',
+        header: 'Updated',
+        cell: ({ row }) => (
+          <Text variant="body3" color="color.text.subtle">
+            {row.original.updatedLabel}
+          </Text>
+        ),
+      },
+      {
+        id: 'updatedBy',
+        accessorKey: 'updatedBy',
+        header: 'Updated by',
+        cell: ({ row }) => (
+          <Text variant="body3" color="color.text.subtle">
+            {row.original.updatedBy}
+          </Text>
+        ),
+      },
+    ],
+    [workspaceId, teamId, projectId, navigate]
+  )
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_330px]">
-        <Box border padding="400" className="rounded-xl bg-white">
+      <Inline align="flex-start" gap="400" fullWidth wrap>
+        <Box border padding="400" fullWidth>
           <Text variant="body3" color="color.text.subtle">
             Loading project...
           </Text>
         </Box>
-        <Box border padding="300" className="rounded-xl bg-white" />
-      </div>
+        <Box border padding="300" fullWidth />
+      </Inline>
     )
   }
 
   return (
     <>
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_330px]">
-        <section className="min-w-0">
-          <div className="mb-2 flex items-center gap-2 text-sm text-slate-500">
-            <span>Projects</span>
-            <span>&gt;</span>
-            <span className="font-medium text-slate-800">{projectName}</span>
-          </div>
+      <Inline align="flex-start" gap="400" fullWidth wrap>
+        <Stack fullWidth gap="200">
+          <Breadcrumbs separator=">">
+            <BreadcrumbsItem text="Projects" />
+            <BreadcrumbsItem text={projectName} current />
+          </Breadcrumbs>
 
           <Tabs
             items={tabs}
@@ -429,71 +729,87 @@ export function TeamProjectDetailScreen({
 
           {activeTab === 'overview' && (
             <Box border padding="400">
-              <div className="mb-4 flex items-start justify-between gap-4">
-                <Stack gap="200">
-                  <Inline align="center" gap="100">
-                    <Avatar name={projectName[0]?.toUpperCase() ?? 'P'} />
-                    <Text variant="heading4">{projectName}</Text>
-                  </Inline>
-                  <Inline fullWidth>
-                    <Button
-                      icon={<Plus size={16} />}
-                      variant="warning"
-                      size="small"
-                      onClick={() => {
-                        if (workspaceId && teamId && projectId) {
-                          navigate(
-                            `/workspace/${workspaceId}/team/${teamId}/projects/${projectId}/documentation/new`
-                          )
-                        }
-                      }}
-                    >
-                      Add document or link
-                    </Button>
-                    <Button
-                      variant="info"
-                      size="small"
-                      onClick={handleGenerateSummary}
-                      disabled={summaryLoading}
-                      icon={<Plus size={16} />}
-                    >
-                      {summaryLoading ? 'Generating…' : 'Generate Summary'}
-                    </Button>
-                  </Inline>
-                </Stack>
-              </div>
+              <Stack gap="400">
+                <Inline align="flex-start" justify="space-between" fullWidth>
+                  <Stack gap="200">
+                    <Inline align="center" gap="100">
+                      <Avatar name={projectName[0]?.toUpperCase() ?? 'P'} />
+                      <Text variant="heading4">{projectName}</Text>
+                    </Inline>
+                    <Inline fullWidth>
+                      <Button
+                        icon={<Plus size={16} />}
+                        variant="warning"
+                        size="small"
+                        onClick={() => {
+                          if (workspaceId && teamId && projectId) {
+                            navigate(
+                              `/workspace/${workspaceId}/team/${teamId}/projects/${projectId}/documentation/new`
+                            )
+                          }
+                        }}
+                      >
+                        Add document or link
+                      </Button>
+                      <Button
+                        variant="info"
+                        size="small"
+                        onClick={handleGenerateSummary}
+                        disabled={summaryLoading}
+                        icon={<Plus size={16} />}
+                      >
+                        {summaryLoading ? 'Generating…' : 'Generate Summary'}
+                      </Button>
+                    </Inline>
+                  </Stack>
+                </Inline>
 
-              {projectSummary !== null ? (
-                <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
-                  <p className="whitespace-pre-wrap text-sm leading-6 text-slate-700">
-                    {projectSummary}
-                  </p>
-                  <div className="mt-3 text-xs text-slate-500">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setProjectSummary(null)
-                        setSummaryError(null)
-                      }}
-                      className="underline"
-                    >
-                      Show latest updates
-                    </button>
-                    {' · '}
-                    <button
-                      type="button"
-                      onClick={handleGenerateSummary}
-                      disabled={summaryLoading}
-                      className="underline"
-                    >
-                      {summaryLoading ? 'Generating…' : 'Regenerate summary'}
-                    </button>
-                  </div>
-                </div>
-              ) : summaryError ? (
-                <div className="mb-4 rounded-lg border border-rose-200 bg-rose-50 p-3">
-                  <Text variant="body3">{summaryError}</Text>
-                  <div className="mt-2">
+                {projectSummary !== null ? (
+                  <Card fullWidth variant="default" size="small">
+                    <CardContent>
+                      <Text
+                        variant="body3"
+                        paragraphSpacing
+                        style={{ whiteSpace: 'pre-wrap' }}
+                      >
+                        {projectSummary}
+                      </Text>
+                    </CardContent>
+                    <CardFooter>
+                      <Inline gap="200" align="center" wrap>
+                        <Button
+                          buttonType="link"
+                          size="small"
+                          onClick={() => {
+                            setProjectSummary(null)
+                            setSummaryError(null)
+                          }}
+                        >
+                          Show latest updates
+                        </Button>
+                        <Text variant="caption2" color="color.text.subtle">
+                          ·
+                        </Text>
+                        <Button
+                          buttonType="link"
+                          size="small"
+                          onClick={handleGenerateSummary}
+                          disabled={summaryLoading}
+                        >
+                          {summaryLoading
+                            ? 'Generating…'
+                            : 'Regenerate summary'}
+                        </Button>
+                      </Inline>
+                    </CardFooter>
+                  </Card>
+                ) : summaryError ? (
+                  <Stack gap="200">
+                    <Banner
+                      variant="danger"
+                      size="small"
+                      title={summaryError}
+                    />
                     <Button
                       variant="glass"
                       onClick={handleGenerateSummary}
@@ -501,62 +817,55 @@ export function TeamProjectDetailScreen({
                     >
                       Try again
                     </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="mb-4 space-y-2">
-                  {updates.length === 0 ? (
-                    <Banner
-                      size="small"
-                      variant="default"
-                      title="Write the first project update to get started"
+                  </Stack>
+                ) : (
+                  <Stack gap="200">
+                    {updates.length === 0 ? (
+                      <Banner
+                        size="small"
+                        variant="default"
+                        title="Write the first project update to get started"
+                      />
+                    ) : (
+                      <>
+                        <ProjectUpdateHighlightCard
+                          update={featuredUpdate}
+                          onAddComment={handleAddComment}
+                          onViewFullThread={() => setActiveTab('updates')}
+                        />
+                        <UpdatesTree
+                          updates={updatesTreeItems}
+                          enableSearch={false}
+                          onAddComment={handleAddComment}
+                          onReact={noop}
+                        />
+                      </>
+                    )}
+
+                    <StatusUpdateComposer
+                      placeholder="Write first project update"
+                      onPost={handlePostUpdate}
+                      onChooseFile={noop}
+                      onCreateDocument={noop}
+                      onAddLink={noop}
                     />
-                  ) : (
-                    <>
-                      <ProjectUpdateHighlightCard
-                        update={featuredUpdate}
-                        onAddComment={handleAddComment}
-                        onViewFullThread={() => setActiveTab('updates')}
-                      />
-                      <UpdatesTree
-                        updates={updatesTreeItems}
-                        enableSearch={false}
-                        onAddComment={handleAddComment}
-                        onReact={noop}
-                      />
-                    </>
-                  )}
+                  </Stack>
+                )}
 
-                  <StatusUpdateComposer
-                    placeholder="Write first project update"
-                    onPost={handlePostUpdate}
-                    onChooseFile={noop}
-                    onCreateDocument={noop}
-                    onAddLink={noop}
-                  />
-                </div>
-              )}
+                <Stack gap="100">
+                  <Text variant="heading6">Description</Text>
+                  <Button buttonType="link" size="small">
+                    Add description...
+                  </Button>
+                </Stack>
 
-              <div className="mb-6">
-                <h3 className="mb-1 text-sm font-semibold text-slate-700">
-                  Description
-                </h3>
-                <button
-                  type="button"
-                  className="text-sm text-slate-500 hover:text-slate-700"
-                >
-                  Add description...
-                </button>
-              </div>
+                <MilestonesSection
+                  milestones={milestones}
+                  onAdd={handleAddMilestone}
+                />
 
-              <MilestonesSection
-                milestones={milestones}
-                onAdd={handleAddMilestone}
-              />
-
-              <div className="mt-6">
                 <ActivitySection items={activity} />
-              </div>
+              </Stack>
             </Box>
           )}
 
@@ -590,7 +899,7 @@ export function TeamProjectDetailScreen({
                     </Text>
                   ) : (
                     <Badge size="small" variant="default">
-                      {`${issues.length} issue${issues.length === 1 ? '' : 's'}`}
+                      {`${allProjectIssues.length} issue${allProjectIssues.length === 1 ? '' : 's'}`}
                     </Badge>
                   )}
                   {workspaceId && teamId && (
@@ -612,80 +921,29 @@ export function TeamProjectDetailScreen({
                   <Text variant="body3" color="color.text.subtle">
                     Loading...
                   </Text>
-                ) : issues.length === 0 ? (
-                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-8 text-center">
-                    <Text variant="body3" color="color.text.subtle">
-                      No issues in this project yet
-                    </Text>
-                  </div>
+                ) : rootProjectIssues.length === 0 ? (
+                  <Box border padding="400" fullWidth>
+                    <Stack align="center">
+                      <Text variant="body3" color="color.text.subtle">
+                        No issues in this project yet
+                      </Text>
+                    </Stack>
+                  </Box>
                 ) : (
-                  <TableWrap>
-                    <HeadRow>
-                      <span>Name</span>
-                      <span>Priority</span>
-                      <span>List</span>
-                      <span>Due date</span>
-                      <span>Assignee</span>
-                    </HeadRow>
-
-                    {issues.map((issue) => (
-                      <DataRow
-                        key={issue.id}
-                        onClick={() => {
-                          if (workspaceId && teamId) {
-                            navigate(
-                              `/workspace/${workspaceId}/team/${teamId}/issue/${issue.id}`
-                            )
-                          }
-                        }}
-                      >
-                        <NameCol>
-                          <IssueId>{issue.id}</IssueId>
-                          <IssueTitle>{issue.title}</IssueTitle>
-                        </NameCol>
-
-                        <div
-                          onClick={(e) => {
-                            e.stopPropagation()
-                          }}
-                        >
-                          <PriorityInline
-                            value={issue.priority}
-                            onChange={(priority) =>
-                              updateIssuePriority(issue.id, priority)
-                            }
-                            options={INLINE_PRIORITY_OPTIONS}
-                            placeholder="Not set"
-                          />
-                        </div>
-
-                        <div
-                          onClick={(e) => {
-                            e.stopPropagation()
-                          }}
-                        >
-                          <StatusInline
-                            value={issue.status}
-                            onChange={(status) =>
-                              updateIssueStatus(issue.id, status)
-                            }
-                            placeholder="Set status"
-                          />
-                        </div>
-
-                        <MetaText>{issue.dateLabel}</MetaText>
-
-                        {issue.assignee ? (
-                          <Avatar
-                            name={issue.assigneeInitials || issue.assignee.name}
-                            size="small"
-                          />
-                        ) : (
-                          <MetaText>-</MetaText>
-                        )}
-                      </DataRow>
-                    ))}
-                  </TableWrap>
+                  <Table<ProjectDetailIssueRow>
+                    data={issueTreeData}
+                    columns={issueColumns}
+                    size="medium"
+                    searchable={false}
+                    columnFilterable={false}
+                    emptyMessage="No issues found"
+                    expandable
+                    getSubRows={(row) => row.subRows}
+                    headerContent={(table) => {
+                      issuesTableRef.current = table
+                      return null
+                    }}
+                  />
                 )}
               </Stack>
             </Box>
@@ -721,39 +979,22 @@ export function TeamProjectDetailScreen({
                     Loading documents...
                   </Text>
                 ) : documents.length === 0 ? (
-                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-8 text-center">
-                    <Text variant="body3" color="color.text.subtle">
-                      No documents yet. Add one to get started.
-                    </Text>
-                  </div>
+                  <Box border padding="400" fullWidth>
+                    <Stack align="center">
+                      <Text variant="body3" color="color.text.subtle">
+                        No documents yet. Add one to get started.
+                      </Text>
+                    </Stack>
+                  </Box>
                 ) : (
-                  <TableWrap>
-                    <HeadRow>
-                      <span>Title</span>
-                      <span>Updated</span>
-                      <span>Updated by</span>
-                    </HeadRow>
-                    {documents.map((doc) => (
-                      <DataRow
-                        key={doc.id}
-                        onClick={() => {
-                          if (workspaceId && teamId && projectId) {
-                            navigate(
-                              `/workspace/${workspaceId}/team/${teamId}/projects/${projectId}/documentation/${doc.id}`
-                            )
-                          }
-                        }}
-                      >
-                        <NameCol>
-                          <IssueTitle>{doc.title || 'Untitled'}</IssueTitle>
-                        </NameCol>
-                        <MetaText>
-                          {doc.updatedAt ? formatDateTime(doc.updatedAt) : '—'}
-                        </MetaText>
-                        <MetaText>{doc.updatedBy ?? '—'}</MetaText>
-                      </DataRow>
-                    ))}
-                  </TableWrap>
+                  <Table<ProjectDetailDocumentRow>
+                    data={documentRows}
+                    columns={documentColumns}
+                    size="medium"
+                    searchable={false}
+                    columnFilterable={false}
+                    emptyMessage="No documents"
+                  />
                 )}
               </Stack>
             </Box>
@@ -762,7 +1003,7 @@ export function TeamProjectDetailScreen({
           {activeTab === 'decisions' && projectId && (
             <DecisionTab
               projectId={projectId}
-              issues={issues.map((issue) => ({
+              issues={allProjectIssues.map((issue) => ({
                 id: issue.id,
                 title: issue.title,
               }))}
@@ -773,69 +1014,67 @@ export function TeamProjectDetailScreen({
               isActive
             />
           )}
-        </section>
+        </Stack>
 
-        <aside>
-          <Stack gap="100">
-            <Box border padding="300">
-              <Inline align="center" justify="space-between" fullWidth>
-                <Text variant="body3">Properties</Text>
-              </Inline>
-              <PropertiesSection
-                key={`${properties?.status}-${properties?.priority}`}
-                contentOnly
-                defaultStatus={properties?.status}
-                defaultPriority={properties?.priority}
-                defaultStartDate={
-                  properties?.startDate
-                    ? new Date(properties.startDate)
-                    : undefined
-                }
-                defaultEndDate={
-                  properties?.endDate ? new Date(properties.endDate) : undefined
-                }
-                onStatusChange={handleStatusChange}
-                onPriorityChange={handlePriorityChange}
-              />
-            </Box>
+        <Stack gap="100" fullWidth>
+          <Box border padding="300">
+            <Inline align="center" justify="space-between" fullWidth>
+              <Text variant="body3">Properties</Text>
+            </Inline>
+            <PropertiesSection
+              key={`${properties?.status}-${properties?.priority}`}
+              contentOnly
+              defaultStatus={properties?.status}
+              defaultPriority={properties?.priority}
+              defaultStartDate={
+                properties?.startDate
+                  ? new Date(properties.startDate)
+                  : undefined
+              }
+              defaultEndDate={
+                properties?.endDate ? new Date(properties.endDate) : undefined
+              }
+              onStatusChange={handleStatusChange}
+              onPriorityChange={handlePriorityChange}
+            />
+          </Box>
 
-            <Box border padding="300">
-              <Inline align="center" justify="space-between" fullWidth>
-                <Text variant="heading4">Milestones</Text>
-                <Button
-                  size="small"
-                  onClick={handleAddMilestone}
-                  icon={<Plus size={14} />}
-                >
-                  Create
-                </Button>
-              </Inline>
-              <Text variant="caption2" color="color.text.subtle">
-                Add milestones to organize work into granular stages.
+          <Box border padding="300">
+            <Inline align="center" justify="space-between" fullWidth>
+              <Text variant="heading4">Milestones</Text>
+              <Button
+                size="small"
+                onClick={handleAddMilestone}
+                icon={<Plus size={14} />}
+              >
+                Create
+              </Button>
+            </Inline>
+            <Text variant="caption2" color="color.text.subtle">
+              Add milestones to organize work into granular stages.
+            </Text>
+          </Box>
+
+          <Box border padding="300">
+            <Inline align="center" justify="space-between" fullWidth>
+              <Text variant="body3">Activity</Text>
+              <Button buttonType="link" size="small" onClick={noop}>
+                See all
+              </Button>
+            </Inline>
+            {activity.length > 0 ? (
+              <Text variant="body3" color="color.text.subtle">
+                {activity.length} recent activit
+                {activity.length === 1 ? 'y' : 'ies'}
               </Text>
-            </Box>
-
-            <Box border padding="300">
-              <Inline align="center" justify="space-between" fullWidth>
-                <Text variant="body3">Activity</Text>
-                <Button buttonType="link" size="small" onClick={noop}>
-                  See all
-                </Button>
-              </Inline>
-              {activity.length > 0 ? (
-                <Text variant="body3" color="color.text.subtle">
-                  {activity.length} recent activit
-                  {activity.length === 1 ? 'y' : 'ies'}
-                </Text>
-              ) : (
-                <Text variant="body3" color="color.text.subtle">
-                  No activity yet
-                </Text>
-              )}
-            </Box>
-          </Stack>
-        </aside>
-      </div>
+            ) : (
+              <Text variant="body3" color="color.text.subtle">
+                No activity yet
+              </Text>
+            )}
+          </Box>
+        </Stack>
+      </Inline>
 
       <Modal
         open={showMilestoneModal}
@@ -857,8 +1096,8 @@ export function TeamProjectDetailScreen({
         }
       >
         <Stack gap="300">
-          <div>
-            <Text as="div" variant="body3" style={{ marginBottom: 8 }}>
+          <Stack gap="050">
+            <Text as="div" variant="body3">
               Milestone Name
             </Text>
             <Input
@@ -866,9 +1105,9 @@ export function TeamProjectDetailScreen({
               onChange={(e) => setMilestoneName(e.target.value)}
               placeholder="Enter milestone name"
             />
-          </div>
-          <div>
-            <Text as="div" variant="body3" style={{ marginBottom: 8 }}>
+          </Stack>
+          <Stack gap="050">
+            <Text as="div" variant="body3">
               Target Date
             </Text>
             <Input
@@ -876,7 +1115,7 @@ export function TeamProjectDetailScreen({
               onChange={(e) => setMilestoneDate(e.target.value)}
               placeholder="e.g. Mar 15"
             />
-          </div>
+          </Stack>
         </Stack>
       </Modal>
     </>

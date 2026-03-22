@@ -504,6 +504,8 @@ export async function fetchTeamIssues(
     assignee: { id: string; name: string } | null
     date: string
     status: string
+    parentIssueId: string | null
+    subIssueCount: number
   }[]
 > {
   return authFetch(`/teams/${teamId}/issues?filter=${filter}`) as Promise<
@@ -513,6 +515,8 @@ export async function fetchTeamIssues(
       assignee: { id: string; name: string } | null
       date: string
       status: string
+      parentIssueId: string | null
+      subIssueCount: number
     }[]
   >
 }
@@ -528,6 +532,8 @@ export async function fetchTeamProjectIssues(
     assignee: { id: string; name: string } | null
     date: string
     status: string
+    parentIssueId: string | null
+    subIssueCount: number
   }[]
 > {
   const params = new URLSearchParams({ filter })
@@ -542,6 +548,8 @@ export async function fetchTeamProjectIssues(
       assignee: { id: string; name: string } | null
       date: string
       status: string
+      parentIssueId: string | null
+      subIssueCount: number
     }[]
   >
 }

@@ -13,6 +13,8 @@ export type IssueListItemApi = {
   assignee: { id: string; name: string } | null
   date: string
   status: string
+  parentIssueId: string | null
+  subIssueCount: number
 }
 
 export type SubIssueApi = {
@@ -290,6 +292,9 @@ export async function getTeamIssuesForApi(
   filter?: 'all' | 'active' | 'backlog'
 ): Promise<IssueListItemApi[]> {
   const issues = await getTeamIssues(teamId, filter)
+  const subCounts = await db.countDirectSubIssuesByParentIds(
+    issues.map((i) => i.id)
+  )
   return Promise.all(
     issues.map(async (i) => {
       const assignee = i.assigneeId ? await getMemberById(i.assigneeId) : null
@@ -303,6 +308,8 @@ export async function getTeamIssuesForApi(
             : null,
         date: i.date,
         status: i.status,
+        parentIssueId: i.parentIssueId ?? null,
+        subIssueCount: subCounts[i.id] ?? 0,
       }
     })
   )
@@ -313,6 +320,9 @@ export async function getProjectIssuesForApi(
   filter?: 'all' | 'active' | 'backlog'
 ): Promise<IssueListItemApi[]> {
   const issues = await getProjectIssues(projectId, filter)
+  const subCounts = await db.countDirectSubIssuesByParentIds(
+    issues.map((i) => i.id)
+  )
   return Promise.all(
     issues.map(async (i) => {
       const assignee = i.assigneeId ? await getMemberById(i.assigneeId) : null
@@ -326,6 +336,8 @@ export async function getProjectIssuesForApi(
             : null,
         date: i.date,
         status: i.status,
+        parentIssueId: i.parentIssueId ?? null,
+        subIssueCount: subCounts[i.id] ?? 0,
       }
     })
   )

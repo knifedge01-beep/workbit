@@ -5,6 +5,7 @@ import {
   MinusCircle,
 } from 'lucide-react'
 
+import type { ApiSubIssue } from '../../../api/client'
 import { formatDateTime } from '../../../utils'
 import type {
   InlinePriorityOption,
@@ -76,7 +77,73 @@ export function toIssueRows(
     date: formatDateTime(issue.date),
     status: overrides[issue.id]?.status ?? issue.status ?? DEFAULT_STATUS,
     priority: overrides[issue.id]?.priority ?? DEFAULT_PRIORITY,
+    parentIssueId: issue.parentIssueId ?? null,
+    subIssueCount: issue.subIssueCount ?? 0,
+    depth: 0,
+    isSubtaskRow: false,
   }))
+}
+
+export function subIssuesToTeamRows(
+  parentIssueId: string,
+  subs: ApiSubIssue[],
+  overrides: TeamIssueOverrides
+): TeamIssueRow[] {
+  return subs.map((s) => ({
+    id: s.id,
+    title: s.title,
+    assignee: '',
+    assigneeInitials: '',
+    date: formatDateTime(s.date),
+    status: overrides[s.id]?.status ?? s.status ?? DEFAULT_STATUS,
+    priority: overrides[s.id]?.priority ?? DEFAULT_PRIORITY,
+    parentIssueId,
+    subIssueCount: 0,
+    depth: 1,
+    isSubtaskRow: true,
+  }))
+}
+
+function teamIssueSubtaskPlaceholder(parentId: string): TeamIssueRow {
+  return {
+    id: `${parentId}:__loading`,
+    title: 'Loading…',
+    assignee: '',
+    assigneeInitials: '',
+    date: '',
+    status: DEFAULT_STATUS,
+    priority: DEFAULT_PRIORITY,
+    parentIssueId: parentId,
+    subIssueCount: 0,
+    depth: 1,
+    isSubtaskRow: true,
+    __placeholder: true,
+  }
+}
+
+/** Tree roots for Table expandable; fetch subtasks on expand (see screen sync). */
+export function buildTeamIssueTreeData(
+  roots: TeamIssueRow[],
+  subtasksByParentId: Record<string, ApiSubIssue[] | undefined>,
+  overrides: TeamIssueOverrides
+): TeamIssueRow[] {
+  return roots.map((root) => {
+    const raw = subtasksByParentId[root.id]
+    if (raw !== undefined) {
+      const kids = subIssuesToTeamRows(root.id, raw, overrides)
+      return {
+        ...root,
+        subRows: kids.length > 0 ? kids : undefined,
+      }
+    }
+    if ((root.subIssueCount ?? 0) > 0) {
+      return {
+        ...root,
+        subRows: [teamIssueSubtaskPlaceholder(root.id)],
+      }
+    }
+    return { ...root, subRows: undefined }
+  })
 }
 
 export function getIssuesTabPath(

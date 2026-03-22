@@ -32,6 +32,8 @@ export type TeamIssueApiItem = {
   assignee?: {
     name: string
   } | null
+  parentIssueId?: string | null
+  subIssueCount?: number
 }
 
 export type TeamIssueRow = {
@@ -42,6 +44,14 @@ export type TeamIssueRow = {
   date: string
   status: string
   priority: string
+  parentIssueId: string | null
+  subIssueCount: number
+  depth: number
+  isSubtaskRow: boolean
+  /** Nested rows for @thedatablitz/table expandable + getSubRows */
+  subRows?: TeamIssueRow[]
+  /** Synthetic loading row under a parent before fetch completes */
+  __placeholder?: boolean
 }
 
 export type InlinePriorityOption = PriorityOption

@@ -1,6 +1,7 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { Plus } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
+import type { Row, Table as TanStackTable } from '@tanstack/react-table'
 
 import {
   Alert,
@@ -17,12 +18,19 @@ import { Text } from '@thedatablitz/text'
 import { Button } from '@thedatablitz/button'
 import { Inline } from '@thedatablitz/inline'
 import { TextInput } from '@thedatablitz/text-input'
-import { Table, type ColumnDef } from '@thedatablitz/table'
+import {
+  Table,
+  type ColumnDef,
+  type ExpandedState,
+  type OnChangeFn,
+} from '@thedatablitz/table'
 import { STATUS_OPTIONS } from '../../components/StatusSelector'
 import {
   createIssue,
+  fetchSubIssues,
   fetchTeamIssues,
   updateIssue as apiUpdateIssue,
+  type ApiSubIssue,
 } from '../../api/client'
 import { countBy, getErrorMessage, logError } from '../../utils'
 import { useFetch } from '../../hooks/useFetch'
@@ -38,12 +46,31 @@ import type {
 import {
   CREATE_ISSUE_CHIPS,
   INLINE_PRIORITY_OPTIONS,
+  buildTeamIssueTreeData,
   getIssueDetailPath,
   getIssuesTabPath,
   isValidTab,
   ISSUE_TABS,
   toIssueRows,
 } from './utils/helpers'
+
+function walkExpandedParentIds(
+  table: TanStackTable<TeamIssueRow>,
+  visit: (issueId: string) => void
+) {
+  const rec = (rows: Row<TeamIssueRow>[]) => {
+    for (const row of rows) {
+      const o = row.original
+      if (!o.isSubtaskRow && !o.__placeholder && row.getIsExpanded()) {
+        visit(o.id)
+      }
+      if (row.subRows?.length) {
+        rec(row.subRows)
+      }
+    }
+  }
+  rec(table.getRowModel().rows)
+}
 
 export function TeamIssuesScreen({ teamName }: TeamIssuesScreenProps) {
   const { workspaceId, teamId, tab: tabParam } = useParams<TeamIssuesParams>()
@@ -64,13 +91,111 @@ export function TeamIssuesScreen({ teamName }: TeamIssuesScreenProps) {
   const [createError, setCreateError] = useState<string | null>(null)
   const createStatus = activeTab === 'backlog' ? 'backlog' : 'todo'
 
-  const issues = toIssueRows((apiIssues ?? []) as TeamIssueApiItem[], overrides)
+  const allIssueRows = useMemo(
+    () => toIssueRows((apiIssues ?? []) as TeamIssueApiItem[], overrides),
+    [apiIssues, overrides]
+  )
 
-  const handleNavigateToIssue = (issueId: string) => {
-    if (workspaceId && teamId) {
-      navigate(getIssueDetailPath(workspaceId, teamId, issueId))
-    }
-  }
+  const rootIssueRows = useMemo(
+    () => allIssueRows.filter((r) => !r.parentIssueId),
+    [allIssueRows]
+  )
+
+  const [subtasksRaw, setSubtasksRaw] = useState<Record<string, ApiSubIssue[]>>(
+    {}
+  )
+  const [subtasksLoading, setSubtasksLoading] = useState<
+    Record<string, boolean>
+  >({})
+  const [subtasksError, setSubtasksError] = useState<
+    Record<string, string | null>
+  >({})
+
+  const tableRef = useRef<TanStackTable<TeamIssueRow> | null>(null)
+  const [expanded, setExpanded] = useState<ExpandedState>({})
+
+  useEffect(() => {
+    setSubtasksRaw({})
+    setSubtasksLoading({})
+    setSubtasksError({})
+    setExpanded({})
+  }, [teamId, activeTab])
+
+  const issueTreeData = useMemo(
+    () => buildTeamIssueTreeData(rootIssueRows, subtasksRaw, overrides),
+    [rootIssueRows, subtasksRaw, overrides]
+  )
+
+  const subtasksRawRef = useRef(subtasksRaw)
+  const subtasksLoadingRef = useRef(subtasksLoading)
+  subtasksRawRef.current = subtasksRaw
+  subtasksLoadingRef.current = subtasksLoading
+
+  const requestSubtasks = useCallback((parentId: string) => {
+    if (subtasksRawRef.current[parentId] !== undefined) return
+    if (subtasksLoadingRef.current[parentId]) return
+    setSubtasksLoading((l) => ({ ...l, [parentId]: true }))
+    setSubtasksError((e) => ({ ...e, [parentId]: null }))
+    fetchSubIssues(parentId)
+      .then((list) => {
+        setSubtasksRaw((s) => ({ ...s, [parentId]: list }))
+      })
+      .catch((err) => {
+        logError(err, 'TeamIssues.fetchSubIssues')
+        setSubtasksError((e) => ({
+          ...e,
+          [parentId]:
+            err instanceof Error ? err.message : 'Failed to load subtasks',
+        }))
+        setSubtasksRaw((s) => ({ ...s, [parentId]: [] }))
+      })
+      .finally(() => {
+        setSubtasksLoading((l) => ({ ...l, [parentId]: false }))
+      })
+  }, [])
+
+  const onExpandedChange = useCallback<OnChangeFn<ExpandedState>>((updater) => {
+    setExpanded((old) =>
+      typeof updater === 'function' ? updater(old) : updater
+    )
+  }, [])
+
+  useEffect(() => {
+    const t = tableRef.current
+    if (!t) return
+    walkExpandedParentIds(t, (issueId) => {
+      requestSubtasks(issueId)
+    })
+  }, [expanded, issueTreeData, requestSubtasks])
+
+  const handleNavigateToIssue = useCallback(
+    (issueId: string) => {
+      if (workspaceId && teamId) {
+        navigate(getIssueDetailPath(workspaceId, teamId, issueId))
+      }
+    },
+    [workspaceId, teamId, navigate]
+  )
+
+  const updateIssuePriority = useCallback(
+    (issueId: string, priority: string) => {
+      setOverrides((prev) => ({
+        ...prev,
+        [issueId]: { ...prev[issueId], priority },
+      }))
+    },
+    []
+  )
+
+  const updateIssueStatus = useCallback((issueId: string, status: string) => {
+    setOverrides((prev) => ({
+      ...prev,
+      [issueId]: { ...prev[issueId], status },
+    }))
+    void apiUpdateIssue(issueId, { status }).catch((e) =>
+      logError(e, 'Update issue status')
+    )
+  }, [])
 
   const columns = useMemo<ColumnDef<TeamIssueRow, unknown>[]>(
     () => [
@@ -78,81 +203,107 @@ export function TeamIssuesScreen({ teamName }: TeamIssuesScreenProps) {
         id: 'name',
         accessorKey: 'id',
         header: 'Name',
-        cell: ({ row }) => (
-          <button
-            type="button"
-            onClick={() => handleNavigateToIssue(row.original.id)}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              padding: 0,
-              margin: 0,
-              color: 'inherit',
-              cursor: 'pointer',
-              textAlign: 'left',
-            }}
-          >
-            <NameCol>
-              <Badge variant="brand" size="small">
-                {row.original.id}
-              </Badge>
-              <Text
-                variant="body2"
-                style={{
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
-              >
-                {row.original.title}
-              </Text>
-            </NameCol>
-          </button>
-        ),
+        cell: ({ row }) => {
+          const o = row.original
+          if (o.__placeholder && o.parentIssueId) {
+            const err = subtasksError[o.parentIssueId]
+            const loading = subtasksLoading[o.parentIssueId]
+            return (
+              <MetaText style={{ paddingLeft: row.depth * 16 }}>
+                {err ?? (loading ? 'Loading…' : '—')}
+              </MetaText>
+            )
+          }
+          return (
+            <button
+              type="button"
+              onClick={() => handleNavigateToIssue(row.original.id)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                padding: 0,
+                margin: 0,
+                color: 'inherit',
+                cursor: 'pointer',
+                textAlign: 'left',
+                paddingLeft: row.depth * 16,
+              }}
+            >
+              <NameCol>
+                {row.original.parentIssueId ? (
+                  <Badge variant="default" size="small">
+                    Subtask · {row.original.id}
+                  </Badge>
+                ) : (
+                  <Badge variant="brand" size="small">
+                    {row.original.id}
+                  </Badge>
+                )}
+                <Text
+                  variant="body2"
+                  style={{
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  {row.original.title}
+                </Text>
+              </NameCol>
+            </button>
+          )
+        },
       },
       {
         id: 'priority',
         accessorKey: 'priority',
         header: 'Priority',
-        cell: ({ row }) => (
-          <div onClick={(e) => e.stopPropagation()}>
-            <PriorityInline
-              value={row.original.priority}
-              onChange={(priority) =>
-                updateIssuePriority(row.original.id, priority)
-              }
-              options={INLINE_PRIORITY_OPTIONS}
-              placeholder="Not set"
-            />
-          </div>
-        ),
+        cell: ({ row }) =>
+          row.original.__placeholder ? null : (
+            <div onClick={(e) => e.stopPropagation()}>
+              <PriorityInline
+                value={row.original.priority}
+                onChange={(priority) =>
+                  updateIssuePriority(row.original.id, priority)
+                }
+                options={INLINE_PRIORITY_OPTIONS}
+                placeholder="Not set"
+              />
+            </div>
+          ),
       },
       {
         id: 'status',
         accessorKey: 'status',
         header: 'List',
-        cell: ({ row }) => (
-          <div onClick={(e) => e.stopPropagation()}>
-            <StatusInline
-              value={row.original.status}
-              onChange={(status) => updateIssueStatus(row.original.id, status)}
-              placeholder="Set status"
-            />
-          </div>
-        ),
+        cell: ({ row }) =>
+          row.original.__placeholder ? null : (
+            <div onClick={(e) => e.stopPropagation()}>
+              <StatusInline
+                value={row.original.status}
+                onChange={(status) =>
+                  updateIssueStatus(row.original.id, status)
+                }
+                placeholder="Set status"
+              />
+            </div>
+          ),
       },
       {
         id: 'date',
         accessorKey: 'date',
         header: 'Due date',
-        cell: ({ row }) => <MetaText>{row.original.date}</MetaText>,
+        cell: ({ row }) =>
+          row.original.__placeholder ? null : (
+            <MetaText>{row.original.date}</MetaText>
+          ),
       },
       {
         id: 'assignee',
         accessorKey: 'assignee',
         header: 'Assignee',
         cell: ({ row }) =>
-          row.original.assignee ? (
+          row.original.__placeholder ? null : row.original.assignee ? (
             <Avatar
               name={row.original.assigneeInitials || row.original.assignee}
               size={20}
@@ -162,25 +313,14 @@ export function TeamIssuesScreen({ teamName }: TeamIssuesScreenProps) {
           ),
       },
     ],
-    []
+    [
+      handleNavigateToIssue,
+      subtasksError,
+      subtasksLoading,
+      updateIssuePriority,
+      updateIssueStatus,
+    ]
   )
-
-  const updateIssuePriority = (issueId: string, priority: string) => {
-    setOverrides((prev) => ({
-      ...prev,
-      [issueId]: { ...prev[issueId], priority },
-    }))
-  }
-
-  const updateIssueStatus = (issueId: string, status: string) => {
-    setOverrides((prev) => ({
-      ...prev,
-      [issueId]: { ...prev[issueId], status },
-    }))
-    void apiUpdateIssue(issueId, { status }).catch((e) =>
-      logError(e, 'Update issue status')
-    )
-  }
 
   const handleTabChange = (id: string) => {
     if (workspaceId && teamId && isValidTab(id)) {
@@ -188,7 +328,7 @@ export function TeamIssuesScreen({ teamName }: TeamIssuesScreenProps) {
     }
   }
 
-  const statusCounts = countBy(issues, (issue) => issue.status)
+  const statusCounts = countBy(allIssueRows, (issue) => issue.status)
 
   const statusSummary = STATUS_OPTIONS.filter(
     (opt) => (statusCounts[opt.id] ?? 0) > 0
@@ -235,7 +375,7 @@ export function TeamIssuesScreen({ teamName }: TeamIssuesScreenProps) {
     setIssueDescription('')
     setCreateMore(false)
   }
-
+  console.log({ issueTreeData })
   return (
     <Stack gap={4}>
       {createError && <Alert variant="error">{createError}</Alert>}
@@ -270,12 +410,20 @@ export function TeamIssuesScreen({ teamName }: TeamIssuesScreenProps) {
       </Flex>
 
       <Table<TeamIssueRow>
-        data={issues}
+        data={issueTreeData}
         columns={columns}
         size="medium"
         searchable
-        columnFilterable
+        columnFilterable={false}
         emptyMessage="No issues found"
+        expandable
+        expanded={expanded}
+        onExpandedChange={onExpandedChange}
+        getSubRows={(row) => row.subRows}
+        headerContent={(table) => {
+          tableRef.current = table
+          return null
+        }}
       />
 
       <Modal

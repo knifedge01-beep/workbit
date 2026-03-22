@@ -111,6 +111,9 @@ export function ApiKeysTab() {
     () => [
       {
         id: 'name',
+        // Table cell renderer bails out when getValue() is null; datablitz Table
+        // does not fall through to `cell` unless accessor yields a value.
+        accessorFn: (row) => row.name?.trim() || 'Untitled key',
         header: 'Key name',
         cell: ({ row }) => (
           <Text variant="body2">
@@ -120,6 +123,7 @@ export function ApiKeysTab() {
       },
       {
         id: 'preview',
+        accessorKey: 'masked_key',
         header: 'Key preview',
         cell: ({ row }) => (
           <MonospaceKey>{row.original.masked_key}</MonospaceKey>
@@ -127,6 +131,7 @@ export function ApiKeysTab() {
       },
       {
         id: 'created',
+        accessorKey: 'created_at',
         header: 'Created / Last used',
         cell: ({ row }) => {
           const lastUsed = row.original.last_used_at
@@ -146,6 +151,11 @@ export function ApiKeysTab() {
       },
       {
         id: 'tags',
+        accessorFn: (row) =>
+          [
+            row.environment ?? 'Live',
+            ...(row.permissions?.length ? row.permissions : ['Full access']),
+          ].join(' '),
         header: 'Environment / Permissions',
         cell: ({ row }) => {
           const permissions =
@@ -176,6 +186,7 @@ export function ApiKeysTab() {
       },
       {
         id: 'actions',
+        accessorKey: 'id',
         header: 'Actions',
         cell: ({ row }) => (
           <Inline gap="050" wrap>

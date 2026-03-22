@@ -66,6 +66,24 @@ export async function getIssuesByParentIssueId(
   return (data ?? []).map((r) => rowToIssue(r as DbRow))
 }
 
+/** Count direct child issues per parent id (one query). */
+export async function countDirectSubIssuesByParentIds(
+  parentIds: string[]
+): Promise<Record<string, number>> {
+  if (parentIds.length === 0) return {}
+  const { data, error } = await getClient()
+    .from('issues')
+    .select('parent_issue_id')
+    .in('parent_issue_id', parentIds)
+  if (error) throw error
+  const counts: Record<string, number> = {}
+  for (const row of data ?? []) {
+    const pid = (row as { parent_issue_id: string | null }).parent_issue_id
+    if (pid) counts[pid] = (counts[pid] ?? 0) + 1
+  }
+  return counts
+}
+
 export async function insertIssue(issue: Issue): Promise<void> {
   const row = issueToRow(issue)
   const { error } = await getClient()

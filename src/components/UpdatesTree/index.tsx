@@ -12,7 +12,7 @@ import { Stack } from '@thedatablitz/stack'
 import { Text } from '@thedatablitz/text'
 import { TextInput as Input } from '@thedatablitz/text-input'
 import { STATUS_CONFIG } from '../../constants/projectStatus'
-import { MarkdownContent } from '../MarkdownContent'
+import { MarkdownPreview } from '@thedatablitz/markdown-editor'
 import type { UpdateItem, UpdatesTreeProps } from './types'
 import {
   avatarInitials,
@@ -175,7 +175,7 @@ export function UpdatesTree({
                 </Inline>
                 <div style={{ margin: '2px 0 4px' }}>
                   <Box>
-                    <MarkdownContent content={item.content} />
+                    <MarkdownPreview value={item.content ?? ''} />
                   </Box>
                 </div>
               </Stack>
@@ -206,7 +206,7 @@ export function UpdatesTree({
                 </Inline>
 
                 <Box>
-                  <MarkdownContent content={item.content} />
+                  <MarkdownPreview value={item.content ?? ''} />
                 </Box>
 
                 <div

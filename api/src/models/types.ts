@@ -120,6 +120,13 @@ export interface ProjectProperties {
   labelIds: string[]
 }
 
+export interface ProjectDocumentation {
+  projectId: string
+  content: string
+  updatedAt: string
+  updatedBy?: string
+}
+
 export interface Milestone {
   id: string
   teamId: string

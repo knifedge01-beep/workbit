@@ -4,7 +4,7 @@ import { MessageCircle, MoreHorizontal, SquarePen } from 'lucide-react'
 import { Avatar, Menu, IconButton, EmojiSelector, Chat } from '@design-system'
 
 import { STATUS_CONFIG } from '../../constants/projectStatus'
-import { MarkdownContent } from '../MarkdownContent'
+import { MarkdownPreview } from '@thedatablitz/markdown-editor'
 import { ResourceSelector } from '../ResourceSelector'
 import {
   Card,
@@ -83,7 +83,7 @@ export function StatusUpdateCard({
       </HeaderSection>
 
       <Body>
-        <MarkdownContent content={data.content} />
+        <MarkdownPreview value={data.content ?? ''} />
       </Body>
 
       {commentsExpanded && showCommentsWhenExpanded && (

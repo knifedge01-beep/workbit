@@ -18,7 +18,7 @@ import { Text } from '@thedatablitz/text'
 import { Card } from '@thedatablitz/card'
 import { TextInput } from '@thedatablitz/text-input'
 
-import { MarkdownContent } from '../MarkdownContent'
+import { MarkdownPreview } from '@thedatablitz/markdown-editor'
 import type { ProjectUpdateHighlightCardProps } from './types'
 import {
   avatarInitials,
@@ -123,7 +123,7 @@ export function ProjectUpdateHighlightCard({
           </TopRow>
 
           <Body>
-            <MarkdownContent content={update.content} />
+            <MarkdownPreview value={update.content ?? ''} />
           </Body>
 
           <Footer>
@@ -182,7 +182,7 @@ export function ProjectUpdateHighlightCard({
                       </Inline>
                     </CommentHeader>
                     <CommentBody>
-                      <MarkdownContent content={item.content} />
+                      <MarkdownPreview value={item.content ?? ''} />
                     </CommentBody>
                   </CommentItem>
                 ))}

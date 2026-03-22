@@ -1,5 +1,3 @@
-import { CalendarClock } from 'lucide-react'
-import { Text } from '@thedatablitz/text'
 import { Dropdown } from '@thedatablitz/dropdown'
 import { StatusSelector } from '../StatusSelector'
 import { PrioritySelector } from '../PrioritySelector'
@@ -22,7 +20,6 @@ export type IssuePropertiesProps = {
   projectValue: string
   projectOptions: Option[]
   onProjectChange: (value: string) => void | Promise<void>
-  createdAt: string
 }
 
 export function IssueProperties({
@@ -36,11 +33,10 @@ export function IssueProperties({
   projectValue,
   projectOptions,
   onProjectChange,
-  createdAt,
 }: IssuePropertiesProps) {
   return (
-    <Box padding="200" border>
-      <Inline className="flex flex-wrap items-center gap-2">
+    <Box>
+      <Inline wrap={false}>
         <StatusSelector value={status} onChange={onStatusChange} />
 
         <PrioritySelector value={priority} onChange={onPriorityChange} />
@@ -60,14 +56,6 @@ export function IssueProperties({
           placeholder="No project"
           size="medium"
         />
-        <Text
-          as="span"
-          variant="body3"
-          className="inline-flex items-center gap-1.5 h-8 text-muted-foreground md:ml-auto"
-        >
-          <CalendarClock size={13} />
-          {createdAt}
-        </Text>
       </Inline>
     </Box>
   )

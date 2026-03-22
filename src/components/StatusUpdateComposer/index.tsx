@@ -5,7 +5,7 @@ import { IconButton } from '@design-system'
 import { Dropdown } from '@thedatablitz/dropdown'
 
 import type { ProjectStatus } from '../../constants/projectStatus'
-import { MarkdownEditor } from '../MarkdownEditor'
+import { MarkdownEditor } from '@thedatablitz/markdown-editor'
 import { ResourceSelector } from '../ResourceSelector'
 import {
   TextAreaWrap,
@@ -68,12 +68,8 @@ export function StatusUpdateComposer({
           value={draft}
           onChange={setDraft}
           placeholder={placeholder}
-          preview="edit"
           minHeight={96}
-          visibleDragbar={false}
-          textareaProps={{
-            'aria-label': 'Project update',
-          }}
+          aria-label="Project update"
         />
       </TextAreaWrap>
 

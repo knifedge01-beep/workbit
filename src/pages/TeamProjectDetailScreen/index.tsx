@@ -10,6 +10,7 @@ import { Tabs } from '@thedatablitz/tabs'
 import { Text } from '@thedatablitz/text'
 import { Avatar } from '@thedatablitz/avatar'
 import { TextInput as Input } from '@thedatablitz/text-input'
+import { TextEditor } from '@thedatablitz/text-editor'
 import {
   StatusUpdateComposer,
   MilestonesSection,
@@ -39,6 +40,8 @@ import {
   patchProject,
   generateProjectSummary,
   updateIssue as apiUpdateIssue,
+  fetchProjectDocumentation,
+  updateProjectDocumentation,
 } from '../../api/client'
 import type { ApiProjectProperties } from '../../api/client'
 import { useFetch } from '../../hooks/useFetch'
@@ -68,7 +71,14 @@ import { Button } from '@thedatablitz/button'
 export function TeamProjectDetailScreen({
   projectName,
   teamId,
+  initialTab = 'overview',
 }: TeamProjectDetailScreenProps) {
+  type ProjectDetailTab =
+    | 'overview'
+    | 'updates'
+    | 'issues'
+    | 'documentation'
+    | 'decisions'
   const { workspaceId, projectId } = useParams<{
     workspaceId: string
     projectId: string
@@ -85,7 +95,16 @@ export function TeamProjectDetailScreen({
     Record<string, UpdateItem[]>
   >({})
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState('overview')
+  const [activeTab, setActiveTab] = useState<ProjectDetailTab>(initialTab)
+  const [docContent, setDocContent] = useState('')
+  const [savedDocContent, setSavedDocContent] = useState('')
+  const [docLoading, setDocLoading] = useState(false)
+  const [docSaving, setDocSaving] = useState(false)
+  const [docError, setDocError] = useState<string | null>(null)
+  const [docLastUpdatedAt, setDocLastUpdatedAt] = useState<string | null>(null)
+  const [docLastUpdatedBy, setDocLastUpdatedBy] = useState<string | null>(null)
+  /** Bump to remount TextEditor after load so `defaultEditorState` applies cleanly. */
+  const [docEditorMountKey, setDocEditorMountKey] = useState(0)
   const [showMilestoneModal, setShowMilestoneModal] = useState(false)
   const [milestoneName, setMilestoneName] = useState('')
   const [milestoneDate, setMilestoneDate] = useState('')
@@ -117,6 +136,7 @@ export function TeamProjectDetailScreen({
     { id: 'overview', label: 'Overview' },
     { id: 'updates', label: 'Updates' },
     { id: 'issues', label: 'Issues' },
+    { id: 'documentation', label: 'Documentation' },
     { id: 'decisions', label: 'Decisions' },
   ]
 
@@ -202,6 +222,49 @@ export function TeamProjectDetailScreen({
       .catch((e) => logError(e, 'TeamProjectDetail'))
       .finally(() => setLoading(false))
   }, [teamId])
+
+  useEffect(() => {
+    if (!projectId) return
+    setDocLoading(true)
+    setDocError(null)
+    fetchProjectDocumentation(projectId)
+      .then((doc) => {
+        const content = doc.content ?? ''
+        setDocContent(content)
+        setSavedDocContent(content)
+        setDocLastUpdatedAt(doc.updatedAt)
+        setDocLastUpdatedBy(doc.updatedBy)
+      })
+      .catch((e) => {
+        logError(e, 'TeamProjectDetail.fetchProjectDocumentation')
+        setDocError((e as Error).message)
+      })
+      .finally(() => {
+        setDocLoading(false)
+        setDocEditorMountKey((k) => k + 1)
+      })
+  }, [projectId])
+
+  const hasDocChanges = docContent !== savedDocContent
+
+  const handleSaveDocumentation = () => {
+    if (!projectId || docSaving || !hasDocChanges) return
+    setDocSaving(true)
+    setDocError(null)
+    updateProjectDocumentation(projectId, docContent)
+      .then((doc) => {
+        const content = doc.content ?? ''
+        setDocContent(content)
+        setSavedDocContent(content)
+        setDocLastUpdatedAt(doc.updatedAt)
+        setDocLastUpdatedBy(doc.updatedBy)
+      })
+      .catch((e) => {
+        logError(e, 'TeamProjectDetail.updateProjectDocumentation')
+        setDocError((e as Error).message)
+      })
+      .finally(() => setDocSaving(false))
+  }
 
   const handlePostUpdate = (content: string, status: ProjectStatus) => {
     if (!teamId) return
@@ -378,7 +441,25 @@ export function TeamProjectDetailScreen({
             <span className="font-medium text-slate-800">{projectName}</span>
           </div>
 
-          <Tabs items={tabs} value={activeTab} onChange={setActiveTab} />
+          <Tabs
+            items={tabs}
+            value={activeTab}
+            onChange={(nextTab) => {
+              setActiveTab(nextTab as ProjectDetailTab)
+              if (!workspaceId || !teamId || !projectId) return
+              if (nextTab === 'documentation') {
+                navigate(
+                  `/workspace/${workspaceId}/team/${teamId}/projects/${projectId}/documentation`
+                )
+                return
+              }
+              if (activeTab === 'documentation') {
+                navigate(
+                  `/workspace/${workspaceId}/team/${teamId}/projects/${projectId}`
+                )
+              }
+            }}
+          />
 
           {activeTab === 'overview' && (
             <Box border padding="400">
@@ -638,6 +719,65 @@ export function TeamProjectDetailScreen({
             </Box>
           )}
 
+          {activeTab === 'documentation' && (
+            <Box border padding="400">
+              <Stack gap="200">
+                <Inline align="center" justify="space-between" fullWidth>
+                  <Text variant="heading5">Project documentation</Text>
+                  <Button
+                    variant="primary"
+                    size="small"
+                    onClick={handleSaveDocumentation}
+                    disabled={docSaving || !hasDocChanges}
+                  >
+                    {docSaving ? 'Saving...' : 'Save'}
+                  </Button>
+                </Inline>
+
+                {docLastUpdatedAt ? (
+                  <Text variant="caption2" color="color.text.subtle">
+                    Updated {formatDateTime(docLastUpdatedAt)}
+                    {docLastUpdatedBy ? ` by ${docLastUpdatedBy}` : ''}
+                  </Text>
+                ) : (
+                  <Text variant="caption2" color="color.text.subtle">
+                    No documentation saved yet.
+                  </Text>
+                )}
+
+                {docError ? (
+                  <Stack gap="100">
+                    <Banner variant="danger" size="small" title={docError} />
+                    <Inline>
+                      <Button
+                        variant="glass"
+                        size="small"
+                        onClick={handleSaveDocumentation}
+                        disabled={docSaving || !hasDocChanges}
+                      >
+                        Retry
+                      </Button>
+                    </Inline>
+                  </Stack>
+                ) : null}
+
+                {docLoading ? (
+                  <Text variant="body3" color="color.text.subtle">
+                    Loading documentation...
+                  </Text>
+                ) : (
+                  <div className="min-w-0 overflow-visible">
+                    <TextEditor
+                      key={`doc-editor-${docEditorMountKey}`}
+                      onChange={setDocContent}
+                      autoFocus={false}
+                    />
+                  </div>
+                )}
+              </Stack>
+            </Box>
+          )}
+
           {activeTab === 'decisions' && projectId && (
             <DecisionTab
               projectId={projectId}
@@ -649,7 +789,7 @@ export function TeamProjectDetailScreen({
                 id: milestone.id,
                 name: milestone.name,
               }))}
-              isActive={activeTab === 'decisions'}
+              isActive
             />
           )}
         </section>

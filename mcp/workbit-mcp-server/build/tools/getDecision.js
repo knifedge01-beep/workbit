@@ -9,10 +9,7 @@ export function registerGetDecisionTool(server) {
                 .string()
                 .min(1)
                 .describe('The project ID containing the decision.'),
-            decisionId: z
-                .string()
-                .min(1)
-                .describe('The decision ID to fetch.'),
+            decisionId: z.string().min(1).describe('The decision ID to fetch.'),
         },
     }, async ({ projectId, decisionId }) => {
         try {

@@ -71,7 +71,33 @@ export function TeamProjectDetailScreenWrapper() {
     'Project'
 
   return (
-    <TeamProjectDetailScreen projectName={projectName} teamId={teamId ?? ''} />
+    <TeamProjectDetailScreen
+      projectName={projectName}
+      teamId={teamId ?? ''}
+      initialTab="overview"
+    />
+  )
+}
+
+export function TeamProjectDocumentationScreenWrapper() {
+  const { teamId, projectId } = useParams<TeamProjectRouteParams>()
+  useRedirectIfInvalidTeam()
+  const { projects } = useWorkspace()
+  const projectName =
+    (teamId &&
+      projectId &&
+      projects.find(
+        (project) => project.team.id === teamId && project.id === projectId
+      )?.name) ??
+    projectId ??
+    'Project'
+
+  return (
+    <TeamProjectDetailScreen
+      projectName={projectName}
+      teamId={teamId ?? ''}
+      initialTab="documentation"
+    />
   )
 }
 

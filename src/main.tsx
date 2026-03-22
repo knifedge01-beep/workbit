@@ -1,4 +1,5 @@
 import { init as initLogbit } from '@thedatablitz/logbit-sdk'
+import { tokensCss } from '@thedatablitz/tokens'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
@@ -8,6 +9,18 @@ import { WorkspaceProvider } from './contexts/WorkspaceContext'
 import App from './App'
 import '@design-system/styles/global.css'
 import '@design-system-v2/styles/globals.css'
+
+/** Required by @thedatablitz/text-editor injected theme (`var(--ds-…)`). */
+const TOKENS_STYLE_ID = 'db-design-bit-tokens'
+if (
+  typeof document !== 'undefined' &&
+  !document.getElementById(TOKENS_STYLE_ID)
+) {
+  const el = document.createElement('style')
+  el.id = TOKENS_STYLE_ID
+  el.textContent = tokensCss
+  document.head.prepend(el)
+}
 
 initLogbit({
   service: 'workbit-web',

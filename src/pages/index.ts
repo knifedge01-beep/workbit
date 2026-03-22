@@ -28,6 +28,7 @@ export {
   TeamIssuesScreenWrapper,
   TeamProjectsScreenWrapper,
   TeamProjectDetailScreenWrapper,
+  TeamProjectDocumentationScreenWrapper,
   TeamViewsScreenWrapper,
   TeamLogsScreenWrapper,
   IssueDetailScreenWrapper,

@@ -1,13 +1,14 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
+import { useParams } from 'react-router-dom'
 import { Breadcrumbs, BreadcrumbsItem } from '@thedatablitz/breadcrumb'
 import { Button } from '@thedatablitz/button'
 import { Text } from '@thedatablitz/text'
+import { TextEditor } from '@thedatablitz/text-editor'
 import { Stack } from '@thedatablitz/stack'
 import { Inline } from '@thedatablitz/inline'
 import {
   LoadingState,
   ErrorState,
-  IssueDescriptionEditor,
   IssueActivity,
   IssueProperties,
   SubIssues,
@@ -21,6 +22,7 @@ import {
   generateSubIssues,
 } from '../../api/client'
 import { formatDateTime, logError } from '../../utils'
+import { stringToLexicalEditorState } from '../../utils/textEditorState'
 import type { IssueDetailScreenProps } from './types'
 import { Box } from '@thedatablitz/box'
 
@@ -31,10 +33,15 @@ export function IssueDetailScreen({
   teamName,
   projectName,
 }: IssueDetailScreenProps) {
+  const { workspaceId, teamId } = useParams<{
+    workspaceId: string
+    teamId: string
+  }>()
   const [priority, setPriority] = useState('medium')
   const [generatingSubIssues, setGeneratingSubIssues] = useState(false)
   const { projects: workspaceProjects } = useWorkspace()
-  const teamId = workspaceProjects.find((p) => p.name === projectName)?.team.id
+  const issueTeamId = workspaceProjects.find((p) => p.name === projectName)
+    ?.team.id
 
   const {
     data: issueData,
@@ -45,8 +52,8 @@ export function IssueDetailScreen({
 
   const { data: members } = useFetch(() => fetchMembers(), [])
 
-  const teamProjects = teamId
-    ? workspaceProjects.filter((p) => p.team.id === teamId)
+  const teamProjects = issueTeamId
+    ? workspaceProjects.filter((p) => p.team.id === issueTeamId)
     : []
 
   const projectOptions = [
@@ -92,22 +99,50 @@ export function IssueDetailScreen({
 
   const descriptionLatestRef = useRef('')
   const descriptionDirtyRef = useRef(false)
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const issueIdRef = useRef(issueId)
+  issueIdRef.current = issueId
 
-  const handleDescriptionChange = useCallback((html: string) => {
-    descriptionLatestRef.current = html
+  const handleDescriptionChange = useCallback((json: string) => {
+    descriptionLatestRef.current = json
     descriptionDirtyRef.current = true
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+    saveTimerRef.current = setTimeout(() => {
+      saveTimerRef.current = null
+      if (!descriptionDirtyRef.current) return
+      descriptionDirtyRef.current = false
+      void updateIssue(issueIdRef.current, {
+        description: descriptionLatestRef.current,
+      }).catch((e) => logError(e, 'Description update'))
+    }, 800)
   }, [])
 
-  const handleDescriptionBlur = useCallback(() => {
-    if (!descriptionDirtyRef.current) return
-    descriptionDirtyRef.current = false
-    updateIssue(issueId, { description: descriptionLatestRef.current }).catch(
-      (e) => logError(e, 'Description update')
-    )
+  useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current)
+        saveTimerRef.current = null
+      }
+      if (descriptionDirtyRef.current) {
+        descriptionDirtyRef.current = false
+        void updateIssue(issueId, {
+          description: descriptionLatestRef.current,
+        }).catch((e) => logError(e, 'Description update'))
+      }
+    }
   }, [issueId])
 
-  const descriptionForEditor = issueData?.description ?? ''
-  const editorKey = `editor-${issueId}`
+  useEffect(() => {
+    descriptionLatestRef.current = stringToLexicalEditorState(
+      issueData?.description
+    )
+    descriptionDirtyRef.current = false
+  }, [issueData?.id]) // eslint-disable-line react-hooks/exhaustive-deps -- only when switching issues
+
+  const issueDescriptionDefaultLexical = useMemo(
+    () => stringToLexicalEditorState(issueData?.description),
+    [issueData?.description]
+  )
 
   const handleBreakdownWork = async () => {
     if (generatingSubIssues) return
@@ -150,31 +185,47 @@ export function IssueDetailScreen({
     project: issueData.project?.name || projectName || 'No Project',
   }
 
+  const teamHref =
+    workspaceId && teamId
+      ? `/workspace/${workspaceId}/team/${teamId}/issues/active`
+      : workspaceId
+        ? `/workspace/${workspaceId}/workspace/teams`
+        : '#'
+  const projectHref =
+    workspaceId && teamId
+      ? `/workspace/${workspaceId}/team/${teamId}/projects`
+      : workspaceId
+        ? `/workspace/${workspaceId}/workspace/projects`
+        : '#'
+  const issueHref =
+    workspaceId && teamId
+      ? `/workspace/${workspaceId}/team/${teamId}/issue/${issue.id}`
+      : '#'
+
   return (
     <Box fullWidth border>
-      <IssueProperties
-        status={issue.status}
-        onStatusChange={handleStatusChange}
-        priority={priority}
-        onPriorityChange={setPriority}
-        assigneeValue={issueData?.assignee?.id ?? ''}
-        assigneeOptions={assigneeOptions}
-        onAssigneeChange={handleAssigneeChange}
-        projectValue={issueData?.project?.id ?? ''}
-        projectOptions={projectOptions}
-        onProjectChange={handleProjectChange}
-        createdAt={issue.createdAt}
-      />
       <Stack fullWidth>
-        <Box fullWidth padding="200">
+        <Stack fullWidth padding="200" gap="150">
           <Breadcrumbs ariaLabel="Breadcrumb">
-            <BreadcrumbsItem href="/item" text={teamName} />
-            <BreadcrumbsItem href="/item" text={issue.project} />
-            <BreadcrumbsItem href="/item" text={issue.id} />
+            <BreadcrumbsItem href={teamHref} text={teamName} />
+            <BreadcrumbsItem href={projectHref} text={issue.project} />
+            <BreadcrumbsItem href={issueHref} text={issue.id} />
           </Breadcrumbs>
-        </Box>
+          <IssueProperties
+            status={issue.status}
+            onStatusChange={handleStatusChange}
+            priority={priority}
+            onPriorityChange={setPriority}
+            assigneeValue={issueData?.assignee?.id ?? ''}
+            assigneeOptions={assigneeOptions}
+            onAssigneeChange={handleAssigneeChange}
+            projectValue={issueData?.project?.id ?? ''}
+            projectOptions={projectOptions}
+            onProjectChange={handleProjectChange}
+          />
+        </Stack>
 
-        <Stack fullWidth padding="300" gap="200">
+        <Stack fullWidth padding="200" gap="100">
           <Inline fullWidth justify="space-between" align="center" gap="100">
             <Text as="h1" variant="heading3">
               {issue.title}
@@ -189,16 +240,12 @@ export function IssueDetailScreen({
           </Inline>
 
           <Box fullWidth>
-            <IssueDescriptionEditor
-              key={editorKey}
-              defaultValue={descriptionForEditor}
-              value={undefined}
+            <TextEditor
+              key={issueId}
+              defaultEditorState={issueDescriptionDefaultLexical}
               onChange={handleDescriptionChange}
-              onBlur={handleDescriptionBlur}
-              placeholder="Add description..."
-              stickyToolbar={false}
-              toolbarTop={56}
-              alwaysShowToolbar={false}
+              placeholder="Add description…"
+              autoFocus={false}
             />
           </Box>
 

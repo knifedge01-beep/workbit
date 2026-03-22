@@ -14,6 +14,7 @@ import type {
   StatusUpdate,
   StatusUpdateComment,
   ProjectProperties,
+  ProjectDocumentation,
   Milestone,
   ActivityItem,
   Issue,
@@ -137,6 +138,15 @@ export function rowToProjectProperties(r: DbRow): ProjectProperties {
     endDate: r.end_date as string | undefined,
     teamIds: (r.team_ids as string[]) ?? [],
     labelIds: (r.label_ids as string[]) ?? [],
+  }
+}
+
+export function rowToProjectDocumentation(r: DbRow): ProjectDocumentation {
+  return {
+    projectId: r.project_id as string,
+    content: (r.content as string) ?? '',
+    updatedAt: r.updated_at as string,
+    updatedBy: (r.updated_by as string | null | undefined) ?? undefined,
   }
 }
 
@@ -346,6 +356,17 @@ function projectPropertiesToRow(
     end_date: p.endDate ?? null,
     team_ids: p.teamIds ?? [],
     label_ids: p.labelIds ?? [],
+  }
+}
+
+export function projectDocumentationToRow(
+  p: ProjectDocumentation
+): Record<string, unknown> {
+  return {
+    project_id: p.projectId,
+    content: p.content,
+    updated_at: p.updatedAt,
+    updated_by: p.updatedBy ?? null,
   }
 }
 

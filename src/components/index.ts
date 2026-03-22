@@ -32,8 +32,6 @@ export { IssueDescriptionEditor } from './IssueDescriptionEditor'
 export { IssueActivity, type IssueActivityProps } from './IssueActivity'
 export { IssueProperties, type IssuePropertiesProps } from './IssueProperties'
 export { SubIssues, type SubIssuesProps } from './SubIssues'
-export { MarkdownEditor } from './MarkdownEditor'
-export { MarkdownContent } from './MarkdownContent'
 export { DecisionTab } from './DecisionTab'
 export { TaskListTable, type TaskListItem } from './TaskListTable'
 export {

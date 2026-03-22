@@ -19,6 +19,7 @@ import {
   TeamIssuesScreenWrapper,
   TeamProjectsScreenWrapper,
   TeamProjectDetailScreenWrapper,
+  TeamProjectDocumentationScreenWrapper,
   TeamViewsScreenWrapper,
   TeamLogsScreenWrapper,
   IssueDetailScreenWrapper,
@@ -101,6 +102,10 @@ export function AppRoutes() {
         <Route
           path="team/:teamId/projects/:projectId"
           element={<TeamProjectDetailScreenWrapper />}
+        />
+        <Route
+          path="team/:teamId/projects/:projectId/documentation"
+          element={<TeamProjectDocumentationScreenWrapper />}
         />
         <Route path="team/:teamId/issues/new" element={<CreateIssueScreen />} />
         <Route

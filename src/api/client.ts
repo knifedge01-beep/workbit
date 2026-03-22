@@ -108,6 +108,13 @@ export interface ApiProjectProperties {
   [key: string]: unknown
 }
 
+export interface ApiProjectDocumentation {
+  projectId: string
+  content: string
+  updatedAt: string | null
+  updatedBy: string | null
+}
+
 export type ApiDecisionType = 'major' | 'minor'
 export type ApiDecisionStatus =
   | 'proposed'
@@ -658,6 +665,24 @@ export async function updateProjectDecision(
     method: 'PATCH',
     body: JSON.stringify(body),
   }) as Promise<ApiDecision>
+}
+
+export async function fetchProjectDocumentation(
+  projectId: string
+): Promise<ApiProjectDocumentation> {
+  return authFetch(
+    `/projects/${projectId}/documentation`
+  ) as Promise<ApiProjectDocumentation>
+}
+
+export async function updateProjectDocumentation(
+  projectId: string,
+  content: string
+): Promise<ApiProjectDocumentation> {
+  return authFetch(`/projects/${projectId}/documentation`, {
+    method: 'PATCH',
+    body: JSON.stringify({ content }),
+  }) as Promise<ApiProjectDocumentation>
 }
 
 export async function createIssue(

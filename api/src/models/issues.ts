@@ -37,7 +37,7 @@ export type IssueDetailApi = {
   teamId: string | null
   team: { id: string; name: string } | null
   project: { id: string; name: string } | null
-  parentIssueId?: string | null
+  parentIssueId?: string
 }
 
 export async function getTeamIssues(
@@ -141,7 +141,12 @@ export async function updateIssue(
   patch: Partial<
     Pick<
       Issue,
-      'status' | 'assigneeId' | 'assigneeName' | 'projectId' | 'description'
+      | 'status'
+      | 'assigneeId'
+      | 'assigneeName'
+      | 'projectId'
+      | 'description'
+      | 'parentIssueId'
     >
   >
 ): Promise<Issue | null> {
@@ -350,7 +355,7 @@ export async function getIssueDetailForApi(
     teamId: issue.teamId ?? null,
     team: team ? { id: team.id, name: team.name } : null,
     project: project ? { id: project.id, name: project.name } : null,
-    parentIssueId: issue.parentIssueId ?? null,
+    parentIssueId: issue.parentIssueId,
   }
 }
 
@@ -414,6 +419,7 @@ export async function updateIssueForApi(
     assigneeName?: string
     projectId?: string | null
     description?: string
+    parentIssueId?: string | null
   }
 ): Promise<IssueDetailApi | null> {
   const existing = await getIssueById(issueId)
@@ -433,7 +439,12 @@ export async function updateIssueForApi(
   const updatePayload: Partial<
     Pick<
       Issue,
-      'status' | 'assigneeId' | 'assigneeName' | 'projectId' | 'description'
+      | 'status'
+      | 'assigneeId'
+      | 'assigneeName'
+      | 'projectId'
+      | 'description'
+      | 'parentIssueId'
     >
   > = {
     ...(patch.status !== undefined && { status: patch.status }),
@@ -443,6 +454,9 @@ export async function updateIssueForApi(
     }),
     ...(projectId !== undefined && { projectId: projectId ?? undefined }),
     ...(patch.description !== undefined && { description: patch.description }),
+    ...(patch.parentIssueId !== undefined && {
+      parentIssueId: patch.parentIssueId ?? undefined,
+    }),
   }
   const issue = await updateIssue(issueId, updatePayload)
   if (!issue) return null

@@ -7,6 +7,7 @@ export interface CreateIssueParams {
   title: string
   projectId: string
   description?: string
+  parentIssueId?: string
 }
 
 export interface CreatedIssue {
@@ -17,6 +18,7 @@ export interface CreatedIssue {
   status: string
   teamId: string
   projectId?: string
+  parentIssueId?: string
   assignee?: { id: string; name: string } | null
   team?: { id: string; name: string } | null
   project?: { id: string; name: string } | null

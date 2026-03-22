@@ -86,8 +86,8 @@ export async function createIssue(req: Request, res: Response) {
       title?: string
       description?: string
       status?: string
-      parentIssueId?: string
       body?: string
+      parentIssueId?: string
     }
     const teamId =
       teamIdFromParams ??
@@ -95,7 +95,10 @@ export async function createIssue(req: Request, res: Response) {
     const title = body.title
     const description = body.description
     const status = body.status
-    const parentIssueId = body.parentIssueId
+    const parentIssueId =
+      body.parentIssueId && body.parentIssueId !== ''
+        ? body.parentIssueId
+        : undefined
 
     if (!title || !title.trim()) {
       res.status(400).json({ error: 'title is required' })
@@ -107,8 +110,7 @@ export async function createIssue(req: Request, res: Response) {
       title: title.trim(),
       description,
       status,
-      parentIssueId:
-        parentIssueId && parentIssueId !== '' ? parentIssueId : undefined,
+      parentIssueId,
     })
     const detail = await issuesModel.getIssueDetailForApi(issue.id)
     if (!detail) {
@@ -240,6 +242,7 @@ export async function updateIssue(req: Request, res: Response) {
       assigneeName?: string
       projectId?: string | null
       description?: string
+      parentIssueId?: string | null
     }
     const detail = await issuesModel.updateIssueForApi(issueId, {
       status: body.status,
@@ -247,6 +250,7 @@ export async function updateIssue(req: Request, res: Response) {
       assigneeName: body.assigneeName,
       projectId: body.projectId,
       description: body.description,
+      parentIssueId: body.parentIssueId,
     })
     if (!detail) {
       res.status(404).json({ error: 'Issue not found' })

@@ -25,9 +25,13 @@ export function registerCreateIssueTool(server: McpServer): void {
           .describe(
             'Optional team ID. When provided, the issue is created under this team.'
           ),
+        parentIssueId: z
+          .string()
+          .optional()
+          .describe('Optional parent issue ID to nest this as a sub-issue.'),
       },
     },
-    async ({ title, description, projectId, teamId }) => {
+    async ({ title, description, projectId, teamId, parentIssueId }) => {
       try {
         const createdByLine = 'Created by: AI Generated'
         const descriptionWithSource =
@@ -40,12 +44,16 @@ export function registerCreateIssueTool(server: McpServer): void {
           description?: string
           projectId?: string
           teamId?: string
+          parentIssueId?: string
         } = { title, description: descriptionWithSource }
         if (projectId != null && projectId !== '') {
           payload.projectId = projectId
         }
         if (teamId != null && teamId !== '') {
           payload.teamId = teamId
+        }
+        if (parentIssueId != null && parentIssueId !== '') {
+          payload.parentIssueId = parentIssueId
         }
 
         const path = teamId

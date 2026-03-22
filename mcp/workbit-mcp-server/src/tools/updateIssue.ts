@@ -34,6 +34,13 @@ export function registerUpdateIssueTool(server: McpServer): void {
           .string()
           .optional()
           .describe('Optional new description for the issue.'),
+        parentIssueId: z
+          .string()
+          .nullable()
+          .optional()
+          .describe(
+            'Optional parent issue ID to set or change the parent, or null to remove it.'
+          ),
       },
     },
     async ({
@@ -43,6 +50,7 @@ export function registerUpdateIssueTool(server: McpServer): void {
       assigneeName,
       projectId,
       description,
+      parentIssueId,
     }) => {
       try {
         const payload: Record<string, unknown> = {}
@@ -51,13 +59,14 @@ export function registerUpdateIssueTool(server: McpServer): void {
         if (assigneeName !== undefined) payload.assigneeName = assigneeName
         if (projectId !== undefined) payload.projectId = projectId
         if (description !== undefined) payload.description = description
+        if (parentIssueId !== undefined) payload.parentIssueId = parentIssueId
 
         if (Object.keys(payload).length === 0) {
           return {
             content: [
               {
                 type: 'text',
-                text: 'No fields to update. Provide at least one of: status, assigneeId, assigneeName, projectId, description.',
+                text: 'No fields to update. Provide at least one of: status, assigneeId, assigneeName, projectId, description, parentIssueId.',
               },
             ],
           }

@@ -186,7 +186,8 @@ export function rowToIssue(r: DbRow): Issue {
     teamId: (r.team_id as string) || undefined,
     projectId: r.project_id as string | undefined,
     description: r.description as string | undefined,
-    parentIssueId: r.parent_issue_id as string | undefined,
+    parentIssueId:
+      (r.parent_issue_id as string | null | undefined) ?? undefined,
   }
 }
 

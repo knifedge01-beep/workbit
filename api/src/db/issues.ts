@@ -79,7 +79,12 @@ export async function updateIssue(
   patch: Partial<
     Pick<
       Issue,
-      'status' | 'assigneeId' | 'assigneeName' | 'projectId' | 'description'
+      | 'status'
+      | 'assigneeId'
+      | 'assigneeName'
+      | 'projectId'
+      | 'description'
+      | 'parentIssueId'
     >
   >
 ): Promise<Issue | null> {

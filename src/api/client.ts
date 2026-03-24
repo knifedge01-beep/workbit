@@ -607,7 +607,7 @@ export async function fetchTeamProjectIssues(
   >
 }
 
-/** GET /projects/:projectId — workspace-scoped project metadata. */
+/** GET /projects/:projectId — project metadata only. */
 export interface ApiProjectSummary {
   id: string
   name: string
@@ -622,6 +622,15 @@ export async function fetchProject(
   return authFetch(
     `/projects/${encodeURIComponent(projectId)}`
   ) as Promise<ApiProjectSummary>
+}
+
+export async function fetchProjectStatusUpdates(
+  projectId: string
+): Promise<ApiStatusUpdate[]> {
+  const res = (await authFetch(
+    `/projects/${encodeURIComponent(projectId)}/status-updates`
+  )) as { nodes: ApiStatusUpdate[] }
+  return res.nodes
 }
 
 export async function fetchProjectDecisions(

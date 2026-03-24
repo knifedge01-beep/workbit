@@ -1,7 +1,15 @@
 import { generateId } from './store.js'
-import type { Project, Team, Member, Role, Invitation } from './types.js'
+import type {
+  Project,
+  Team,
+  Member,
+  Role,
+  Invitation,
+  StatusUpdate,
+} from './types.js'
 import * as dbProjects from '../db/projects.js'
 import * as dbTeams from '../db/teams.js'
+import * as dbStatusUpdates from '../db/statusUpdates.js'
 import * as dbMembers from '../db/members.js'
 import * as dbRoles from '../db/roles.js'
 import * as dbInvitations from '../db/invitations.js'
@@ -27,6 +35,33 @@ export type ProjectListItemApi = {
   status: string
 }
 
+/** Status update node on GET /api/v1/projects/:projectId/status-updates. */
+export type ProjectStatusUpdateNodeApi = {
+  id: string
+  status: string
+  content: string
+  author: { id: string; name: string; avatarSrc?: string }
+  createdAt: string
+  commentCount: number
+}
+
+function statusUpdateToProjectApiNode(
+  u: StatusUpdate
+): ProjectStatusUpdateNodeApi {
+  return {
+    id: u.id,
+    status: u.status,
+    content: u.content,
+    author: {
+      id: u.authorId,
+      name: u.authorName,
+      avatarSrc: u.authorAvatarSrc,
+    },
+    createdAt: u.createdAt,
+    commentCount: u.commentCount,
+  }
+}
+
 export async function getProjectsForApi(): Promise<ProjectListItemApi[]> {
   const [projects, teams] = await Promise.all([
     dbProjects.getProjects(),
@@ -47,7 +82,7 @@ export async function getProjectsForApi(): Promise<ProjectListItemApi[]> {
   })
 }
 
-/** Single project for GET /api/v1/projects/:projectId (same shape as workspace project list items). */
+/** Single project for GET /api/v1/projects/:projectId (metadata only). */
 export async function getProjectByIdForApi(
   projectId: string
 ): Promise<ProjectListItemApi | null> {
@@ -62,6 +97,21 @@ export async function getProjectByIdForApi(
       ? { id: team.id, name: team.name }
       : { id: project.teamId, name: project.teamId },
     status: project.status,
+  }
+}
+
+/** Status updates for GET /api/v1/projects/:projectId/status-updates (20 most recent). */
+export async function getProjectStatusUpdatesForApi(
+  projectId: string
+): Promise<{ nodes: ProjectStatusUpdateNodeApi[] } | null> {
+  const project = await dbProjects.getProjectById(projectId)
+  if (!project) return null
+  const updates = await dbStatusUpdates.getStatusUpdatesByProjectId(
+    projectId,
+    20
+  )
+  return {
+    nodes: updates.map(statusUpdateToProjectApiNode),
   }
 }
 

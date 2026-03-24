@@ -38,7 +38,7 @@ export interface IssueDetail {
   parentIssueId?: string | null
 }
 
-/** Matches GET /api/v1/projects/:projectId */
+/** Matches GET /api/v1/projects/:projectId — project metadata only. */
 export interface ProjectSummary {
   id: string
   name: string
@@ -62,7 +62,7 @@ export type IssueListFilter = 'all' | 'active' | 'backlog'
 
 export type ProjectStatus = 'on-track' | 'at-risk' | 'off-track'
 
-/** Status update card in project.details (same as app `ApiStatusUpdate`). */
+/** Status update for a project — GET /api/v1/projects/:projectId/status-updates. */
 export interface ProjectStatusUpdate {
   id: string
   status: ProjectStatus
@@ -177,6 +177,7 @@ export const workbit = {
     )
   },
 
+  /** Project metadata — GET /api/v1/projects/:projectId */
   async getProject(projectId: string): Promise<ProjectSummary> {
     return requestJson<ProjectSummary>(
       `/api/v1/projects/${encodeURIComponent(projectId)}`
@@ -200,14 +201,14 @@ export const workbit = {
     })
   },
 
-  /**
-   * Team + linked project details (status updates, milestones, activity, properties).
-   * Matches the app project details screen data: GET /api/v1/teams/:teamId/project.
-   */
-  async getTeamProject(teamId: string): Promise<TeamProjectResponse> {
-    return requestJson<TeamProjectResponse>(
-      `/api/v1/teams/${encodeURIComponent(teamId)}/project`
+  /** Status updates for a project — GET /api/v1/projects/:projectId/status-updates */
+  async statusUpdatesByProject(
+    projectId: string
+  ): Promise<ProjectStatusUpdate[]> {
+    const body = await requestJson<{ nodes: ProjectStatusUpdate[] }>(
+      `/api/v1/projects/${encodeURIComponent(projectId)}/status-updates`
     )
+    return body.nodes
   },
 
   /** All comments on a project status update. */
@@ -218,22 +219,6 @@ export const workbit = {
     return requestJson<StatusUpdateComment[]>(
       `/api/v1/teams/${encodeURIComponent(teamId)}/project/updates/${encodeURIComponent(updateId)}/comments`
     )
-  },
-
-  /** A single comment on a status update, resolved from the update’s comment list. */
-  async getProjectStatusUpdateComment(
-    teamId: string,
-    updateId: string,
-    commentId: string
-  ): Promise<StatusUpdateComment> {
-    const list = await requestJson<StatusUpdateComment[]>(
-      `/api/v1/teams/${encodeURIComponent(teamId)}/project/updates/${encodeURIComponent(updateId)}/comments`
-    )
-    const item = list.find((c) => c.id === commentId)
-    if (!item) {
-      throw new Error(`Status update comment not found: ${commentId}`)
-    }
-    return item
   },
 
   /** Create a comment on a project status update (may return multiple entries if an AI reply is appended). */

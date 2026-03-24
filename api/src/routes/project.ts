@@ -20,6 +20,10 @@ projectRoutes.patch(
   projectDocsCtrl.patchProjectDocument
 )
 projectRoutes.get('/:projectId/issues', ctrl.getProjectIssues)
+projectRoutes.get(
+  '/:projectId/status-updates',
+  projectsCtrl.getProjectStatusUpdates
+)
 projectRoutes.get('/:projectId/decisions', decisionsCtrl.listProjectDecisions)
 projectRoutes.post('/:projectId/decisions', decisionsCtrl.createProjectDecision)
 projectRoutes.patch(

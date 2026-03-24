@@ -15,7 +15,10 @@ export function registerUpdateProjectDecisionTool(server) {
                 .enum(['major', 'minor'])
                 .optional()
                 .describe('Optional updated decision type.'),
-            rationale: z.string().optional().describe('Optional updated rationale.'),
+            rationale: z
+                .string()
+                .optional()
+                .describe('Optional updated rationale.'),
             impact: z.string().optional().describe('Optional updated impact.'),
             decisionDate: z
                 .string()
@@ -73,7 +76,10 @@ export function registerUpdateProjectDecisionTool(server) {
             };
         }
         catch (error) {
-            logMcpError(error, 'tools.updateProjectDecision', { projectId, decisionId });
+            logMcpError(error, 'tools.updateProjectDecision', {
+                projectId,
+                decisionId,
+            });
             return {
                 content: [
                     {

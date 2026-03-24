@@ -5,7 +5,10 @@ export function registerProjectUpdateTools(server) {
     server.registerTool('getProjectStatusUpdates', {
         description: 'Read project status updates for a team, optionally scoped to a projectId.',
         inputSchema: {
-            teamId: z.string().min(1).describe('The team ID that owns the project.'),
+            teamId: z
+                .string()
+                .min(1)
+                .describe('The team ID that owns the project.'),
             projectId: z
                 .string()
                 .optional()
@@ -26,7 +29,10 @@ export function registerProjectUpdateTools(server) {
             };
         }
         catch (error) {
-            logMcpError(error, 'tools.getProjectStatusUpdates', { teamId, projectId });
+            logMcpError(error, 'tools.getProjectStatusUpdates', {
+                teamId,
+                projectId,
+            });
             return {
                 content: [
                     {
@@ -48,7 +54,9 @@ export function registerProjectUpdateTools(server) {
         try {
             const comments = await makeWorkbitRequest(`/teams/${encodeURIComponent(teamId)}/project/updates/${encodeURIComponent(updateId)}/comments`);
             const item = Array.isArray(comments)
-                ? comments.find((c) => c && typeof c === 'object' && c.id === commentId)
+                ? comments.find((c) => c &&
+                    typeof c === 'object' &&
+                    c.id === commentId)
                 : null;
             const result = item ?? {
                 error: `Project status comment not found for id: ${commentId}`,

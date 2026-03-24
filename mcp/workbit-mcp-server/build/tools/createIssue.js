@@ -71,10 +71,7 @@ function stringToLexicalEditorState(raw) {
     return plainTextToLexicalEditorState(s);
 }
 function countWords(input) {
-    return input
-        .trim()
-        .split(/\s+/)
-        .filter(Boolean).length;
+    return input.trim().split(/\s+/).filter(Boolean).length;
 }
 function buildElaborateDescription(title, description) {
     const createdByLine = 'Created by: AI Generated';

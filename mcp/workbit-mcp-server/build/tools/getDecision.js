@@ -16,7 +16,9 @@ export function registerGetDecisionTool(server) {
         try {
             const response = await makeWorkbitRequest(`/projects/${encodeURIComponent(projectId)}/decisions?pageSize=200`);
             const items = Array.isArray(response?.items) ? response.items : [];
-            const decision = items.find((d) => d && typeof d === 'object' && d.id === decisionId);
+            const decision = items.find((d) => d &&
+                typeof d === 'object' &&
+                d.id === decisionId);
             const result = decision ?? {
                 error: `Decision not found for id: ${decisionId}`,
             };

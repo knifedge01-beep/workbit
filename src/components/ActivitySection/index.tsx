@@ -1,20 +1,14 @@
 import { useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 
-import { Text, Flex } from '@design-system'
-
+import { Flex } from '@design-system'
+import { Text } from '@design-system/typography'
 import { SectionHeader, CollapsibleContent } from '../CollapsibleSection'
-import {
-  Timeline,
-  TimelineItem,
-  TimelineDot,
-  TimelineBody,
-  SeeAllLink,
-} from './styles'
+import { Timeline, TimelineItem, TimelineDot, TimelineBody } from './styles'
 import type { ActivitySectionProps } from './types'
 import { DEFAULT_ACTIVITY } from './utils/defaultActivity'
 import { getActivityIcon } from './utils/getActivityIcon'
-
+import { Button } from '@thedatablitz/button'
 export type { ActivityItem } from './types'
 
 export function ActivitySection({
@@ -60,9 +54,11 @@ export function ActivitySection({
               transition: 'transform 0.2s',
             }}
           />
-          <span style={{ fontSize: 13, fontWeight: 500 }}>Activity</span>
+          <Text>Activity</Text>
         </Flex>
-        <SeeAllLink type="button">See all</SeeAllLink>
+        <Button buttonType="link" size="small" variant="primary">
+          See all
+        </Button>
       </SectionHeader>
       <CollapsibleContent $open={open}>{content}</CollapsibleContent>
     </div>

@@ -1,5 +1,10 @@
 import { useMemo, useState } from 'react'
 import { Flame, Heart, MessageSquare, Rocket, ThumbsUp } from 'lucide-react'
+import {
+  CommentThread,
+  type CommentItem,
+  type CommentSubmitPayload,
+} from '@thedatablitz/comment'
 
 import { Tree } from '@thedatablitz/tree'
 import { Avatar } from '@thedatablitz/avatar'
@@ -10,7 +15,7 @@ import { Inline } from '@thedatablitz/inline'
 import { Card } from '@thedatablitz/card'
 import { Stack } from '@thedatablitz/stack'
 import { Text } from '@thedatablitz/text'
-import { TextInput as Input } from '@thedatablitz/text-input'
+import { TextInput } from '@thedatablitz/text-input'
 import { STATUS_CONFIG } from '../../constants/projectStatus'
 import { MarkdownPreview } from '@thedatablitz/markdown-editor'
 import type { UpdateItem, UpdatesTreeProps } from './types'
@@ -28,6 +33,27 @@ type UpdatesTreeNode = {
   id: string
   label: React.ReactNode
   children?: UpdatesTreeNode[]
+}
+
+function flattenComments(items: UpdateItem[]): CommentItem[] {
+  const out: CommentItem[] = []
+  const walk = (nodes: UpdateItem[], parentCommentId: string | null) => {
+    for (const node of nodes) {
+      out.push({
+        commentId: node.id,
+        commentText: node.content,
+        commentDate: node.timestamp,
+        commentAuthor: node.author,
+        commentAuthorAvatar: '',
+        parentCommentId,
+        likes: 0,
+        mentionAuthorIds: [],
+      })
+      if (node.comments?.length) walk(node.comments, node.id)
+    }
+  }
+  walk(items, null)
+  return out
 }
 
 export function UpdatesTree({
@@ -52,7 +78,6 @@ export function UpdatesTree({
 
   const [query, setQuery] = useState('')
   const [composerById, setComposerById] = useState<Record<string, boolean>>({})
-  const [draftById, setDraftById] = useState<Record<string, string>>({})
   const [submittingById, setSubmittingById] = useState<Record<string, boolean>>(
     {}
   )
@@ -109,12 +134,8 @@ export function UpdatesTree({
       onReact?.(item)
     }
 
-    const handleSubmitComposer = async (
-      e: React.FormEvent<HTMLFormElement>
-    ) => {
-      e.preventDefault()
-      e.stopPropagation()
-      const text = (draftById[item.id] ?? '').trim()
+    const submitComment = async (payload: CommentSubmitPayload) => {
+      const text = payload.commentText.trim()
       if (!text) return
 
       if (!onAddComment) {
@@ -125,29 +146,6 @@ export function UpdatesTree({
       setSubmittingById((prev) => ({ ...prev, [item.id]: true }))
       try {
         await onAddComment(item, text)
-        setDraftById((prev) => ({ ...prev, [item.id]: '' }))
-      } finally {
-        setSubmittingById((prev) => ({ ...prev, [item.id]: false }))
-      }
-    }
-
-    const composePlaceholder = isUpdate
-      ? 'Add a comment or reply...'
-      : 'Reply...'
-
-    const submitComposer = async () => {
-      const text = (draftById[item.id] ?? '').trim()
-      if (!text) return
-
-      if (!onAddComment) {
-        onReply?.(item)
-        return
-      }
-
-      setSubmittingById((prev) => ({ ...prev, [item.id]: true }))
-      try {
-        await onAddComment(item, text)
-        setDraftById((prev) => ({ ...prev, [item.id]: '' }))
       } finally {
         setSubmittingById((prev) => ({ ...prev, [item.id]: false }))
       }
@@ -329,45 +327,19 @@ export function UpdatesTree({
                 padding: '12px 10px',
                 borderRadius: 8,
               }}
+              onClick={(e) => e.stopPropagation()}
             >
-              <form
-                onSubmit={handleSubmitComposer}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Inline align="center" gap="100" fullWidth>
-                  <Box>
-                    <Avatar name="ME" size="small" />
-                  </Box>
-                  <Input
-                    type="text"
-                    value={draftById[item.id] ?? ''}
-                    onClick={(e) => e.stopPropagation()}
-                    onChange={(e) =>
-                      setDraftById((prev) => ({
-                        ...prev,
-                        [item.id]: e.target.value,
-                      }))
-                    }
-                    placeholder={composePlaceholder}
-                    fullWidth
-                    size="small"
-                    aria-label={`Compose ${isUpdate ? 'comment' : 'reply'}`}
-                  />
-                  <Button
-                    size="small"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      void submitComposer()
-                    }}
-                    disabled={
-                      submittingById[item.id] === true ||
-                      !(draftById[item.id] ?? '').trim()
-                    }
-                  >
-                    {submittingById[item.id] === true ? 'Posting...' : 'Post'}
-                  </Button>
-                </Inline>
-              </form>
+              <CommentThread
+                comments={flattenComments(item.comments ?? [])}
+                onSubmitComment={(payload) => {
+                  void submitComment(payload)
+                }}
+                placeholder={isUpdate ? 'Add a comment...' : 'Reply...'}
+                submitButtonText="Post"
+                disabled={submittingById[item.id] === true}
+                loading={false}
+                error={false}
+              />
             </div>
           )}
         </Stack>
@@ -397,7 +369,7 @@ export function UpdatesTree({
             borderBottom: '1px solid var(--db-color-border-default)',
           }}
         >
-          <Input
+          <TextInput
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}

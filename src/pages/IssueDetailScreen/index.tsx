@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
+import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Breadcrumbs, BreadcrumbsItem } from '@thedatablitz/breadcrumb'
 import { Button } from '@thedatablitz/button'
@@ -25,6 +25,7 @@ import { formatDateTime, logError } from '../../utils'
 import { stringToLexicalEditorState } from '../../utils/textEditorState'
 import type { IssueDetailScreenProps } from './types'
 import { Box } from '@thedatablitz/box'
+import { useIssueDescriptionAutosave } from './hooks/useIssueDescriptionAutosave'
 
 // ===== MAIN COMPONENT =====
 
@@ -49,7 +50,6 @@ export function IssueDetailScreen({
     error,
     reload,
   } = useFetch(() => fetchIssue(issueId), [issueId])
-
   const { data: members } = useFetch(() => fetchMembers(), [])
 
   const teamProjects = issueTeamId
@@ -97,52 +97,10 @@ export function IssueDetailScreen({
     }
   }
 
-  const descriptionLatestRef = useRef('')
-  const descriptionDirtyRef = useRef(false)
-  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const issueIdRef = useRef(issueId)
-  issueIdRef.current = issueId
-
-  const handleDescriptionChange = useCallback((json: string) => {
-    descriptionLatestRef.current = json
-    descriptionDirtyRef.current = true
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
-    saveTimerRef.current = setTimeout(() => {
-      saveTimerRef.current = null
-      if (!descriptionDirtyRef.current) return
-      descriptionDirtyRef.current = false
-      void updateIssue(issueIdRef.current, {
-        description: descriptionLatestRef.current,
-      }).catch((e) => logError(e, 'Description update'))
-    }, 800)
-  }, [])
-
-  useEffect(() => {
-    return () => {
-      if (saveTimerRef.current) {
-        clearTimeout(saveTimerRef.current)
-        saveTimerRef.current = null
-      }
-      if (descriptionDirtyRef.current) {
-        descriptionDirtyRef.current = false
-        void updateIssue(issueId, {
-          description: descriptionLatestRef.current,
-        }).catch((e) => logError(e, 'Description update'))
-      }
-    }
-  }, [issueId])
-
-  useEffect(() => {
-    descriptionLatestRef.current = stringToLexicalEditorState(
-      issueData?.description
-    )
-    descriptionDirtyRef.current = false
-  }, [issueData?.id]) // eslint-disable-line react-hooks/exhaustive-deps -- only when switching issues
-
-  const issueDescriptionDefaultLexical = useMemo(
-    () => stringToLexicalEditorState(issueData?.description),
-    [issueData?.description]
-  )
+  const { saveDescription } = useIssueDescriptionAutosave({
+    issueId,
+    initialDescription: issueData?.description,
+  })
 
   const handleBreakdownWork = async () => {
     if (generatingSubIssues) return
@@ -183,6 +141,7 @@ export function IssueDetailScreen({
     createdAt: formatDateTime(issueData.date),
     status: issueData.status,
     project: issueData.project?.name || projectName || 'No Project',
+    description: stringToLexicalEditorState(issueData.description),
   }
 
   const teamHref =
@@ -242,8 +201,8 @@ export function IssueDetailScreen({
           <Box fullWidth>
             <TextEditor
               key={issueId}
-              defaultEditorState={issueDescriptionDefaultLexical}
-              onChange={handleDescriptionChange}
+              defaultEditorState={issue.description}
+              onChange={saveDescription}
               placeholder="Add description…"
               autoFocus={false}
             />

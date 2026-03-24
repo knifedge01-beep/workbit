@@ -42,12 +42,14 @@ export async function getTeamProject(teamId: string) {
       project: null,
     }
   }
-  const [updates, properties, milestones, activity] = await Promise.all([
-    dbStatusUpdates.getStatusUpdatesByProjectId(team.projectId, 20),
-    dbProjectProperties.getProjectPropertiesByTeamId(teamId),
-    dbMilestones.getMilestonesByTeamId(teamId),
-    dbActivity.getActivityByTeamId(teamId),
-  ])
+  const [project, updates, properties, milestones, activity] =
+    await Promise.all([
+      dbProjects.getProjectById(team.projectId),
+      dbStatusUpdates.getStatusUpdatesByProjectId(team.projectId, 20),
+      dbProjectProperties.getProjectPropertiesByTeamId(teamId),
+      dbMilestones.getMilestonesByTeamId(teamId),
+      dbActivity.getActivityByTeamId(teamId),
+    ])
   const sortedActivity = [...activity].sort(
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   )
@@ -55,6 +57,7 @@ export async function getTeamProject(teamId: string) {
     team: { id: team.id, name: team.name },
     project: {
       id: team.projectId,
+      description: project?.description ?? '',
       statusUpdates: { nodes: updates },
       properties,
       milestones,

@@ -51,6 +51,7 @@ export async function getTeamProject(req: Request, res: Response) {
       team: data.team,
       project: {
         id: data.project.id,
+        description: data.project.description,
         statusUpdates: { nodes },
         properties: data.project.properties,
         milestones: data.project.milestones,

@@ -1,16 +1,5 @@
 import type { TeamList, TeamSelectOption } from '../types'
 
-export const PROPERTY_CHIPS = [
-  'Backlog',
-  'No priority',
-  'Lead',
-  'Members',
-  'Start',
-  'Target',
-  'Labels',
-  'Dependencies',
-]
-
 export function getProjectListPath(
   workspaceId: string,
   isTeamScoped: boolean,

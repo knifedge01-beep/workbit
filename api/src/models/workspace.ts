@@ -22,6 +22,7 @@ export async function getMembers(): Promise<Member[]> {
 export type ProjectListItemApi = {
   id: string
   name: string
+  description: string
   team: { id: string; name: string }
   status: string
 }
@@ -37,6 +38,7 @@ export async function getProjectsForApi(): Promise<ProjectListItemApi[]> {
     return {
       id: p.id,
       name: p.name,
+      description: p.description,
       team: team
         ? { id: team.id, name: team.name }
         : { id: p.teamId, name: p.teamId },
@@ -209,6 +211,7 @@ export async function createTeam(input: {
 
 export async function createProject(input: {
   name: string
+  description?: string
   teamId: string
   status?: string
 }): Promise<{ project: Project; team: Team }> {
@@ -220,6 +223,7 @@ export async function createProject(input: {
   const project: Project = {
     id: generateId(),
     name: input.name,
+    description: input.description?.trim() ?? '',
     teamId: input.teamId,
     status: input.status ?? 'Active',
   }

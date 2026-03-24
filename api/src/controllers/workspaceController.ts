@@ -200,8 +200,9 @@ export async function getRoles(_req: Request, res: Response) {
 
 export async function createProject(req: Request, res: Response) {
   try {
-    const { name, teamId, status } = req.body as {
+    const { name, description, teamId, status } = req.body as {
       name?: string
+      description?: string
       teamId?: string
       status?: string
     }
@@ -218,6 +219,7 @@ export async function createProject(req: Request, res: Response) {
 
     const { project, team } = await workspaceModel.createProject({
       name,
+      description,
       teamId,
       status,
     })
@@ -225,6 +227,7 @@ export async function createProject(req: Request, res: Response) {
     res.status(201).json({
       id: project.id,
       name: project.name,
+      description: project.description,
       team: { id: team.id, name: team.name },
       status: project.status,
     })

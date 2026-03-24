@@ -42,6 +42,7 @@ export function rowToProject(r: DbRow): Project {
   return {
     id: r.id as string,
     name: r.name as string,
+    description: (r.description as string) ?? '',
     teamId: r.team_id as string,
     status: r.status as string,
   }

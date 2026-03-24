@@ -136,7 +136,7 @@ export function LoginScreen() {
             />
           </Field>
           {error && <Error>{error}</Error>}
-          <Button type="submit" disabled={loading}>
+          <Button variant="primary" onClick={handleSubmit} disabled={loading}>
             {loading ? 'Signing in…' : 'Sign in'}
           </Button>
         </Form>

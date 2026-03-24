@@ -321,14 +321,7 @@ export function UpdatesTree({
           )}
 
           {isComposerOpen(item.id) && onAddComment && (
-            <div
-              style={{
-                background: 'var(--db-color-background-subtle)',
-                padding: '12px 10px',
-                borderRadius: 8,
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
+            <Box className="max-w-[260px]!">
               <CommentThread
                 comments={flattenComments(item.comments ?? [])}
                 onSubmitComment={(payload) => {
@@ -340,7 +333,7 @@ export function UpdatesTree({
                 loading={false}
                 error={false}
               />
-            </div>
+            </Box>
           )}
         </Stack>
       ),

@@ -54,13 +54,24 @@ create table if not exists public.status_updates (
   created_at timestamptz not null,
   comment_count int not null default 0
 );
-create table if not exists public.status_update_comments (
+create table if not exists public.comments (
   id text primary key,
-  update_id text not null,
-  author_name text not null,
-  author_avatar_src text,
-  content text not null,
-  timestamp timestamptz not null
+  entity_id text,
+  comment_text text not null,
+  comment_date timestamptz not null default now(),
+  comment_author text not null,
+  comment_author_avatar text,
+  parent_comment_id text references public.comments (id) on delete cascade,
+  likes integer not null default 0 check (likes >= 0),
+  mention_author_ids text[] not null default '{}',
+  comment_options jsonb not null default '{"hideReplies": false, "hideLikes": false}'::jsonb,
+  constraint comments_comment_options_shape check (
+    jsonb_typeof(comment_options) = 'object'
+    and comment_options ? 'hideReplies'
+    and comment_options ? 'hideLikes'
+    and jsonb_typeof(comment_options -> 'hideReplies') = 'boolean'
+    and jsonb_typeof(comment_options -> 'hideLikes') = 'boolean'
+  )
 );
 create table if not exists public.project_properties (
   team_id text primary key,
@@ -135,7 +146,7 @@ alter table public.views enable row level security;
 alter table public.roles enable row level security;
 alter table public.invitations enable row level security;
 alter table public.status_updates enable row level security;
-alter table public.status_update_comments enable row level security;
+alter table public.comments enable row level security;
 alter table public.project_properties enable row level security;
 alter table public.milestones enable row level security;
 alter table public.activity enable row level security;
@@ -157,8 +168,8 @@ drop policy if exists "invitations_service_role" on public.invitations;
 create policy "invitations_service_role" on public.invitations for all using (true) with check (true);
 drop policy if exists "status_updates_service_role" on public.status_updates;
 create policy "status_updates_service_role" on public.status_updates for all using (true) with check (true);
-drop policy if exists "status_update_comments_service_role" on public.status_update_comments;
-create policy "status_update_comments_service_role" on public.status_update_comments for all using (true) with check (true);
+drop policy if exists "comments_service_role" on public.comments;
+create policy "comments_service_role" on public.comments for all using (true) with check (true);
 drop policy if exists "project_properties_service_role" on public.project_properties;
 create policy "project_properties_service_role" on public.project_properties for all using (true) with check (true);
 drop policy if exists "milestones_service_role" on public.milestones;

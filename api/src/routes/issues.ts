@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import * as ctrl from '../controllers/issuesController.js'
+import * as commentsCtrl from '../controllers/commentsController.js'
 
 export const issuesRoutes = Router()
 
@@ -8,5 +9,5 @@ issuesRoutes.get('/:issueId', ctrl.getIssue)
 issuesRoutes.get('/:issueId/sub-issues', ctrl.getSubIssues)
 issuesRoutes.post('/:issueId/sub-issues/generate', ctrl.generateSubIssues)
 issuesRoutes.patch('/:issueId', ctrl.updateIssue)
-issuesRoutes.get('/:issueId/comments', ctrl.getIssueComments)
-issuesRoutes.post('/:issueId/comments', ctrl.postIssueComment)
+issuesRoutes.get('/:issueId/comments', commentsCtrl.getIssueComments)
+issuesRoutes.post('/:issueId/comments', commentsCtrl.postIssueComment)

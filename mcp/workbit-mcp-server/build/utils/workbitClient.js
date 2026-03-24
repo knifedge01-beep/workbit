@@ -3,6 +3,11 @@ function getHeaders() {
     const headers = {
         'Content-Type': 'application/json',
     };
+    const bearer = process.env.WORKBIT_BEARER_TOKEN;
+    if (bearer) {
+        headers.Authorization = `Bearer ${bearer}`;
+        return headers;
+    }
     const apiKey = process.env.WORKBIT_API_KEY;
     if (apiKey) {
         headers[WORKBIT_API_KEY_HEADER] = apiKey;

@@ -6,6 +6,10 @@ export function registerCreateProjectTool(server) {
         description: 'Create a new Workbit project. Requires a team ID; the project will be linked to that team.',
         inputSchema: {
             name: z.string().min(1).describe('The project name.'),
+            description: z
+                .string()
+                .optional()
+                .describe('Optional project description.'),
             teamId: z
                 .string()
                 .min(1)
@@ -15,12 +19,15 @@ export function registerCreateProjectTool(server) {
                 .optional()
                 .describe("Optional project status (e.g. 'Active'). Defaults to 'Active' if omitted."),
         },
-    }, async ({ name, teamId, status }) => {
+    }, async ({ name, description, teamId, status }) => {
         try {
             const payload = {
                 name,
                 teamId,
             };
+            if (description != null && description !== '') {
+                payload.description = description;
+            }
             if (status != null && status !== '') {
                 payload.status = status;
             }

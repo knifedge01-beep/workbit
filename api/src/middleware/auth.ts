@@ -6,9 +6,16 @@ export interface AuthUser {
   email: string | undefined
 }
 
+/** Credential to pass to the Workbit MCP subprocess so tools can call this API as the same principal. */
+export type WorkbitUpstreamAuth =
+  | { kind: 'bearer'; token: string }
+  | { kind: 'apiKey'; secret: string }
+
 declare module 'express-serve-static-core' {
   interface Request {
     user?: AuthUser
+    /** Set by optionalAuth when JWT or API key auth succeeds; used by MCP proxy only. Never log. */
+    workbitUpstreamAuth?: WorkbitUpstreamAuth
   }
 }
 
@@ -47,6 +54,7 @@ export async function optionalAuth(
       } = await supabaseAdmin.auth.getUser(token)
       if (!error && user) {
         req.user = { id: user.id, email: user.email }
+        req.workbitUpstreamAuth = { kind: 'bearer', token }
         next()
         return
       }
@@ -64,6 +72,7 @@ export async function optionalAuth(
       .maybeSingle()
     if (row?.user_id) {
       req.user = { id: row.user_id, email: undefined }
+      req.workbitUpstreamAuth = { kind: 'apiKey', secret: apiKeyRaw }
     }
   }
 

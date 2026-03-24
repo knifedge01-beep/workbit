@@ -1,6 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { z } from 'zod'
 import { makeWorkbitRequest } from '../utils/workbitClient.js'
+import { makeWorkbitPostRequest } from '../utils/workbitClient.js'
 import { logMcpError } from '../logging.js'
 
 export function registerGetDecisionTool(server: McpServer): void {
@@ -18,17 +19,25 @@ export function registerGetDecisionTool(server: McpServer): void {
     },
     async ({ projectId, decisionId }) => {
       try {
-        const decision = await makeWorkbitRequest<unknown>(
-          `/projects/${encodeURIComponent(projectId)}/decisions/${encodeURIComponent(
-            decisionId
-          )}`
+        const response = await makeWorkbitRequest<{
+          items?: unknown[]
+        }>(`/projects/${encodeURIComponent(projectId)}/decisions?pageSize=200`)
+        const items = Array.isArray(response?.items) ? response.items : []
+        const decision = items.find(
+          (d) =>
+            d &&
+            typeof d === 'object' &&
+            (d as { id?: string }).id === decisionId
         )
+        const result = decision ?? {
+          error: `Decision not found for id: ${decisionId}`,
+        }
 
         return {
           content: [
             {
               type: 'text',
-              text: JSON.stringify(decision, null, 2),
+              text: JSON.stringify(result, null, 2),
             },
           ],
         }
@@ -113,6 +122,107 @@ export function registerGetDecisionTool(server: McpServer): void {
             {
               type: 'text',
               text: `Failed to fetch decisions from Workbit API: ${
+                (error as Error).message
+              }`,
+            },
+          ],
+        }
+      }
+    }
+  )
+
+  server.registerTool(
+    'createProjectDecision',
+    {
+      description:
+        'Create a new decision for a project (alias tool for project-scoped decision creation).',
+      inputSchema: {
+        projectId: z
+          .string()
+          .min(1)
+          .describe('The project ID where the decision will be created.'),
+        title: z.string().min(1).describe('The decision title.'),
+        type: z
+          .enum(['major', 'minor'])
+          .describe('Decision type: major or minor.'),
+        status: z
+          .enum(['proposed', 'approved', 'rejected', 'superseded'])
+          .optional()
+          .describe('Optional status (defaults to proposed in API).'),
+        rationale: z
+          .string()
+          .min(1)
+          .describe('Why this decision is being made.'),
+        impact: z
+          .string()
+          .optional()
+          .describe('Optional impact and implications of this decision.'),
+        decisionDate: z
+          .string()
+          .optional()
+          .describe('Optional ISO date (e.g. 2026-03-22).'),
+        tags: z
+          .array(z.string())
+          .optional()
+          .describe('Optional tags as an array of strings.'),
+        linkedIssueIds: z
+          .array(z.string())
+          .optional()
+          .describe('Optional related issue IDs.'),
+        linkedMilestoneIds: z
+          .array(z.string())
+          .optional()
+          .describe('Optional related milestone IDs.'),
+      },
+    },
+    async ({
+      projectId,
+      title,
+      type,
+      status,
+      rationale,
+      impact,
+      decisionDate,
+      tags,
+      linkedIssueIds,
+      linkedMilestoneIds,
+    }) => {
+      try {
+        const payload: Record<string, unknown> = {
+          title,
+          type,
+          rationale,
+        }
+        if (status !== undefined) payload.status = status
+        if (impact !== undefined) payload.impact = impact
+        if (decisionDate !== undefined) payload.decisionDate = decisionDate
+        if (tags !== undefined) payload.tags = tags
+        if (linkedIssueIds !== undefined)
+          payload.linkedIssueIds = linkedIssueIds
+        if (linkedMilestoneIds !== undefined) {
+          payload.linkedMilestoneIds = linkedMilestoneIds
+        }
+
+        const decision = await makeWorkbitPostRequest<unknown>(
+          `/projects/${encodeURIComponent(projectId)}/decisions`,
+          payload
+        )
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(decision, null, 2),
+            },
+          ],
+        }
+      } catch (error) {
+        logMcpError(error, 'tools.createProjectDecision', { projectId, title })
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Failed to create project decision in Workbit API: ${
                 (error as Error).message
               }`,
             },

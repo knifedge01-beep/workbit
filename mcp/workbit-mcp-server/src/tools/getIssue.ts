@@ -55,7 +55,7 @@ export function registerGetIssueTool(server: McpServer): void {
     async ({ projectId }) => {
       try {
         const issues = await makeWorkbitRequest<unknown>(
-          `/projects/${encodeURIComponent(projectId)}`
+          `/projects/${encodeURIComponent(projectId)}/issues`
         )
 
         return {

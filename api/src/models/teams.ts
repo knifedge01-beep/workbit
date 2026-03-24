@@ -77,6 +77,7 @@ export async function getStatusUpdateComments(
     authorAvatarSrc: c.authorAvatarSrc,
     content: c.content,
     timestamp: c.createdAt,
+    parentCommentId: c.parentCommentId,
   }))
 }
 
@@ -121,10 +122,18 @@ export async function addStatusUpdateComment(
   updateId: string,
   content: string,
   authorName: string,
-  authorAvatarSrc?: string
+  authorAvatarSrc?: string,
+  options?: { parentCommentId?: string | null }
 ): Promise<StatusUpdateComment> {
   const update = await dbStatusUpdates.getStatusUpdateById(updateId)
   if (!update || update.teamId !== teamId) throw new Error('Update not found')
+  const parentCommentId = options?.parentCommentId ?? null
+  if (parentCommentId) {
+    const parent = await dbIssueComments.getIssueCommentById(parentCommentId)
+    if (!parent || parent.entityId !== updateId) {
+      throw new Error('Parent comment not found')
+    }
+  }
   const comment: StatusUpdateComment = {
     id: generateId(),
     updateId,
@@ -132,6 +141,7 @@ export async function addStatusUpdateComment(
     authorAvatarSrc,
     content,
     timestamp: new Date().toISOString(),
+    parentCommentId,
   }
   await dbIssueComments.insertIssueComment({
     id: comment.id,
@@ -140,7 +150,7 @@ export async function addStatusUpdateComment(
     authorAvatarSrc: comment.authorAvatarSrc,
     content: comment.content,
     createdAt: comment.timestamp,
-    parentCommentId: null,
+    parentCommentId: comment.parentCommentId,
     likes: 0,
     mentionAuthorIds: [],
     commentOptions: { hideReplies: false, hideLikes: false },

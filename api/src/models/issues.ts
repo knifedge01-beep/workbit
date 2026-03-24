@@ -255,6 +255,38 @@ export async function getNextIssueId(
   return `${counterStr}-${prefix}`
 }
 
+/** Next id after a duplicate insert (e.g. "05-WT" -> "06-WT"). Does not rely on re-listing issues—avoids stale reads returning the same candidate. */
+function bumpIssueIdAfterDuplicate(currentId: string): string | null {
+  const m = currentId.match(/^(\d+)-(.+)$/i)
+  if (!m) return null
+  const n = parseInt(m[1], 10)
+  if (!Number.isFinite(n) || n < 0) return null
+  const suffix = m[2]
+  const next = n + 1
+  const counterStr = String(next).padStart(2, '0')
+  return `${counterStr}-${suffix}`
+}
+
+const ISSUE_ID_ALLOCATION_MAX_ATTEMPTS = 256
+
+function isPrimaryKeyDuplicateError(err: unknown): boolean {
+  if (err && typeof err === 'object' && 'code' in err) {
+    const code = (err as { code: string }).code
+    if (code === '23505') return true
+  }
+  const msg =
+    err instanceof Error
+      ? err.message
+      : err && typeof err === 'object' && 'message' in err
+        ? String((err as { message: unknown }).message)
+        : String(err)
+  return (
+    msg.includes('duplicate key') ||
+    msg.includes('issues_pkey') ||
+    msg.includes('unique constraint')
+  )
+}
+
 export async function createIssue(input: {
   title: string
   teamId?: string
@@ -270,21 +302,34 @@ export async function createIssue(input: {
       throw new Error('Team not found')
     }
   }
-  const id = await getNextIssueId(input.projectId, input.teamId)
-  const issue: Issue = {
-    id,
-    title: input.title,
-    teamId: input.teamId,
-    projectId: input.projectId,
-    assigneeId: input.assigneeId,
-    status: input.status ?? 'todo',
-    date: new Date().toISOString(),
-    description: input.description,
-    parentIssueId: input.parentIssueId,
-  }
 
-  await db.insertIssue(issue)
-  return issue
+  let lastErr: unknown
+  let id = await getNextIssueId(input.projectId, input.teamId)
+  for (let attempt = 0; attempt < ISSUE_ID_ALLOCATION_MAX_ATTEMPTS; attempt++) {
+    const issue: Issue = {
+      id,
+      title: input.title,
+      teamId: input.teamId,
+      projectId: input.projectId,
+      assigneeId: input.assigneeId,
+      status: input.status ?? 'todo',
+      date: new Date().toISOString(),
+      description: input.description,
+      parentIssueId: input.parentIssueId,
+    }
+    try {
+      await db.insertIssue(issue)
+      return issue
+    } catch (e) {
+      lastErr = e
+      if (!isPrimaryKeyDuplicateError(e)) throw e
+      const bumped = bumpIssueIdAfterDuplicate(id)
+      id = bumped ?? (await getNextIssueId(input.projectId, input.teamId))
+    }
+  }
+  throw lastErr instanceof Error
+    ? lastErr
+    : new Error('Could not allocate a unique issue id after concurrent creates')
 }
 
 export async function getTeamIssuesForApi(

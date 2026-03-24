@@ -87,6 +87,7 @@ export interface StatusUpdateComment {
   authorAvatarSrc?: string
   content: string
   timestamp: string
+  parentCommentId: string | null
 }
 
 export interface IssueComment {
@@ -209,7 +210,6 @@ export interface Store {
   roles: Role[]
   invitations: Invitation[]
   statusUpdates: StatusUpdate[]
-  statusUpdateComments: StatusUpdateComment[]
   projectPropertiesByTeam: Record<string, ProjectProperties>
   milestones: Milestone[]
   activity: ActivityItem[]
@@ -226,7 +226,6 @@ export const EMPTY_STORE: Store = {
   roles: [],
   invitations: [],
   statusUpdates: [],
-  statusUpdateComments: [],
   projectPropertiesByTeam: {},
   milestones: [],
   activity: [],

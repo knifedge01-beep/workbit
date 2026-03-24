@@ -41,7 +41,7 @@ export function registerGetIssueTool(server) {
         },
     }, async ({ projectId }) => {
         try {
-            const issues = await makeWorkbitRequest(`/projects/${encodeURIComponent(projectId)}`);
+            const issues = await makeWorkbitRequest(`/projects/${encodeURIComponent(projectId)}/issues`);
             return {
                 content: [
                     {

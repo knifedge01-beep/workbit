@@ -2,8 +2,6 @@ import type { Request, Response } from 'express'
 import * as issuesModel from '../models/issues.js'
 import { logApiError } from '../utils/log.js'
 
-const DEFAULT_AUTHOR_NAME = 'You'
-
 export async function getTeamIssues(req: Request, res: Response) {
   try {
     const { teamId } = req.params
@@ -18,12 +16,14 @@ export async function getTeamIssues(req: Request, res: Response) {
 
 export async function getProjectIssues(req: Request, res: Response) {
   try {
-    const { id } = req.params
+    const { projectId } = req.params
     const filter = (req.query.filter as 'all' | 'active' | 'backlog') ?? 'all'
-    const list = await issuesModel.getProjectIssuesForApi(id, filter)
+    const list = await issuesModel.getProjectIssuesForApi(projectId, filter)
     res.json(list)
   } catch (e) {
-    logApiError(e, 'issues.getProjectIssues', { projectId: req.params.id })
+    logApiError(e, 'issues.getProjectIssues', {
+      projectId: req.params.projectId,
+    })
     res.status(500).json({ error: (e as Error).message })
   }
 }
@@ -149,87 +149,6 @@ export async function createIssue(req: Request, res: Response) {
       return
     }
     res.status(500).json({ error: msg })
-  }
-}
-
-export async function getIssueComments(req: Request, res: Response) {
-  try {
-    const { issueId } = req.params
-    const comments = await issuesModel.getIssueComments(issueId)
-    res.json(
-      comments.map((c) => ({
-        id: c.id,
-        entityId: c.entityId,
-        authorName: c.authorName,
-        authorAvatarSrc: c.authorAvatarSrc,
-        content: c.content,
-        createdAt: c.createdAt,
-        parentCommentId: c.parentCommentId,
-        likes: c.likes,
-        mentionAuthorIds: c.mentionAuthorIds,
-        commentOptions: c.commentOptions,
-      }))
-    )
-  } catch (e) {
-    logApiError(e, 'issues.getIssueComments', {
-      issueId: req.params.issueId,
-    })
-    res.status(500).json({ error: (e as Error).message })
-  }
-}
-
-export async function postIssueComment(req: Request, res: Response) {
-  try {
-    const { issueId } = req.params
-    const { content, parentCommentId } = req.body as {
-      content?: string
-      parentCommentId?: string | null
-    }
-    if (!content || typeof content !== 'string') {
-      res.status(400).json({ error: 'content is required' })
-      return
-    }
-    const authorName = req.user?.email ?? DEFAULT_AUTHOR_NAME
-    const comment = await issuesModel.addIssueComment(
-      issueId,
-      content,
-      {
-        name: authorName,
-        avatarSrc: undefined,
-      },
-      {
-        parentCommentId:
-          parentCommentId === undefined || parentCommentId === ''
-            ? null
-            : parentCommentId,
-      }
-    )
-    res.status(201).json({
-      id: comment.id,
-      entityId: comment.entityId,
-      authorName: comment.authorName,
-      authorAvatarSrc: comment.authorAvatarSrc,
-      content: comment.content,
-      createdAt: comment.createdAt,
-      parentCommentId: comment.parentCommentId,
-      likes: comment.likes,
-      mentionAuthorIds: comment.mentionAuthorIds,
-      commentOptions: comment.commentOptions,
-    })
-  } catch (e) {
-    logApiError(e, 'issues.postIssueComment', {
-      issueId: req.params.issueId,
-    })
-    const err = e as Error
-    if (err.message === 'Issue not found') {
-      res.status(404).json({ error: err.message })
-      return
-    }
-    if (err.message === 'Parent comment not found') {
-      res.status(400).json({ error: err.message })
-      return
-    }
-    res.status(500).json({ error: err.message })
   }
 }
 

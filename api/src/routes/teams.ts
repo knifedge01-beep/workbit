@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import * as teamsCtrl from '../controllers/teamsController.js'
 import * as issuesCtrl from '../controllers/issuesController.js'
+import * as commentsCtrl from '../controllers/commentsController.js'
 
 export const teamsRoutes = Router()
 
@@ -9,12 +10,12 @@ teamsRoutes.get('/:teamId/project', teamsCtrl.getTeamProject)
 teamsRoutes.get('/:teamId/project/issues', teamsCtrl.getTeamProjectIssues)
 teamsRoutes.get(
   '/:teamId/project/updates/:updateId/comments',
-  teamsCtrl.getStatusUpdateComments
+  commentsCtrl.getStatusUpdateComments
 )
 teamsRoutes.post('/:teamId/project/updates', teamsCtrl.postStatusUpdate)
 teamsRoutes.post(
   '/:teamId/project/updates/:updateId/comments',
-  teamsCtrl.postStatusUpdateComment
+  commentsCtrl.postStatusUpdateComment
 )
 teamsRoutes.patch('/:teamId/project', teamsCtrl.patchProject)
 teamsRoutes.post('/:teamId/project/milestones', teamsCtrl.postMilestone)

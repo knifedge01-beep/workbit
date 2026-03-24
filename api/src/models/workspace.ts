@@ -47,6 +47,24 @@ export async function getProjectsForApi(): Promise<ProjectListItemApi[]> {
   })
 }
 
+/** Single project for GET /api/v1/projects/:projectId (same shape as workspace project list items). */
+export async function getProjectByIdForApi(
+  projectId: string
+): Promise<ProjectListItemApi | null> {
+  const project = await dbProjects.getProjectById(projectId)
+  if (!project) return null
+  const team = await dbTeams.getTeamById(project.teamId)
+  return {
+    id: project.id,
+    name: project.name,
+    description: project.description,
+    team: team
+      ? { id: team.id, name: team.name }
+      : { id: project.teamId, name: project.teamId },
+    status: project.status,
+  }
+}
+
 export type TeamListItemApi = {
   id: string
   name: string

@@ -11,7 +11,9 @@
     "seed": "tsx src/scripts/seed.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.80.0",
     "@google/genai": "^1.45.0",
+    "@modelcontextprotocol/sdk": "^1.27.1",
     "@supabase/supabase-js": "^2.97.0",
     "@thedatablitz/logbit-sdk": "^0.1.16",
     "cors": "^2.8.5",

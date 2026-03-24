@@ -1,6 +1,8 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useEffect } from 'react'
 import { useWorkspace } from '../../contexts/WorkspaceContext'
+import { useFetch } from '../../hooks/useFetch'
+import { fetchProject, type ApiProjectSummary } from '../../api/client'
 import { TeamIssuesScreen } from '../TeamIssuesScreen'
 import { TeamProjectsScreen } from '../TeamProjectsScreen'
 import { TeamProjectDetailScreen } from '../TeamProjectDetailScreen'
@@ -17,6 +19,18 @@ import { RESERVED_TEAM_SEGMENTS, resolveTeamName } from './utils'
 function useTeamName(teamId: string | undefined) {
   const { teams } = useWorkspace()
   return resolveTeamName(teams, teamId)
+}
+
+/** Resolve display title from GET /projects/:projectId (avoids scanning full workspace project list). */
+function useProjectTitle(projectId: string | undefined) {
+  const { data } = useFetch(
+    () =>
+      projectId
+        ? fetchProject(projectId)
+        : Promise.resolve(null as ApiProjectSummary | null),
+    [projectId]
+  )
+  return data?.name ?? projectId ?? 'Project'
 }
 
 function useRedirectIfInvalidTeam() {
@@ -60,15 +74,7 @@ export function TeamProjectsScreenWrapper() {
 export function TeamProjectDetailScreenWrapper() {
   const { teamId, projectId } = useParams<TeamProjectRouteParams>()
   useRedirectIfInvalidTeam()
-  const { projects } = useWorkspace()
-  const projectName =
-    (teamId &&
-      projectId &&
-      projects.find(
-        (project) => project.team.id === teamId && project.id === projectId
-      )?.name) ??
-    projectId ??
-    'Project'
+  const projectName = useProjectTitle(projectId)
 
   return (
     <TeamProjectDetailScreen
@@ -82,15 +88,7 @@ export function TeamProjectDetailScreenWrapper() {
 export function TeamProjectDocumentationScreenWrapper() {
   const { teamId, projectId } = useParams<TeamProjectRouteParams>()
   useRedirectIfInvalidTeam()
-  const { projects } = useWorkspace()
-  const projectName =
-    (teamId &&
-      projectId &&
-      projects.find(
-        (project) => project.team.id === teamId && project.id === projectId
-      )?.name) ??
-    projectId ??
-    'Project'
+  const projectName = useProjectTitle(projectId)
 
   return (
     <TeamProjectDetailScreen
@@ -103,33 +101,17 @@ export function TeamProjectDocumentationScreenWrapper() {
 }
 
 export function TeamProjectNewDocumentScreenWrapper() {
-  const { teamId, projectId } = useParams<TeamProjectRouteParams>()
+  const { projectId } = useParams<TeamProjectRouteParams>()
   useRedirectIfInvalidTeam()
-  const { projects } = useWorkspace()
-  const projectName =
-    (teamId &&
-      projectId &&
-      projects.find(
-        (project) => project.team.id === teamId && project.id === projectId
-      )?.name) ??
-    projectId ??
-    'Project'
+  const projectName = useProjectTitle(projectId)
 
   return <ProjectDocumentEditorScreen projectName={projectName} mode="new" />
 }
 
 export function TeamProjectEditDocumentScreenWrapper() {
-  const { teamId, projectId } = useParams<TeamProjectDocumentRouteParams>()
+  const { projectId } = useParams<TeamProjectDocumentRouteParams>()
   useRedirectIfInvalidTeam()
-  const { projects } = useWorkspace()
-  const projectName =
-    (teamId &&
-      projectId &&
-      projects.find(
-        (project) => project.team.id === teamId && project.id === projectId
-      )?.name) ??
-    projectId ??
-    'Project'
+  const projectName = useProjectTitle(projectId)
 
   return <ProjectDocumentEditorScreen projectName={projectName} mode="edit" />
 }

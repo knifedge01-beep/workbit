@@ -22,10 +22,11 @@ import { issuesRoutes } from './routes/issues.js'
 import { meRoutes } from './routes/me.js'
 import { authRoutes } from './routes/auth.js'
 import { apiKeysRoutes } from './routes/apiKeys.js'
-import { seedIfEmpty } from './utils/seed.js'
 import { isSupabaseConfigured } from './utils/supabaseServer.js'
 import { LOGBIT_PROJECT_ID } from './utils/log.js'
 import { projectRoutes } from './routes/project.js'
+import { chatRoutes } from './routes/chat.js'
+import { agentsRoutes } from './routes/agents.js'
 
 const DEFAULT_PORT = 3001
 const API_PREFIX = '/api/v1'
@@ -44,6 +45,8 @@ app.use(`${API_PREFIX}/teams`, teamsRoutes)
 app.use(`${API_PREFIX}/issues`, issuesRoutes)
 app.use(`${API_PREFIX}/me`, meRoutes)
 app.use(`${API_PREFIX}/keys`, apiKeysRoutes)
+app.use(`${API_PREFIX}/chat`, chatRoutes)
+app.use(`${API_PREFIX}/agents`, agentsRoutes)
 
 app.get('/health', (_req, res) => res.json({ ok: true }))
 
@@ -53,8 +56,6 @@ async function start() {
   console.log(
     `[Store] Using ${usingSupabase ? 'Supabase' : 'file (data.json)'}. SUPABASE_URL set: ${Boolean(process.env.SUPABASE_URL)}. SUPABASE_SERVICE_ROLE_KEY set: ${Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY)}.`
   )
-  const seeded = await seedIfEmpty()
-  if (seeded) console.log('Seeded default data')
   app.listen(port, () => {
     console.log(`API listening on http://localhost:${port}`)
   })

@@ -213,6 +213,7 @@ export async function fetchProjects(): Promise<
   {
     id: string
     name: string
+    description: string
     team: { id: string; name: string }
     status: string
   }[]
@@ -221,6 +222,7 @@ export async function fetchProjects(): Promise<
     {
       id: string
       name: string
+      description: string
       team: { id: string; name: string }
       status: string
     }[]
@@ -229,11 +231,13 @@ export async function fetchProjects(): Promise<
 
 export async function createProject(body: {
   name: string
+  description?: string
   teamId: string
   status?: string
 }): Promise<{
   id: string
   name: string
+  description: string
   team: { id: string; name: string }
   status: string
 }> {
@@ -243,6 +247,7 @@ export async function createProject(body: {
   }) as Promise<{
     id: string
     name: string
+    description: string
     team: { id: string; name: string }
     status: string
   }>
@@ -318,6 +323,7 @@ export type TeamProjectResponse =
       team: { id: string; name: string }
       project: {
         id: string
+        description: string
         statusUpdates: { nodes: ApiStatusUpdate[] }
         properties: ApiProjectProperties
         milestones: {
@@ -392,21 +398,34 @@ export async function postStatusUpdate(
 export async function postComment(
   teamId: string,
   updateId: string,
-  content: string
+  content: string,
+  options?: { parentCommentId?: string | null }
 ): Promise<{
-  id: string
-  authorName: string
-  timestamp: string
-  content: string
-}> {
-  return authFetch(`/teams/${teamId}/project/updates/${updateId}/comments`, {
-    method: 'POST',
-    body: JSON.stringify({ content }),
-  }) as Promise<{
+  comments: Array<{
     id: string
     authorName: string
+    authorAvatarSrc?: string
     timestamp: string
     content: string
+    parentCommentId: string | null
+  }>
+}> {
+  const body =
+    options === undefined
+      ? { content }
+      : { content, parentCommentId: options.parentCommentId ?? null }
+  return authFetch(`/teams/${teamId}/project/updates/${updateId}/comments`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  }) as Promise<{
+    comments: Array<{
+      id: string
+      authorName: string
+      authorAvatarSrc?: string
+      timestamp: string
+      content: string
+      parentCommentId: string | null
+    }>
   }>
 }
 
@@ -420,6 +439,7 @@ export async function fetchStatusUpdateComments(
     authorAvatarSrc?: string
     timestamp: string
     content: string
+    parentCommentId: string | null
   }[]
 > {
   return authFetch(
@@ -431,6 +451,7 @@ export async function fetchStatusUpdateComments(
       authorAvatarSrc?: string
       timestamp: string
       content: string
+      parentCommentId: string | null
     }[]
   >
 }
@@ -465,6 +486,38 @@ export async function patchProject(
     method: 'PATCH',
     body: JSON.stringify(body),
   }) as Promise<ApiProjectProperties>
+}
+
+export type AgentRunMode = 'single' | 'planner_worker'
+
+export type RunProjectAgentResponse = {
+  summary: string
+  finishedReason?: 'max_rounds' | 'model_done' | 'empty_reply' | 'no_message'
+  mode: AgentRunMode
+  plan?: string
+}
+
+/** Run the project-scoped MCP agent (NVIDIA + allowlisted tools). */
+export async function runProjectAgent(
+  projectId: string,
+  body?: {
+    instructions?: string
+    maxRounds?: number
+    mode?: AgentRunMode
+  }
+): Promise<RunProjectAgentResponse> {
+  const raw = (await authFetch('/agents/run', {
+    method: 'POST',
+    body: JSON.stringify({
+      projectId,
+      ...(body?.instructions !== undefined
+        ? { instructions: body.instructions }
+        : {}),
+      ...(body?.maxRounds !== undefined ? { maxRounds: body.maxRounds } : {}),
+      ...(body?.mode !== undefined ? { mode: body.mode } : {}),
+    }),
+  })) as RunProjectAgentResponse
+  return raw
 }
 
 /** Generate an AI summary for the team project; stored as a status update with [ai-generated] prefix. Returns the new status update. */
@@ -552,6 +605,23 @@ export async function fetchTeamProjectIssues(
       subIssueCount: number
     }[]
   >
+}
+
+/** GET /projects/:projectId — workspace-scoped project metadata. */
+export interface ApiProjectSummary {
+  id: string
+  name: string
+  description: string
+  team: { id: string; name: string }
+  status: string
+}
+
+export async function fetchProject(
+  projectId: string
+): Promise<ApiProjectSummary> {
+  return authFetch(
+    `/projects/${encodeURIComponent(projectId)}`
+  ) as Promise<ApiProjectSummary>
 }
 
 export async function fetchProjectDecisions(
@@ -795,4 +865,15 @@ export async function updateIssue(
     method: 'PATCH',
     body: JSON.stringify(body),
   }) as Promise<ApiIssueDetail>
+}
+
+export type ApiChatReply = {
+  reply: string
+}
+
+export async function sendChatMessage(message: string): Promise<ApiChatReply> {
+  return authFetch('/chat', {
+    method: 'POST',
+    body: JSON.stringify({ message }),
+  }) as Promise<ApiChatReply>
 }

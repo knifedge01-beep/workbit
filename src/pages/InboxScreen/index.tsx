@@ -20,47 +20,49 @@ export function InboxScreen() {
         summary="Your notifications and updates will appear here."
       />
 
-      <div className="flex w-full min-h-0 flex-1 flex-col items-center justify-center px-2 pb-10 pt-6 sm:px-4 sm:pb-14 sm:pt-10">
-        <Box border padding="600" fullWidth>
-          <Stack gap="300" align="center" fullWidth>
-            <div
-              className="flex h-14 w-14 shrink-0 items-center justify-center bg-slate-100 text-slate-500"
-              aria-hidden
-            >
-              <Mail size={28} strokeWidth={1.75} />
-            </div>
-            <Text as="h2" variant="heading3">
-              No notifications yet
-            </Text>
-            <Text
-              variant="body3"
-              color="color.text.subtle"
-              className="max-w-md text-center"
-            >
-              When you have new updates, mentions, or assignments, they&apos;ll
-              appear here. Get started by creating an issue or exploring
-              projects.
-            </Text>
-            <Inline gap="150">
-              <Button
-                variant="glass"
-                className="rounded-none"
-                onClick={() => navigate(`${base}/issues/new`)}
+      <div className="flex w-full min-h-0 flex-1 flex-col gap-6 px-2 pb-10 pt-6 sm:px-4 sm:pb-14 sm:pt-10">
+        <div className="flex w-full min-h-0 flex-1 flex-col items-center justify-center">
+          <Box border padding="600" fullWidth>
+            <Stack gap="300" align="center" fullWidth>
+              <div
+                className="flex h-14 w-14 shrink-0 items-center justify-center bg-slate-100 text-slate-500"
+                aria-hidden
               >
-                <Plus size={16} aria-hidden />
-                Create Issue
-              </Button>
-              <Button
-                variant="glass"
-                className="rounded-none"
-                onClick={() => navigate(`${base}/workspace/projects`)}
+                <Mail size={28} strokeWidth={1.75} />
+              </div>
+              <Text as="h2" variant="heading3">
+                No notifications yet
+              </Text>
+              <Text
+                variant="body3"
+                color="color.text.subtle"
+                className="max-w-md text-center"
               >
-                <FolderKanban size={16} aria-hidden />
-                View Projects
-              </Button>
-            </Inline>
-          </Stack>
-        </Box>
+                When you have new updates, mentions, or assignments,
+                they&apos;ll appear here. Get started by creating an issue or
+                exploring projects.
+              </Text>
+              <Inline gap="150">
+                <Button
+                  variant="glass"
+                  className="rounded-none"
+                  onClick={() => navigate(`${base}/issues/new`)}
+                >
+                  <Plus size={16} aria-hidden />
+                  Create Issue
+                </Button>
+                <Button
+                  variant="glass"
+                  className="rounded-none"
+                  onClick={() => navigate(`${base}/workspace/projects`)}
+                >
+                  <FolderKanban size={16} aria-hidden />
+                  View Projects
+                </Button>
+              </Inline>
+            </Stack>
+          </Box>
+        </div>
       </div>
     </View>
   )

@@ -38,7 +38,16 @@ export interface IssueDetail {
   parentIssueId?: string | null
 }
 
-/** Matches GET /api/v1/projects/:projectId (issues list) */
+/** Matches GET /api/v1/projects/:projectId */
+export interface ProjectSummary {
+  id: string
+  name: string
+  description: string
+  team: { id: string; name: string }
+  status: string
+}
+
+/** Matches GET /api/v1/projects/:projectId/issues */
 export interface IssueListItem {
   id: string
   title: string
@@ -50,6 +59,77 @@ export interface IssueListItem {
 }
 
 export type IssueListFilter = 'all' | 'active' | 'backlog'
+
+export type ProjectStatus = 'on-track' | 'at-risk' | 'off-track'
+
+/** Status update card in project.details (same as app `ApiStatusUpdate`). */
+export interface ProjectStatusUpdate {
+  id: string
+  status: ProjectStatus
+  content: string
+  author: { id: string; name: string; avatarSrc?: string }
+  createdAt: string
+  commentCount: number
+}
+
+export type TeamProjectActivityIcon = 'milestone' | 'project'
+
+export interface TeamProjectProperties {
+  status?: string
+  priority?: string
+  startDate?: string
+  endDate?: string
+  [key: string]: unknown
+}
+
+/** Same payload as GET /api/v1/teams/:teamId/project (team project details page). */
+export type TeamProjectResponse =
+  | {
+      team: { id: string; name: string }
+      project: {
+        id: string
+        description: string
+        statusUpdates: { nodes: ProjectStatusUpdate[] }
+        properties: TeamProjectProperties
+        milestones: {
+          id: string
+          name: string
+          progress: number
+          total: number
+          targetDate: string
+        }[]
+        activity: {
+          id: string
+          message: string
+          date: string
+          icon: TeamProjectActivityIcon
+        }[]
+      }
+    }
+  | {
+      team: { id: string; name: string }
+      project: null
+    }
+
+/** GET /api/v1/teams/:teamId/project/updates/:updateId/comments */
+export interface StatusUpdateComment {
+  id: string
+  authorName: string
+  authorAvatarSrc?: string
+  content: string
+  timestamp: string
+  parentCommentId: string | null
+}
+
+export interface PostStatusUpdateCommentParams {
+  content: string
+  parentCommentId?: string | null
+}
+
+/** POST /api/v1/teams/:teamId/project/updates/:updateId/comments */
+export interface PostStatusUpdateCommentResult {
+  comments: StatusUpdateComment[]
+}
 
 let config: { apiKey: string; baseUrl: string } | null = null
 
@@ -97,13 +177,19 @@ export const workbit = {
     )
   },
 
+  async getProject(projectId: string): Promise<ProjectSummary> {
+    return requestJson<ProjectSummary>(
+      `/api/v1/projects/${encodeURIComponent(projectId)}`
+    )
+  },
+
   async getIssuesByProject(
     projectId: string,
     filter: IssueListFilter = 'all'
   ): Promise<IssueListItem[]> {
     const q = new URLSearchParams({ filter })
     return requestJson<IssueListItem[]>(
-      `/api/v1/projects/${encodeURIComponent(projectId)}?${q}`
+      `/api/v1/projects/${encodeURIComponent(projectId)}/issues?${q}`
     )
   },
 
@@ -112,5 +198,59 @@ export const workbit = {
       method: 'POST',
       body: JSON.stringify({ ...params }),
     })
+  },
+
+  /**
+   * Team + linked project details (status updates, milestones, activity, properties).
+   * Matches the app project details screen data: GET /api/v1/teams/:teamId/project.
+   */
+  async getTeamProject(teamId: string): Promise<TeamProjectResponse> {
+    return requestJson<TeamProjectResponse>(
+      `/api/v1/teams/${encodeURIComponent(teamId)}/project`
+    )
+  },
+
+  /** All comments on a project status update. */
+  async getProjectStatusUpdateComments(
+    teamId: string,
+    updateId: string
+  ): Promise<StatusUpdateComment[]> {
+    return requestJson<StatusUpdateComment[]>(
+      `/api/v1/teams/${encodeURIComponent(teamId)}/project/updates/${encodeURIComponent(updateId)}/comments`
+    )
+  },
+
+  /** A single comment on a status update, resolved from the update’s comment list. */
+  async getProjectStatusUpdateComment(
+    teamId: string,
+    updateId: string,
+    commentId: string
+  ): Promise<StatusUpdateComment> {
+    const list = await requestJson<StatusUpdateComment[]>(
+      `/api/v1/teams/${encodeURIComponent(teamId)}/project/updates/${encodeURIComponent(updateId)}/comments`
+    )
+    const item = list.find((c) => c.id === commentId)
+    if (!item) {
+      throw new Error(`Status update comment not found: ${commentId}`)
+    }
+    return item
+  },
+
+  /** Create a comment on a project status update (may return multiple entries if an AI reply is appended). */
+  async postProjectStatusUpdateComment(
+    teamId: string,
+    updateId: string,
+    params: PostStatusUpdateCommentParams
+  ): Promise<PostStatusUpdateCommentResult> {
+    const body: { content: string; parentCommentId?: string | null } = {
+      content: params.content,
+    }
+    if (params.parentCommentId !== undefined) {
+      body.parentCommentId = params.parentCommentId
+    }
+    return requestJson<PostStatusUpdateCommentResult>(
+      `/api/v1/teams/${encodeURIComponent(teamId)}/project/updates/${encodeURIComponent(updateId)}/comments`,
+      { method: 'POST', body: JSON.stringify(body) }
+    )
   },
 }

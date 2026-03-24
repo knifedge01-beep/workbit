@@ -27,8 +27,13 @@ export function registerUpdateIssueTool(server) {
                 .string()
                 .optional()
                 .describe('Optional new description for the issue.'),
+            parentIssueId: z
+                .string()
+                .nullable()
+                .optional()
+                .describe('Optional parent issue ID to set or change the parent, or null to remove it.'),
         },
-    }, async ({ issueId, status, assigneeId, assigneeName, projectId, description, }) => {
+    }, async ({ issueId, status, assigneeId, assigneeName, projectId, description, parentIssueId, }) => {
         try {
             const payload = {};
             if (status !== undefined)
@@ -41,12 +46,14 @@ export function registerUpdateIssueTool(server) {
                 payload.projectId = projectId;
             if (description !== undefined)
                 payload.description = description;
+            if (parentIssueId !== undefined)
+                payload.parentIssueId = parentIssueId;
             if (Object.keys(payload).length === 0) {
                 return {
                     content: [
                         {
                             type: 'text',
-                            text: 'No fields to update. Provide at least one of: status, assigneeId, assigneeName, projectId, description.',
+                            text: 'No fields to update. Provide at least one of: status, assigneeId, assigneeName, projectId, description, parentIssueId.',
                         },
                     ],
                 };

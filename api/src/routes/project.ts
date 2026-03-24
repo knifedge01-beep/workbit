@@ -2,6 +2,7 @@ import { Router } from 'express'
 import * as ctrl from '../controllers/issuesController.js'
 import * as decisionsCtrl from '../controllers/decisionsController.js'
 import * as projectDocsCtrl from '../controllers/projectDocumentsController.js'
+import * as projectsCtrl from '../controllers/projectsController.js'
 
 export const projectRoutes = Router()
 
@@ -18,7 +19,7 @@ projectRoutes.patch(
   '/:projectId/documents/:documentId',
   projectDocsCtrl.patchProjectDocument
 )
-projectRoutes.get('/:id', ctrl.getProjectIssues)
+projectRoutes.get('/:projectId/issues', ctrl.getProjectIssues)
 projectRoutes.get('/:projectId/decisions', decisionsCtrl.listProjectDecisions)
 projectRoutes.post('/:projectId/decisions', decisionsCtrl.createProjectDecision)
 projectRoutes.patch(
@@ -29,3 +30,4 @@ projectRoutes.delete(
   '/:projectId/decisions/:decisionId',
   decisionsCtrl.deleteProjectDecision
 )
+projectRoutes.get('/:projectId', projectsCtrl.getProject)

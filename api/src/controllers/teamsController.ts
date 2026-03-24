@@ -107,27 +107,6 @@ export async function getTeamProjectIssues(req: Request, res: Response) {
   }
 }
 
-export async function getStatusUpdateComments(req: Request, res: Response) {
-  try {
-    const { updateId } = req.params
-    const comments = await teamsModel.getStatusUpdateComments(updateId)
-    res.json(
-      comments.map((c) => ({
-        id: c.id,
-        authorName: c.authorName,
-        authorAvatarSrc: c.authorAvatarSrc,
-        content: c.content,
-        timestamp: c.timestamp,
-      }))
-    )
-  } catch (e) {
-    logApiError(e, 'teams.getStatusUpdateComments', {
-      updateId: req.params.updateId,
-    })
-    res.status(500).json({ error: (e as Error).message })
-  }
-}
-
 export async function postStatusUpdate(req: Request, res: Response) {
   try {
     const { teamId } = req.params
@@ -165,35 +144,6 @@ export async function postStatusUpdate(req: Request, res: Response) {
   } catch (e) {
     logApiError(e, 'teams.postStatusUpdate', { teamId: req.params.teamId })
     res.status(500).json({ error: (e as Error).message })
-  }
-}
-
-export async function postStatusUpdateComment(req: Request, res: Response) {
-  try {
-    const { teamId, updateId } = req.params
-    const { content } = req.body as { content?: string }
-    if (!content || typeof content !== 'string') {
-      res.status(400).json({ error: 'content is required' })
-      return
-    }
-    const authorName = req.user?.email ?? DEFAULT_AUTHOR_NAME
-    const comment = await teamsModel.addStatusUpdateComment(
-      teamId,
-      updateId,
-      content,
-      authorName,
-      undefined
-    )
-    res.status(201).json(comment)
-  } catch (e) {
-    logApiError(e, 'teams.postStatusUpdateComment', {
-      teamId: req.params.teamId,
-      updateId: req.params.updateId,
-    })
-    const err = e as Error
-    if (err.message === 'Update not found')
-      res.status(404).json({ error: err.message })
-    else res.status(500).json({ error: err.message })
   }
 }
 

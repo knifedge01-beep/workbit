@@ -99,3 +99,53 @@ export function registerUpdateProjectTool(server: McpServer): void {
     }
   )
 }
+
+export function registerUpdateProjectStatusTool(server: McpServer): void {
+  server.registerTool(
+    'updateProjectStatus',
+    {
+      description:
+        "Update only a team's project status (e.g. 'on-track', 'at-risk', 'off-track').",
+      inputSchema: {
+        teamId: z
+          .string()
+          .min(1)
+          .describe('The team ID that owns the project to update.'),
+        status: z
+          .string()
+          .min(1)
+          .describe(
+            "Project status (e.g. 'on-track', 'at-risk', 'off-track')."
+          ),
+      },
+    },
+    async ({ teamId, status }) => {
+      try {
+        const result = await makeWorkbitPatchRequest<unknown>(
+          `/teams/${encodeURIComponent(teamId)}/project`,
+          { status }
+        )
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        }
+      } catch (error) {
+        logMcpError(error, 'tools.updateProjectStatus', { teamId, status })
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Failed to update project status in Workbit API: ${
+                (error as Error).message
+              }`,
+            },
+          ],
+        }
+      }
+    }
+  )
+}

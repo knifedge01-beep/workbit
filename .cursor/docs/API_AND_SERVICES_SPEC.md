@@ -226,7 +226,7 @@ No mandatory API until screen has concrete features.
 |------|------|-----|
 | Current team context | — | From route `teamId` + **GraphQL** `team(teamId)` if needed |
 | Latest status update + list of updates | GET | **GraphQL** `teamProjectUpdates(teamId)` or `project(teamId).statusUpdates` |
-| Comments for an update | GET | **GraphQL** `statusUpdateComments(updateId)` |
+| Comments for an update | GET | **GraphQL** `statusUpdate(id) { comments }` |
 | Post status update | POST | **REST** `POST /api/v1/teams/:teamId/project/updates` |
 | Post comment on update | POST | **REST** `POST /api/v1/teams/:teamId/project/updates/:updateId/comments` |
 | Project status panel: properties, milestones, activity | GET | **GraphQL** `teamProject(teamId) { properties, milestones, activity }` |
@@ -436,7 +436,7 @@ Services are thin wrappers around HTTP/GraphQL clients. Suggested location: `src
 | **graphqlClient** | Configure GraphQL client (e.g. Apollo or `fetch` to `POST /graphql`). Export `query<T>(document, variables)`. |
 | **restClient** | Base REST client (base URL, auth headers). Export `get`, `post`, `put`, `patch`, `delete`. |
 | **workspaceService** | Use GraphQL for: `workspaceProjects`, `workspaceTeams`, `workspaceMembers`, `workspaceViews`, `workspaceRoles`. Use REST for: `inviteMember`. |
-| **projectService** | Use GraphQL for: `teamProject`, `teamProjectUpdates`, `statusUpdateComments`. Use REST for: `postStatusUpdate`, `postComment`, `createMilestone`, `updateMilestone`, `updateProject`. |
+| **projectService** | Use GraphQL for: `teamProject`, `teamProjectUpdates`, `statusUpdate(id) { comments }`. Use REST for: `postStatusUpdate`, `postComment`, `createMilestone`, `updateMilestone`, `updateProject`. |
 | **issueService** | Use GraphQL for: `teamIssues`, `myIssues`. Use REST for: `updateIssue`. |
 | **teamService** | Use GraphQL for: `team` (by id), `teamViews`, `teamLogs`, `navTeams`. |
 | **inboxService** | Use GraphQL for: `inbox` / `me.notifications`. Optional REST for mark-read if needed. |

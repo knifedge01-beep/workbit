@@ -46,6 +46,7 @@ import {
   createMilestone,
   patchProject,
   generateProjectSummary,
+  runProjectAgent,
   updateIssue as apiUpdateIssue,
   fetchProjectDocuments,
 } from '../../api/client'
@@ -65,10 +66,9 @@ import {
   DEFAULT_PRIORITY,
   INLINE_PRIORITY_OPTIONS,
   apiUpdateToCard,
-  appendChildNode,
   buildProjectIssueTreeData,
 } from './utils/helpers'
-import { Plus } from 'lucide-react'
+import { Bot, Plus } from 'lucide-react'
 
 function walkExpandedProjectIssueParents(
   table: TanStackTable<ProjectDetailIssueRow>,
@@ -86,6 +86,38 @@ function walkExpandedProjectIssueParents(
     }
   }
   rec(table.getRowModel().rows)
+}
+
+function mapStatusCommentsToUpdateItems(params: {
+  updateId: string
+  status: ProjectStatus
+  comments: Array<{
+    id: string
+    authorName: string
+    timestamp: string
+    content: string
+    parentCommentId: string | null
+  }>
+}): UpdateItem[] {
+  const commentsById = new Map(params.comments.map((c) => [c.id, c]))
+  return params.comments.map((comment) => {
+    const parentId =
+      comment.parentCommentId && commentsById.has(comment.parentCommentId)
+        ? `${params.updateId}:comment:${comment.parentCommentId}`
+        : params.updateId
+    return {
+      id: `${params.updateId}:comment:${comment.id}`,
+      kind: 'comment',
+      updateId: params.updateId,
+      parentId,
+      content: comment.content,
+      author: comment.authorName,
+      timestamp: formatDateTime(comment.timestamp),
+      status: params.status,
+      comments: [],
+      reactions: {},
+    }
+  })
 }
 
 export function TeamProjectDetailScreen({
@@ -123,9 +155,20 @@ export function TeamProjectDetailScreen({
   const [showMilestoneModal, setShowMilestoneModal] = useState(false)
   const [milestoneName, setMilestoneName] = useState('')
   const [milestoneDate, setMilestoneDate] = useState('')
+  const [projectDescription, setProjectDescription] = useState('')
   const [projectSummary, setProjectSummary] = useState<string | null>(null)
   const [summaryLoading, setSummaryLoading] = useState(false)
   const [summaryError, setSummaryError] = useState<string | null>(null)
+  const [agentRunningMode, setAgentRunningMode] = useState<
+    'single' | 'planner_worker' | null
+  >(null)
+  const [agentError, setAgentError] = useState<string | null>(null)
+  const [agentOutcome, setAgentOutcome] = useState<{
+    summary: string
+    finishedReason?: string
+    plan?: string
+    mode: string
+  } | null>(null)
   const [issueOverrides, setIssueOverrides] = useState<
     Record<string, { status?: string; priority?: string }>
   >({})
@@ -273,6 +316,7 @@ export function TeamProjectDetailScreen({
           setCommentsByUpdateId({})
           setMilestones([])
           setActivity([])
+          setProjectDescription('')
           setProperties({})
           return
         }
@@ -288,18 +332,11 @@ export function TeamProjectDetailScreen({
                 teamId,
                 update.id
               )
-              const mapped: UpdateItem[] = comments.map((comment) => ({
-                id: `${update.id}:comment:${comment.id}`,
-                kind: 'comment',
+              const mapped = mapStatusCommentsToUpdateItems({
                 updateId: update.id,
-                parentId: update.id,
-                content: comment.content,
-                author: comment.authorName,
-                timestamp: formatDateTime(comment.timestamp),
                 status: update.status,
-                comments: [],
-                reactions: {},
-              }))
+                comments,
+              })
               return [update.id, mapped] as const
             })
           )
@@ -326,6 +363,7 @@ export function TeamProjectDetailScreen({
             date: formatDateTime(item.date),
           }))
         )
+        setProjectDescription(data.project.description ?? '')
         setProperties(data.project.properties)
       })
       .catch((e) => logError(e, 'TeamProjectDetail'))
@@ -363,60 +401,42 @@ export function TeamProjectDetailScreen({
     if (!teamId) return
 
     const updateId = item.updateId
-
-    if (item.kind === 'update') {
-      await postComment(teamId, updateId, content)
-        .then((comment) => {
-          const created: UpdateItem = {
-            id: `${updateId}:comment:${comment.id}`,
-            kind: 'comment',
-            updateId,
-            parentId: updateId,
-            content: comment.content,
-            author: comment.authorName,
-            timestamp: formatDateTime(comment.timestamp),
-            status: item.status,
-            comments: [],
-            reactions: {},
-          }
-
-          setCommentsByUpdateId((prev) => ({
-            ...prev,
-            [updateId]: [...(prev[updateId] ?? []), created],
-          }))
-
-          setUpdates((prev) =>
-            prev.map((update) =>
-              update.id === updateId
-                ? { ...update, commentCount: (update.commentCount ?? 0) + 1 }
-                : update
-            )
-          )
-        })
-        .catch((e) => {
-          logError(e, 'TeamProjectDetail.postComment')
-          throw e
-        })
-      return
-    }
-
-    const localReply: UpdateItem = {
-      id: `${updateId}:local:${Date.now()}:${Math.random().toString(16).slice(2, 8)}`,
-      kind: 'comment',
+    await postComment(
+      teamId,
       updateId,
-      parentId: item.id,
       content,
-      author: 'You',
-      timestamp: formatDateTime(new Date().toISOString()),
-      status: item.status,
-      comments: [],
-      reactions: {},
-    }
+      item.kind === 'comment'
+        ? { parentCommentId: item.id.replace(`${updateId}:comment:`, '') }
+        : undefined
+    )
+      .then((result) => {
+        const createdItems = mapStatusCommentsToUpdateItems({
+          updateId,
+          status: item.status ?? 'on-track',
+          comments: result.comments,
+        })
 
-    setCommentsByUpdateId((prev) => ({
-      ...prev,
-      [updateId]: appendChildNode(prev[updateId] ?? [], item.id, localReply),
-    }))
+        setCommentsByUpdateId((prev) => ({
+          ...prev,
+          [updateId]: [...(prev[updateId] ?? []), ...createdItems],
+        }))
+
+        setUpdates((prev) =>
+          prev.map((update) =>
+            update.id === updateId
+              ? {
+                  ...update,
+                  commentCount:
+                    (update.commentCount ?? 0) + createdItems.length,
+                }
+              : update
+          )
+        )
+      })
+      .catch((e) => {
+        logError(e, 'TeamProjectDetail.postComment')
+        throw e
+      })
   }
 
   const handleAddMilestone = () => {
@@ -478,6 +498,27 @@ export function TeamProjectDetailScreen({
         setSummaryError((e as Error).message)
       })
       .finally(() => setSummaryLoading(false))
+  }
+
+  const handleRunAgent = (mode: 'single' | 'planner_worker') => {
+    if (!projectId) return
+    setAgentRunningMode(mode)
+    setAgentError(null)
+    setAgentOutcome(null)
+    runProjectAgent(projectId, { mode })
+      .then((out) => {
+        setAgentOutcome({
+          summary: out.summary,
+          finishedReason: out.finishedReason,
+          plan: out.plan,
+          mode: out.mode,
+        })
+      })
+      .catch((e) => {
+        logError(e, 'TeamProjectDetail.runProjectAgent')
+        setAgentError((e as Error).message)
+      })
+      .finally(() => setAgentRunningMode(null))
   }
 
   const updateIssuePriority = useCallback(
@@ -687,7 +728,7 @@ export function TeamProjectDetailScreen({
 
   if (loading) {
     return (
-      <Inline align="flex-start" gap="400" fullWidth wrap>
+      <Inline align="flex-start" gap="400" fullWidth wrap={false}>
         <Box border padding="400" fullWidth>
           <Text variant="body3" color="color.text.subtle">
             Loading project...
@@ -700,7 +741,7 @@ export function TeamProjectDetailScreen({
 
   return (
     <>
-      <Inline align="flex-start" gap="400" fullWidth wrap>
+      <Inline align="flex-start" gap="400" fullWidth wrap={false}>
         <Stack fullWidth gap="200">
           <Breadcrumbs separator=">">
             <BreadcrumbsItem text="Projects" />
@@ -736,7 +777,12 @@ export function TeamProjectDetailScreen({
                       <Avatar name={projectName[0]?.toUpperCase() ?? 'P'} />
                       <Text variant="heading4">{projectName}</Text>
                     </Inline>
-                    <Inline fullWidth>
+                    {projectDescription ? (
+                      <Text variant="body2" color="color.text.subtle">
+                        {projectDescription}
+                      </Text>
+                    ) : null}
+                    <Inline fullWidth wrap gap="100">
                       <Button
                         icon={<Plus size={16} />}
                         variant="warning"
@@ -752,7 +798,7 @@ export function TeamProjectDetailScreen({
                         Add document or link
                       </Button>
                       <Button
-                        variant="info"
+                        variant="ai"
                         size="small"
                         onClick={handleGenerateSummary}
                         disabled={summaryLoading}
@@ -760,9 +806,81 @@ export function TeamProjectDetailScreen({
                       >
                         {summaryLoading ? 'Generating…' : 'Generate Summary'}
                       </Button>
+                      <Button
+                        variant="glass"
+                        size="small"
+                        icon={<Bot size={16} />}
+                        disabled={agentRunningMode !== null || !projectId}
+                        onClick={() => handleRunAgent('single')}
+                      >
+                        {agentRunningMode === 'single'
+                          ? 'Running…'
+                          : 'Run agent'}
+                      </Button>
+                      <Button
+                        variant="glass"
+                        size="small"
+                        icon={<Bot size={16} />}
+                        disabled={agentRunningMode !== null || !projectId}
+                        onClick={() => handleRunAgent('planner_worker')}
+                      >
+                        {agentRunningMode === 'planner_worker'
+                          ? 'Running…'
+                          : 'Plan & run'}
+                      </Button>
                     </Inline>
                   </Stack>
                 </Inline>
+
+                {agentError ? (
+                  <Banner variant="danger" size="small" title={agentError} />
+                ) : null}
+                {agentOutcome ? (
+                  <Card fullWidth variant="default" size="small">
+                    <CardContent>
+                      <Stack gap="200">
+                        <Text variant="caption2" color="color.text.subtle">
+                          Agent · {agentOutcome.mode}
+                          {agentOutcome.finishedReason
+                            ? ` · ${agentOutcome.finishedReason}`
+                            : ''}
+                        </Text>
+                        {agentOutcome.plan ? (
+                          <>
+                            <Text variant="heading6">Plan</Text>
+                            <Text
+                              variant="body3"
+                              paragraphSpacing
+                              style={{ whiteSpace: 'pre-wrap' }}
+                            >
+                              {agentOutcome.plan}
+                            </Text>
+                          </>
+                        ) : null}
+                        <Text variant="heading6">Summary</Text>
+                        <Text
+                          variant="body3"
+                          paragraphSpacing
+                          style={{ whiteSpace: 'pre-wrap' }}
+                        >
+                          {agentOutcome.summary}
+                        </Text>
+                      </Stack>
+                    </CardContent>
+                    <CardFooter>
+                      <Button
+                        buttonType="link"
+                        size="small"
+                        onClick={() => {
+                          setAgentOutcome(null)
+                          setAgentError(null)
+                        }}
+                      >
+                        Dismiss
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                ) : null}
 
                 {projectSummary !== null ? (
                   <Card fullWidth variant="default" size="small">
@@ -831,7 +949,6 @@ export function TeamProjectDetailScreen({
                         <ProjectUpdateHighlightCard
                           update={featuredUpdate}
                           onAddComment={handleAddComment}
-                          onViewFullThread={() => setActiveTab('updates')}
                         />
                         <UpdatesTree
                           updates={updatesTreeItems}
@@ -851,13 +968,6 @@ export function TeamProjectDetailScreen({
                     />
                   </Stack>
                 )}
-
-                <Stack gap="100">
-                  <Text variant="heading6">Description</Text>
-                  <Button buttonType="link" size="small">
-                    Add description...
-                  </Button>
-                </Stack>
 
                 <MilestonesSection
                   milestones={milestones}
@@ -1016,11 +1126,12 @@ export function TeamProjectDetailScreen({
           )}
         </Stack>
 
-        <Stack gap="100" fullWidth>
-          <Box border padding="300">
-            <Inline align="center" justify="space-between" fullWidth>
-              <Text variant="body3">Properties</Text>
-            </Inline>
+        <Stack gap="200" className="max-w-[300px]" fullWidth>
+          <Box>
+            <Text variant="heading6">Other Details</Text>
+          </Box>
+          <Box border padding="200">
+            <Text variant="heading7">Properties</Text>
             <PropertiesSection
               key={`${properties?.status}-${properties?.priority}`}
               contentOnly
@@ -1039,9 +1150,9 @@ export function TeamProjectDetailScreen({
             />
           </Box>
 
-          <Box border padding="300">
+          <Box border padding="200">
             <Inline align="center" justify="space-between" fullWidth>
-              <Text variant="heading4">Milestones</Text>
+              <Text variant="heading7">Milestones</Text>
               <Button
                 size="small"
                 onClick={handleAddMilestone}
@@ -1055,9 +1166,9 @@ export function TeamProjectDetailScreen({
             </Text>
           </Box>
 
-          <Box border padding="300">
+          <Box border padding="200">
             <Inline align="center" justify="space-between" fullWidth>
-              <Text variant="body3">Activity</Text>
+              <Text variant="heading7">Activity</Text>
               <Button buttonType="link" size="small" onClick={noop}>
                 See all
               </Button>

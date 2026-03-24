@@ -22,7 +22,7 @@ To use Supabase instead of the file store and enable email auth:
 
 1. **Create the database tables in Supabase** (required before `npm run seed` or API use):
    - Open your [Supabase project](https://supabase.com/dashboard) → **SQL Editor**.
-   - Run the SQL in **`api/scripts/create-separate-tables.sql`**. This creates separate tables: `projects`, `teams`, `members`, `views`, `roles`, `invitations`, `status_updates`, `status_update_comments`, `project_properties`, `milestones`, `activity`, `issues`, `notifications`.
+   - Run the SQL in **`api/scripts/create-separate-tables.sql`**. This creates separate tables: `projects`, `teams`, `members`, `views`, `roles`, `invitations`, `status_updates`, `project_properties`, `milestones`, `activity`, `issues`, `notifications`, and `comments`.
 2. Copy `api/.env.example` to `api/.env` and set `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` (from Supabase → Settings → API). The API loads `api/.env` automatically when you run `npm run seed` or `npm run dev` from the `api` folder.
 3. **Run seed:** `cd api && npm run seed`. This inserts dummy data into the separate tables.
 4. When these env vars are set, the API reads/writes from Supabase and requires a valid Supabase JWT for all `/api/v1` requests. Send `Authorization: Bearer <access_token>` from the frontend.

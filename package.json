@@ -49,7 +49,7 @@
     "@thedatablitz/breadcrumb": "^0.2.0",
     "@thedatablitz/button": "^0.1.5",
     "@thedatablitz/card": "^0.1.2",
-    "@thedatablitz/comment": "^0.2.0",
+    "@thedatablitz/comment": "^0.4.0",
     "@thedatablitz/date-time-picker": "^0.2.0",
     "@thedatablitz/dropdown": "^0.3.0",
     "@thedatablitz/inline": "^0.1.2",

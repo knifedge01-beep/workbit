@@ -11,7 +11,6 @@ import type {
   Role,
   Invitation,
   StatusUpdate,
-  StatusUpdateComment,
   ProjectProperties,
   ProjectDocument,
   ProjectDocumentSummary,
@@ -106,17 +105,6 @@ export function rowToStatusUpdate(r: DbRow): StatusUpdate {
     projectId: (r.project_id as string | undefined) ?? null,
     issueId: (r.issue_id as string | undefined) ?? null,
     milestoneId: (r.milestone_id as string | undefined) ?? null,
-  }
-}
-
-export function rowToStatusUpdateComment(r: DbRow): StatusUpdateComment {
-  return {
-    id: r.id as string,
-    updateId: r.update_id as string,
-    authorName: r.author_name as string,
-    authorAvatarSrc: r.author_avatar_src as string | undefined,
-    content: r.content as string,
-    timestamp: r.timestamp as string,
   }
 }
 
@@ -325,19 +313,6 @@ function statusUpdateToRow(u: StatusUpdate): Record<string, unknown> {
   }
 }
 
-function statusUpdateCommentToRow(
-  c: StatusUpdateComment
-): Record<string, unknown> {
-  return {
-    id: c.id,
-    update_id: c.updateId,
-    author_name: c.authorName,
-    author_avatar_src: c.authorAvatarSrc ?? null,
-    content: c.content,
-    timestamp: c.timestamp,
-  }
-}
-
 function projectPropertiesToRow(
   teamId: string,
   p: ProjectProperties
@@ -413,9 +388,6 @@ export function storeToRows(store: Store) {
     roles: store.roles.map((r) => roleToRow(r)),
     invitations: store.invitations.map((i) => invitationToRow(i)),
     status_updates: store.statusUpdates.map((u) => statusUpdateToRow(u)),
-    status_update_comments: store.statusUpdateComments.map((c) =>
-      statusUpdateCommentToRow(c)
-    ),
     project_properties: Object.entries(store.projectPropertiesByTeam ?? {}).map(
       ([teamId, p]) => projectPropertiesToRow(teamId, p)
     ),

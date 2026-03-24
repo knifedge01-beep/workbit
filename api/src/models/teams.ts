@@ -8,7 +8,7 @@ import type {
 } from './types.js'
 import * as dbTeams from '../db/teams.js'
 import * as dbStatusUpdates from '../db/statusUpdates.js'
-import * as dbStatusUpdateComments from '../db/statusUpdateComments.js'
+import * as dbIssueComments from '../db/issueComments.js'
 import * as dbProjectProperties from '../db/projectProperties.js'
 import * as dbMilestones from '../db/milestones.js'
 import * as dbActivity from '../db/activity.js'
@@ -69,7 +69,15 @@ export async function getTeamProject(teamId: string) {
 export async function getStatusUpdateComments(
   updateId: string
 ): Promise<StatusUpdateComment[]> {
-  return dbStatusUpdateComments.getStatusUpdateCommentsByUpdateId(updateId)
+  const comments = await dbIssueComments.getIssueCommentsByIssueId(updateId)
+  return comments.map((c) => ({
+    id: c.id,
+    updateId: c.entityId,
+    authorName: c.authorName,
+    authorAvatarSrc: c.authorAvatarSrc,
+    content: c.content,
+    timestamp: c.createdAt,
+  }))
 }
 
 export async function getStatusUpdatesByIssueId(
@@ -125,7 +133,18 @@ export async function addStatusUpdateComment(
     content,
     timestamp: new Date().toISOString(),
   }
-  await dbStatusUpdateComments.insertStatusUpdateComment(comment)
+  await dbIssueComments.insertIssueComment({
+    id: comment.id,
+    entityId: comment.updateId,
+    authorName: comment.authorName,
+    authorAvatarSrc: comment.authorAvatarSrc,
+    content: comment.content,
+    createdAt: comment.timestamp,
+    parentCommentId: null,
+    likes: 0,
+    mentionAuthorIds: [],
+    commentOptions: { hideReplies: false, hideLikes: false },
+  })
   await dbStatusUpdates.updateStatusUpdateCommentCount(
     updateId,
     (update.commentCount ?? 0) + 1

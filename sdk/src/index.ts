@@ -10,6 +10,21 @@ export interface CreateIssueParams {
   parentIssueId?: string
 }
 
+export interface CreateProjectParams {
+  name: string
+  teamId: string
+  description?: string
+  status?: ProjectStatus
+}
+
+export interface CreatedProject {
+  id: string
+  name: string
+  description?: string
+  team: { id: string; name: string }
+  status: string
+}
+
 export interface CreatedIssue {
   id: string
   title: string
@@ -196,6 +211,13 @@ export const workbit = {
 
   async issue(params: CreateIssueParams): Promise<CreatedIssue> {
     return requestJson<CreatedIssue>('/api/v1/issues', {
+      method: 'POST',
+      body: JSON.stringify({ ...params }),
+    })
+  },
+
+  async createProject(params: CreateProjectParams): Promise<CreatedProject> {
+    return requestJson<CreatedProject>('/api/v1/workspace/projects', {
       method: 'POST',
       body: JSON.stringify({ ...params }),
     })

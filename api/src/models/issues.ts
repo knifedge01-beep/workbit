@@ -374,6 +374,7 @@ export async function getProjectIssuesForApi(
       return {
         id: i.id,
         title: i.title,
+        description: i.description,
         assignee: assignee
           ? { id: assignee.id, name: assignee.name }
           : i.assigneeName

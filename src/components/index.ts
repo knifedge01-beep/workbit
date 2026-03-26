@@ -5,7 +5,6 @@ export {
 } from './StatusSelector'
 export { PrioritySelector, type PriorityOption } from './PrioritySelector'
 export { SidebarNav } from './SidebarNav'
-export { WhatsNewCard } from './WhatsNewCard'
 export { MilestoneForm } from './MilestoneForm'
 export { PropertiesSection } from './PropertiesSection'
 export { MilestonesSection, type MilestoneItem } from './MilestonesSection'

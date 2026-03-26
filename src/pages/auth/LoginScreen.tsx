@@ -1,58 +1,13 @@
 import { useState } from 'react'
-import { Navigate, useNavigate, useLocation } from 'react-router-dom'
-import { Input } from '@design-system'
-import styled from 'styled-components'
+import { Link, Navigate, useNavigate, useLocation } from 'react-router-dom'
+import { Box } from '@thedatablitz/box'
+import { Card, CardContent } from '@thedatablitz/card'
+import { Stack } from '@thedatablitz/stack'
+import { Text } from '@thedatablitz/text'
+import { TextInput } from '@thedatablitz/text-input'
 import { getSupabase, isAuthConfigured } from './supabaseClient'
 import { useAuth } from './AuthContext'
 import { Button } from '@thedatablitz/button'
-
-const Wrapper = styled.div`
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: ${(p) => p.theme.colors.backgroundSubtle};
-`
-
-const Card = styled.div`
-  width: 100%;
-  max-width: 360px;
-  padding: 32px;
-  background: ${(p) => p.theme.colors.surface};
-  border: 1px solid ${(p) => p.theme.colors.border};
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-`
-
-const Title = styled.h1`
-  margin: 0 0 24px;
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: ${(p) => p.theme.colors.text};
-`
-
-const Form = styled.form`
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-`
-
-const Field = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  label {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: ${(p) => p.theme.colors.text};
-  }
-`
-
-const Error = styled.p`
-  margin: 0;
-  font-size: 0.875rem;
-  color: ${(p) => p.theme.colors.error ?? '#dc2626'};
-`
 
 export function LoginScreen() {
   const [email, setEmail] = useState('')
@@ -84,8 +39,7 @@ export function LoginScreen() {
     return <Navigate to={returnTo} replace />
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  async function handleSignIn() {
     setError(null)
     setLoading(true)
     const supabase = getSupabase()
@@ -107,40 +61,74 @@ export function LoginScreen() {
   }
 
   return (
-    <Wrapper>
-      <Card>
-        <Title>Sign in</Title>
-        <Form onSubmit={handleSubmit}>
-          <Field>
-            <label htmlFor="login-email">Email</label>
-            <Input
-              id="login-email"
-              type="email"
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              required
-            />
-          </Field>
-          <Field>
-            <label htmlFor="login-password">Password</label>
-            <Input
-              id="login-password"
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              required
-            />
-          </Field>
-          {error && <Error>{error}</Error>}
-          <Button variant="primary" onClick={handleSubmit} disabled={loading}>
-            {loading ? 'Signing in…' : 'Sign in'}
-          </Button>
-        </Form>
+    <Box
+      fullWidth
+      align="center"
+      justify="center"
+      className="min-h-screen bg-slate-50 px-4 py-10"
+    >
+      <Card variant="default" fullWidth style={{ maxWidth: '420px' }}>
+        <CardContent>
+          <Stack gap="200">
+            <Text as="h1" variant="heading3">
+              Sign in
+            </Text>
+            <Stack gap="150" fullWidth>
+              <Stack gap="050" fullWidth>
+                <label htmlFor="login-email">
+                  <Text as="span" variant="body3">
+                    Email
+                  </Text>
+                </label>
+                <TextInput
+                  id="login-email"
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  required
+                  fullWidth
+                />
+              </Stack>
+              <Stack gap="050" fullWidth>
+                <label htmlFor="login-password">
+                  <Text as="span" variant="body3">
+                    Password
+                  </Text>
+                </label>
+                <TextInput
+                  id="login-password"
+                  type="password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="********"
+                  required
+                  fullWidth
+                />
+              </Stack>
+              {error ? (
+                <Text as="p" variant="body3" color="color.icon.danger">
+                  {error}
+                </Text>
+              ) : null}
+              <Button
+                variant="primary"
+                disabled={loading}
+                loading={loading}
+                onClick={handleSignIn}
+                className="w-full"
+              >
+                {loading ? 'Signing in...' : 'Sign in'}
+              </Button>
+            </Stack>
+            <Text as="p" variant="body3" color="color.text.subtle">
+              Don&apos;t have an account? <Link to="/signup">Create one</Link>
+            </Text>
+          </Stack>
+        </CardContent>
       </Card>
-    </Wrapper>
+    </Box>
   )
 }

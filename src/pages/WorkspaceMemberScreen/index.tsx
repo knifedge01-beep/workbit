@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from 'react-router-dom'
-import { Container, Flex, PageHeader, Stack, Text } from '@design-system'
+import { Container, Flex, PageHeader, Stack } from '@design-system'
 import { MembersTable } from '../../components'
 import { fetchMembers } from '../../api/client'
 import { useFetch } from '../../hooks/useFetch'
@@ -7,6 +7,7 @@ import { UserPlus } from 'lucide-react'
 import type { WorkspaceMemberScreenRouteParams } from './types'
 import { mapMembersToRows } from './utils'
 import { Button } from '@thedatablitz/button'
+import { Text } from '@thedatablitz/text'
 
 export function WorkspaceMemberScreen() {
   const { workspaceId } = useParams<WorkspaceMemberScreenRouteParams>()
@@ -39,7 +40,7 @@ export function WorkspaceMemberScreen() {
           ) : null}
         </Flex>
         {error ? (
-          <Text size="sm" muted>
+          <Text variant="body3" color="color.text.subtle">
             Failed to load members: {error}
           </Text>
         ) : null}

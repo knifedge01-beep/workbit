@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
-import { Container, Stack, PageHeader, Text, Input, Flex } from '@design-system'
-
+import { Container, Stack, PageHeader, Flex } from '@design-system'
+import { TextInput } from '@thedatablitz/text-input'
+import { Text } from '@thedatablitz/text'
 import { createTeam } from '../../api/client'
 import { useWorkspace } from '../../contexts/WorkspaceContext'
 import { logError } from '../../utils/errorHandling'
@@ -46,7 +47,7 @@ export function CreateTeamScreen() {
   if (!workspaceId || !currentWorkspace) {
     return (
       <Container maxWidth="600px">
-        <Text>Workspace not found.</Text>
+        <Text variant="body3">Workspace not found.</Text>
       </Container>
     )
   }
@@ -67,9 +68,9 @@ export function CreateTeamScreen() {
           <Stack gap={4}>
             <div>
               <label style={labelStyle}>
-                <Text size="sm">Team name</Text>
+                <Text variant="body3">Team name</Text>
               </label>
-              <Input
+              <TextInput
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Enter team name"
@@ -79,7 +80,9 @@ export function CreateTeamScreen() {
             </div>
             {error && (
               <div role="alert">
-                <Text size="sm">{error}</Text>
+                <Text variant="body3" color="color.icon.danger">
+                  {error}
+                </Text>
               </div>
             )}
             <Flex gap={2} justify="flex-start">
@@ -90,7 +93,7 @@ export function CreateTeamScreen() {
               >
                 {submitting ? 'Creating…' : 'Create team'}
               </Button>
-              <Button variant="glass" onClick={handleCancel}>
+              <Button variant="danger" onClick={handleCancel}>
                 Cancel
               </Button>
             </Flex>

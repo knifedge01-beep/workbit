@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChevronDown } from 'lucide-react'
 
-import { Avatar, Text } from '@design-system'
-
+import { Avatar } from '@thedatablitz/avatar'
+import { Text } from '@thedatablitz/text'
 import { Item, Panel, TeamTrigger, Wrap } from './styles'
 import type { TeamDropdownProps } from './types'
 import { getTeamInitials } from './utils/getTeamInitials'
@@ -35,8 +35,8 @@ export function TeamDropdown({
         aria-haspopup="listbox"
         aria-label="Select team"
       >
-        <Avatar name={getTeamInitials(selectedTeam.id)} size={28} />
-        <Text size="sm" as="span">
+        <Avatar name={getTeamInitials(selectedTeam.id)} size="small" />
+        <Text variant="body3" as="span">
           {selectedTeam.name}
         </Text>
         <ChevronDown size={16} style={{ flexShrink: 0 }} />
@@ -53,8 +53,10 @@ export function TeamDropdown({
                 setOpen(false)
               }}
             >
-              <Avatar name={getTeamInitials(team.id)} size={20} />
-              <span>{team.name}</span>
+              <Avatar name={getTeamInitials(team.id)} size="small" />
+              <Text variant="body3" as="span">
+                {team.name}
+              </Text>
             </Item>
           ))}
         </Panel>

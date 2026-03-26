@@ -2,16 +2,9 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Users, Folder, MoreHorizontal } from 'lucide-react'
 
-import {
-  Avatar,
-  Menu,
-  Flex,
-  Heading,
-  Text,
-  Search,
-  IconButton,
-} from '@design-system'
-
+import { Menu, Flex, Heading, Search, IconButton } from '@design-system'
+import { Avatar } from '@thedatablitz/avatar'
+import { Text } from '@thedatablitz/text'
 import {
   CardGrid,
   TeamActionsWrap,
@@ -38,7 +31,7 @@ export function TeamsTable({ workspaceId, teams, className }: TeamsTableProps) {
           <Heading level={3} as="h2">
             Teams
           </Heading>
-          <Text size="sm" muted as="span">
+          <Text variant="body3" color="color.text.subtle" as="span">
             {teams.length}
           </Text>
         </Flex>
@@ -67,7 +60,7 @@ export function TeamsTable({ workspaceId, teams, className }: TeamsTableProps) {
             }
           >
             <Flex justify="space-between" align="center">
-              <Avatar name={team.teamName} size={36} />
+              <Avatar name={team.teamName} size="large" />
               <TeamActionsWrap onClick={(e) => e.stopPropagation()}>
                 <Menu
                   trigger={
@@ -82,12 +75,16 @@ export function TeamsTable({ workspaceId, teams, className }: TeamsTableProps) {
             <TeamName>{team.teamName}</TeamName>
             <MetaRow>
               <Users size={12} />
-              <span>{team.members} members</span>
+              <Text variant="body3" color="color.text.subtle" as="span">
+                {team.members} members
+              </Text>
             </MetaRow>
             {team.project && (
               <MetaRow>
                 <Folder size={12} />
-                <span>{team.project}</span>
+                <Text variant="body3" color="color.text.subtle" as="span">
+                  {team.project}
+                </Text>
               </MetaRow>
             )}
           </TeamCard>

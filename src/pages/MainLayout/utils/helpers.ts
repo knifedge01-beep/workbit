@@ -1,10 +1,3 @@
-const SIDEBAR_MIN_WIDTH = 220
-const SIDEBAR_MAX_WIDTH = 420
-
-export function clampSidebarWidth(width: number): number {
-  return Math.min(SIDEBAR_MAX_WIDTH, Math.max(SIDEBAR_MIN_WIDTH, width))
-}
-
 export function isProfileRoute(pathname: string, workspaceId: string): boolean {
   return pathname.startsWith(`/workspace/${workspaceId}/profile`)
 }

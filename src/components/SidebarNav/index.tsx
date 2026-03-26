@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   Mail,
@@ -7,39 +7,28 @@ import {
   ArrowLeft,
   KeyRound,
   User,
-  Settings,
   Users,
   UsersRound,
   Shield,
-  HelpCircle,
-  Bell,
-  LogOut,
 } from 'lucide-react'
 
 import { Avatar } from '@thedatablitz/avatar'
 import { Box } from '@thedatablitz/box'
-import { Button } from '@thedatablitz/button'
+import { Dropdown } from '@thedatablitz/dropdown'
 import { Inline } from '@thedatablitz/inline'
 import { Stack } from '@thedatablitz/stack'
 import { Text } from '@thedatablitz/text'
 import { Tree, type TreeNode } from '@thedatablitz/tree'
-import { getToken } from '@thedatablitz/tokens'
 import { cn } from '@design-system-v2/lib/utils'
 
 import { navClasses } from './styles/classes'
-import type { NavItemProps, SidebarFooterProps, SidebarNavProps } from './types'
+import type { NavItemProps, SidebarNavProps } from './types'
 import {
   getActiveProfileTab,
   getSelectedNavTreeId,
-  initExpandedTeams,
   isTeamIssues,
+  isTeamProjects,
 } from './utils/routeHelpers'
-
-/** Glass trigger with danger semantic color (no separate `danger+glass` variant in Button). */
-const logoutDangerGlassStyle = {
-  color: getToken('color.icon.danger'),
-  borderColor: getToken('color.border.danger'),
-} as const
 
 function NavItem({ to, active, children, collapsed, shortcut }: NavItemProps) {
   const linkClass = cn(
@@ -66,15 +55,10 @@ function NavItem({ to, active, children, collapsed, shortcut }: NavItemProps) {
       className={linkClass}
       aria-current={active ? 'page' : undefined}
     >
-      <Inline align="center" gap="100" fullWidth className="min-w-0 w-full">
+      <Inline align="center" gap="100" fullWidth>
         {children}
         {shortcut ? (
-          <Text
-            as="span"
-            variant="caption2"
-            color="color.text.subtle"
-            className="ml-auto shrink-0 rounded-md bg-slate-200 px-1.5 py-0.5"
-          >
+          <Text as="span" variant="caption2" color="color.text.subtle">
             {shortcut}
           </Text>
         ) : null}
@@ -94,10 +78,33 @@ export function SidebarNav({
   const isProfileRoute = location.pathname.startsWith(`${base}/profile`)
   const activeProfileTab = getActiveProfileTab(location.search)
   const [workspaceOpen, setWorkspaceOpen] = useState(true)
-  const [teamsOpen, setTeamsOpen] = useState(true)
-  const [expandedTeams, setExpandedTeams] = useState<Record<string, boolean>>(
-    () => initExpandedTeams(teams)
+  const [selectedTeamId, setSelectedTeamId] = useState<string>(
+    teams[0]?.id ?? ''
   )
+  const activeTeamIdFromRoute = useMemo(() => {
+    const match = new RegExp(`^${base}/team/([^/]+)(?:/|$)`).exec(
+      location.pathname
+    )
+    return match?.[1] ?? null
+  }, [base, location.pathname])
+
+  useEffect(() => {
+    if (teams.length === 0) {
+      if (selectedTeamId !== '') setSelectedTeamId('')
+      return
+    }
+    if (
+      activeTeamIdFromRoute &&
+      teams.some((team) => team.id === activeTeamIdFromRoute) &&
+      selectedTeamId !== activeTeamIdFromRoute
+    ) {
+      setSelectedTeamId(activeTeamIdFromRoute)
+      return
+    }
+    if (!teams.some((team) => team.id === selectedTeamId)) {
+      setSelectedTeamId(teams[0].id)
+    }
+  }, [activeTeamIdFromRoute, selectedTeamId, teams])
 
   const navPaths = useMemo(() => {
     const paths: Record<string, string> = {
@@ -107,12 +114,8 @@ export function SidebarNav({
       'ws-teams': `${base}/workspace/teams`,
       'ws-roles': `${base}/workspace/roles`,
     }
-    for (const t of teams) {
-      paths[`team:${t.id}:i`] = `${base}/team/${t.id}/issues/active`
-      paths[`team:${t.id}:p`] = `${base}/team/${t.id}/projects`
-    }
     return paths
-  }, [base, teams])
+  }, [base])
 
   const sidebarTreeNodes = useMemo((): TreeNode[] => {
     const workspaceChildren: TreeNode[] = [
@@ -162,57 +165,6 @@ export function SidebarNav({
       },
     ]
 
-    const teamNodes: TreeNode[] = teams.map((team) => ({
-      id: `team:${team.id}`,
-      label: (
-        <Inline align="center" gap="100" fullWidth className="min-w-0">
-          <Avatar name={team.name} size="small" />
-          <Text
-            as="span"
-            variant="body3"
-            truncate
-            className="min-w-0 flex-1 text-left"
-          >
-            {team.name}
-          </Text>
-        </Inline>
-      ),
-      children: [
-        {
-          id: `team:${team.id}:i`,
-          label: (
-            <Inline align="center" gap="100" fullWidth className="min-w-0">
-              <FileText size={13} className="shrink-0" />
-              <Text
-                as="span"
-                variant="body3"
-                truncate
-                className="min-w-0 flex-1"
-              >
-                Issues
-              </Text>
-            </Inline>
-          ),
-        },
-        {
-          id: `team:${team.id}:p`,
-          label: (
-            <Inline align="center" gap="100" fullWidth className="min-w-0">
-              <Folder size={13} className="shrink-0" />
-              <Text
-                as="span"
-                variant="body3"
-                truncate
-                className="min-w-0 flex-1"
-              >
-                Projects
-              </Text>
-            </Inline>
-          ),
-        },
-      ],
-    }))
-
     const roots: TreeNode[] = [
       {
         id: 'nav-inbox',
@@ -222,21 +174,13 @@ export function SidebarNav({
             <Text as="span" variant="body3" truncate className="min-w-0 flex-1">
               Inbox
             </Text>
-            <Text
-              as="span"
-              variant="caption2"
-              color="color.text.subtle"
-              className="shrink-0 rounded-md bg-slate-200 px-1.5 py-0.5"
-            >
-              ⌘2
-            </Text>
           </Inline>
         ),
       },
       {
         id: 'sec-workspace',
         label: (
-          <Box className="mt-2 w-full border-t border-slate-200 pt-2">
+          <Box>
             <Text
               as="span"
               variant="caption1"
@@ -250,67 +194,26 @@ export function SidebarNav({
         children: workspaceChildren,
       },
     ]
-
-    if (teams.length > 0) {
-      roots.push({
-        id: 'sec-teams',
-        label: (
-          <Text
-            as="span"
-            variant="caption1"
-            color="color.text.subtle"
-            className="mt-2 font-semibold uppercase tracking-wide"
-          >
-            Your teams
-          </Text>
-        ),
-        children: teamNodes,
-      })
-    }
-
     return roots
-  }, [teams])
+  }, [])
 
   const expandedTreeIds = useMemo(() => {
     const ids: string[] = []
     if (workspaceOpen) ids.push('sec-workspace')
-    if (teams.length > 0 && teamsOpen) ids.push('sec-teams')
-    for (const t of teams) {
-      if (expandedTeams[t.id] !== false) ids.push(`team:${t.id}`)
-    }
     return ids
-  }, [workspaceOpen, teamsOpen, teams, expandedTeams])
+  }, [workspaceOpen])
 
-  const selectedTreeId = getSelectedNavTreeId(location.pathname, base, teams)
+  const selectedTreeId = getSelectedNavTreeId(location.pathname, base, [])
   const selectedTreeIds = selectedTreeId ? [selectedTreeId] : []
+  const activeTeamId = selectedTeamId || teams[0]?.id || ''
 
   const handleTreeToggle = (id: string, expanded: boolean) => {
     if (id === 'sec-workspace') setWorkspaceOpen(expanded)
-    else if (id === 'sec-teams') setTeamsOpen(expanded)
-    else {
-      const m = /^team:([^:]+)$/.exec(id)
-      if (m) {
-        setExpandedTeams((prev) => ({ ...prev, [m[1]]: expanded }))
-      }
-    }
   }
 
   const handleTreeSelect = (id: string) => {
     if (id === 'sec-workspace') {
       setWorkspaceOpen((o) => !o)
-      return
-    }
-    if (id === 'sec-teams') {
-      setTeamsOpen((o) => !o)
-      return
-    }
-    const parentMatch = /^team:([^:]+)$/.exec(id)
-    if (parentMatch) {
-      const tid = parentMatch[1]
-      setExpandedTeams((prev) => ({
-        ...prev,
-        [tid]: !(prev[tid] ?? true),
-      }))
       return
     }
     const path = navPaths[id]
@@ -450,7 +353,7 @@ export function SidebarNav({
             active={activeProfileTab === 'profile'}
           >
             <User size={15} className="shrink-0" />
-            <Text as="span" variant="body3" truncate className="min-w-0 flex-1">
+            <Text as="span" variant="body3" truncate>
               Account details
             </Text>
           </NavItem>
@@ -459,7 +362,7 @@ export function SidebarNav({
             active={activeProfileTab === 'api-keys'}
           >
             <KeyRound size={15} className="shrink-0" />
-            <Text as="span" variant="body3" truncate className="min-w-0 flex-1">
+            <Text as="span" variant="body3" truncate>
               API keys
             </Text>
           </NavItem>
@@ -469,7 +372,7 @@ export function SidebarNav({
   }
 
   return (
-    <Stack gap="200" className="px-2">
+    <Stack gap="200">
       <Tree
         size="small"
         variant="primary"
@@ -481,129 +384,62 @@ export function SidebarNav({
         onToggle={handleTreeToggle}
         onSelect={handleTreeSelect}
       />
-    </Stack>
-  )
-}
-
-export function SidebarFooter({
-  workspaceId,
-  collapsed = false,
-  onLogout,
-}: SidebarFooterProps) {
-  const navigate = useNavigate()
-  const location = useLocation()
-  const isProfileRoute = location.pathname.startsWith(
-    `/workspace/${workspaceId}/profile`
-  )
-
-  if (collapsed) {
-    return (
-      <Stack gap="050" padding="050" className="px-1 pb-2">
-        {!isProfileRoute ? (
-          <Button
-            variant="glass"
-            buttonType="icon"
-            size="small"
-            icon={<Settings size={15} />}
-            onClick={() => navigate(`/workspace/${workspaceId}/profile`)}
-            aria-label="Settings"
-            className="w-full"
-          />
-        ) : null}
-        <Button
-          variant="glass"
-          buttonType="icon"
-          size="small"
-          icon={<HelpCircle size={15} />}
-          onClick={() => navigate('/help')}
-          aria-label="Help center"
-          className="w-full"
-        />
-        {!isProfileRoute ? (
-          <Button
-            variant="glass"
-            buttonType="icon"
-            size="small"
-            icon={<Bell size={15} />}
-            onClick={() => navigate('/notifications')}
-            aria-label="Notifications"
-            className="w-full"
-          />
-        ) : null}
-        <Button
-          variant="glass"
-          buttonType="icon"
-          size="small"
-          icon={<LogOut size={15} />}
-          onClick={onLogout}
-          aria-label="Log out"
-          className="w-full"
-          style={logoutDangerGlassStyle}
-        />
-      </Stack>
-    )
-  }
-
-  return (
-    <Stack gap="050" className="px-2 pb-2">
-      {!isProfileRoute ? (
-        <Button
-          variant="glass"
-          size="small"
-          onClick={() => navigate(`/workspace/${workspaceId}/profile`)}
-          className="w-full justify-start"
-        >
-          <Inline align="center" gap="100">
-            <Settings size={15} className="shrink-0" aria-hidden />
-            <Text as="span" variant="body3" color="color.text.DEFAULT">
-              Settings
+      <Box padding="100">
+        {teams.length > 0 ? (
+          <Stack gap="100" className="pt-1">
+            <Text
+              as="span"
+              variant="caption1"
+              color="color.text.subtle"
+              className="px-1 font-semibold uppercase tracking-wide"
+            >
+              Your team
             </Text>
-          </Inline>
-        </Button>
-      ) : null}
-      <Button
-        variant="glass"
-        size="small"
-        onClick={() => navigate('/help')}
-        className="w-full justify-start"
-      >
-        <Inline align="center" gap="100">
-          <HelpCircle size={15} className="shrink-0" aria-hidden />
-          <Text as="span" variant="body3" color="color.text.DEFAULT">
-            Help center
-          </Text>
-        </Inline>
-      </Button>
-      {!isProfileRoute ? (
-        <Button
-          variant="glass"
-          size="small"
-          onClick={() => navigate('/notifications')}
-          className="w-full justify-start"
-        >
-          <Inline align="center" gap="100">
-            <Bell size={15} className="shrink-0" aria-hidden />
-            <Text as="span" variant="body3" color="color.text.DEFAULT">
-              Notifications
-            </Text>
-          </Inline>
-        </Button>
-      ) : null}
-      <Button
-        variant="glass"
-        size="small"
-        onClick={onLogout}
-        className="w-full justify-start"
-        style={logoutDangerGlassStyle}
-        aria-label="Log out"
-      >
-        <Inline align="center" gap="100">
-          <LogOut size={15} className="shrink-0" aria-hidden />
-          <Text as="span" variant="body3" color="color.icon.danger">
-            Log out
-          </Text>
-        </Inline>
-      </Button>
+            <Dropdown
+              value={activeTeamId}
+              onChange={(value) => {
+                setSelectedTeamId(value)
+                navigate(`${base}/team/${value}/issues/active`)
+              }}
+              options={teams.map((team) => ({
+                value: team.id,
+                label: team.name,
+              }))}
+              selectionType="single"
+              placeholder="Team"
+              size="small"
+            />
+            <NavItem
+              to={`${base}/team/${activeTeamId}/issues/active`}
+              active={isTeamIssues(base, activeTeamId, location.pathname)}
+            >
+              <FileText size={13} className="shrink-0" />
+              <Text
+                as="span"
+                variant="body3"
+                truncate
+                className="min-w-0 flex-1"
+              >
+                Issues
+              </Text>
+            </NavItem>
+            <NavItem
+              to={`${base}/team/${activeTeamId}/projects`}
+              active={isTeamProjects(base, activeTeamId, location.pathname)}
+            >
+              <Folder size={13} className="shrink-0" />
+              <Text
+                as="span"
+                variant="body3"
+                truncate
+                className="min-w-0 flex-1"
+              >
+                Projects
+              </Text>
+            </NavItem>
+          </Stack>
+        ) : null}
+      </Box>
     </Stack>
   )
 }

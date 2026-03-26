@@ -57,6 +57,8 @@
     "@thedatablitz/markdown-editor": "^0.2.0",
     "@thedatablitz/mcp-component-catalog": "^0.1.5",
     "@thedatablitz/modal": "^0.1.2",
+    "@thedatablitz/popup": "^0.2.0",
+    "@thedatablitz/sidebar": "^0.7.0",
     "@thedatablitz/stack": "^0.1.2",
     "@thedatablitz/table": "^0.7.0",
     "@thedatablitz/tabs": "^0.1.2",

@@ -6,6 +6,9 @@ import {
 } from '../utils/ai/projectAgentMcp.js'
 
 function parseMode(raw: unknown): AgentRunMode {
+  if (raw === 'auto') {
+    return 'auto'
+  }
   if (raw === 'planner_worker') {
     return 'planner_worker'
   }
@@ -63,7 +66,7 @@ export async function postAgentRun(req: Request, res: Response) {
 
   const instructions =
     typeof body.instructions === 'string' ? body.instructions : undefined
-  const mode = parseMode(body.mode)
+  const mode = body.mode === undefined ? 'auto' : parseMode(body.mode)
 
   try {
     const result = await runProjectAgent(auth, {

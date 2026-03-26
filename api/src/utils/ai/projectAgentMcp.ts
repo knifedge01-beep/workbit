@@ -1,3 +1,4 @@
+import { PROJECT_AGENT_SYSTEM_PROMPT } from '../../agents/project_agent.js'
 import type { WorkbitUpstreamAuth } from '../../middleware/auth.js'
 import { runMcpLlmLoop } from './mcpLlmLoop.js'
 import { nvidiaOpenAiChatCompletion } from './nvedia.js'
@@ -23,30 +24,6 @@ export const PROJECT_AGENT_TOOL_ALLOWLIST = [
 
 const DEFAULT_AGENT_MAX_ROUNDS = 36
 
-const PROJECT_AGENT_SYSTEM_PROMPT = `You are a Workbit project agent. You work only inside the project ID given in the user message.
-
-Rules:
-- For project questions (analysis / planning / status), always load full project context before answering: getProject (project + milestones), getIssuesByProject (issues + sub-issue relationships), getProjectDecisions, and getProjectStatusUpdates. For each relevant update, inspect comments using getProjectStatusUpdateComments and getProjectStatusComment when needed.
-- For each issue you plan to modify (and for parent issues where you may add sub-issues), call getIssue first and read both title and description before deciding actions.
-- Plan actions from issue/sub-issue semantics, not title alone: use both title and description content to infer intent, scope, and acceptance criteria.
-- Use at most one tool per assistant turn.
-- Never use placeholder IDs (e.g. literal "issueId"). Use real ids from tool results.
-- Every createIssue/createSubIssue call must include a non-empty description, not just a title.
-- For nested work under an existing issue, prefer createSubIssue with parentIssueId set to the parent's issue id.
-- For new top-level tasks in the project, use createIssue and set projectId when the API expects it.
-- If decisions already exist for the project, treat them as constraints and follow them while planning/executing issue work.
-- Use createProjectDecision to call out key decisions the user must make during plan execution.
-- If missing decisions are blocking execution, create a project decision that captures the pending choice, rationale, and impact.
-- For creation-heavy requests, consider a complete project update package when appropriate: createIssue/createSubIssue for execution work, createMilestone for timeline checkpoints, createProjectDecision for key choices, and createProjectStatusUpdate to communicate progress/outcome.
-- If no extra user instructions are provided, do not stop after loading context. Act autonomously:
-  1) infer concrete next tasks from the project goal and current issues,
-  2) add actionable sub-issues under existing parent issues where helpful,
-  3) create top-level issues only when no suitable parent exists.
-- Avoid duplicate work: before creating an issue/sub-issue, inspect existing issues and only add missing, clearly new tasks.
-- Before finishing, create one project status update via createProjectStatusUpdate summarizing overall changes made in this request (completed actions, current state, and next steps).
-- If an instruction is unclear or unsafe, say so in your final summary instead of guessing.
-- When you are done with the requested work (or cannot proceed), end with a short, concrete summary of actions taken or blockers.`
-
 const PLANNER_SYSTEM_PROMPT = `You are a planning assistant for Workbit. You do NOT call tools. You only output a clear numbered plan (markdown or plain text) that a separate worker will execute using Workbit tools (getProject, getIssuesByProject, getIssue, getProjectDecisions, updateProjectDecision, updateIssue, createSubIssue, createIssue, createMilestone, getProjectStatusUpdates, getProjectStatusComment, getProjectStatusUpdateComments, createProjectStatusUpdateComment, createProjectDecision, createProjectStatusUpdate).
 
 The plan must:
@@ -55,12 +32,26 @@ The plan must:
 - Include steps to observe project status updates and their comments where relevant.
 - Include a step to inspect relevant issues with getIssue and use both title + description as planning inputs.
 - Include a step to record user-facing decision callouts using createProjectDecision when needed.
+- When the user provides a pasted report/snapshot/spec as input, the plan must explicitly translate it into a concrete issue tree (action items, not summary). Use a strict two-phase creation plan:
+  Phase 1: create all parent issues first (createIssue, no parentIssueId).
+  Phase 2: create sub-issues per parent (createSubIssue), finishing one parent before moving to the next.
+- For each issue/sub-issue you plan to create, include the exact title and a concrete description with sections:
+  Insight, Action, Expected impact metric, Acceptance criteria, Instrumentation/data needed, Timebox.
 - Include a final step to create one project status update summarizing overall changes made during execution.
 - Use no placeholder IDs; say "use id from getIssuesByProject" where needed.`
 
-const WORKER_AFTER_PLAN_SYSTEM_PROMPT = `You are a Workbit project worker. Execute the numbered plan from the user message using MCP tools only for the given project. One tool per turn. Use real issue and project IDs from tool results. Before modifying an issue or adding sub-issues under a parent, call getIssue and consider both title and description. Prefer createSubIssue for work under an existing parent issue. Respect existing project decisions while executing. Every createIssue/createSubIssue call must include a non-empty description. Use createProjectDecision for key decisions the user must make, createMilestone for meaningful timeline checkpoints, and createProjectStatusUpdate for user-facing progress summaries. Read and use relevant project updates/comments using getProjectStatusUpdates, getProjectStatusUpdateComments, getProjectStatusComment, and createProjectStatusUpdateComment when needed. When the plan is done or blocked, reply with a concise summary.`
+const WORKER_AFTER_PLAN_SYSTEM_PROMPT = `You are a Workbit project worker. Execute the numbered plan from the user message using MCP tools only for the given project. One tool per turn. Use real issue and project IDs from tool results.
 
-export type AgentRunMode = 'single' | 'planner_worker'
+Hard rules:
+- Before modifying an issue or adding sub-issues under a parent, call getIssue and consider both title and description.
+- Prefer createSubIssue for work under an existing parent issue.
+- Respect existing project decisions while executing.
+- Every createIssue/createSubIssue call must include a non-empty description.
+- For bulk trees, follow the strict two-phase workflow: create all parents first, then create sub-issues per parent; do not interleave.
+
+Use createProjectDecision for key decisions the user must make, createMilestone for meaningful timeline checkpoints, and createProjectStatusUpdate for user-facing progress summaries. Read and use relevant project updates/comments using getProjectStatusUpdates, getProjectStatusUpdateComments, getProjectStatusComment, and createProjectStatusUpdateComment when needed. When the plan is done or blocked, reply with a concise summary.`
+
+export type AgentRunMode = 'auto' | 'single' | 'planner_worker'
 
 export type RunProjectAgentOptions = {
   projectId: string
@@ -76,13 +67,31 @@ export type RunProjectAgentResult = {
   plan?: string
 }
 
+function looksLikePastedReportOrSnapshot(text: string): boolean {
+  const t = text.trim()
+  if (t.length < 280) return false
+  const lower = t.toLowerCase()
+  // Common markers for pasted reports/snapshots/spec-like blobs.
+  if (lower.includes('generated on:')) return true
+  if (lower.includes('---') && lower.includes('overview')) return true
+  if (lower.includes('snapshot') && lower.includes('period')) return true
+  if (
+    /\b(revenue|orders|aov|avg order value|growth|segmentation)\b/.test(lower)
+  )
+    return true
+  // Dense bullet lists often indicate “paste-to-structure”.
+  const bulletLines = t.split('\n').filter((l) => /^\s*[-*]\s+/.test(l))
+  if (bulletLines.length >= 8) return true
+  return false
+}
+
 function buildInitialUserMessage(
   projectId: string,
   instructions?: string
 ): string {
   const trimmedInstructions = instructions?.trim()
   const extra = trimmedInstructions
-    ? `Additional instructions from the user:\n${trimmedInstructions}\n\n`
+    ? `User-provided input (treat as authoritative; convert into concrete action items):\n${trimmedInstructions}\n\n`
     : `No additional instructions were provided.
 Run in autonomous mode for this project: after loading context, execute sensible issue/sub-issue actions that move the project forward.\n\n`
   return `Project ID: ${projectId}
@@ -108,14 +117,26 @@ export async function runProjectAgent(
   auth: WorkbitUpstreamAuth,
   options: RunProjectAgentOptions
 ): Promise<RunProjectAgentResult> {
-  const mode = options.mode ?? 'single'
-  const maxRounds = options.maxRounds ?? DEFAULT_AGENT_MAX_ROUNDS
   const projectId = options.projectId.trim()
+  const instructionsTrimmed = options.instructions?.trim() ?? ''
+  const mode: AgentRunMode =
+    options.mode ??
+    (instructionsTrimmed && looksLikePastedReportOrSnapshot(instructionsTrimmed)
+      ? 'planner_worker'
+      : 'single')
+  const maxRounds = options.maxRounds ?? DEFAULT_AGENT_MAX_ROUNDS
+  const effectiveMode =
+    mode === 'auto'
+      ? instructionsTrimmed &&
+        looksLikePastedReportOrSnapshot(instructionsTrimmed)
+        ? 'planner_worker'
+        : 'single'
+      : mode
 
-  if (mode === 'planner_worker') {
+  if (effectiveMode === 'planner_worker') {
     const planUser = `Project ID: ${projectId}
 
-${options.instructions?.trim() ? `Goal / context:\n${options.instructions.trim()}\n\n` : ''}Produce a numbered plan for improving or maintaining this project using Workbit issues and sub-issues. The worker can only call tools; do not assume hidden state.`
+${instructionsTrimmed ? `Goal / input:\n${instructionsTrimmed}\n\n` : ''}Produce a numbered plan for improving or maintaining this project using Workbit issues and sub-issues. If the user pasted a report/snapshot/spec, translate it into concrete action items with measurable acceptance criteria. The worker can only call tools; do not assume hidden state.`
 
     const planCompletion = await nvidiaOpenAiChatCompletion({
       messages: [
@@ -155,7 +176,7 @@ ${planText}
     return {
       summary: workerResult.text,
       finishedReason: workerResult.finishedReason,
-      mode,
+      mode: effectiveMode,
       plan: planText,
     }
   }
@@ -165,7 +186,7 @@ ${planText}
     systemPrompt: PROJECT_AGENT_SYSTEM_PROMPT,
     initialUserMessage: buildInitialUserMessage(
       projectId,
-      options.instructions
+      instructionsTrimmed || undefined
     ),
     toolNameAllowlist: [...PROJECT_AGENT_TOOL_ALLOWLIST],
     maxRounds,
@@ -175,6 +196,6 @@ ${planText}
   return {
     summary: result.text,
     finishedReason: result.finishedReason,
-    mode: 'single',
+    mode: effectiveMode,
   }
 }

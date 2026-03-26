@@ -50,7 +50,7 @@ export function WorkspaceDropdown({
       options={options}
       value={displayWorkspace?.id ?? ''}
       placeholder="Workspace"
-      size="medium"
+      size="small"
       onChange={(value) => {
         if (value === CREATE_WORKSPACE_VALUE) {
           navigate('/workspaces')

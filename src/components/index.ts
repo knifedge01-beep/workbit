@@ -4,7 +4,7 @@ export {
   type StatusOption,
 } from './StatusSelector'
 export { PrioritySelector, type PriorityOption } from './PrioritySelector'
-export { SidebarNav, SidebarFooter } from './SidebarNav'
+export { SidebarNav } from './SidebarNav'
 export { WhatsNewCard } from './WhatsNewCard'
 export { MilestoneForm } from './MilestoneForm'
 export { PropertiesSection } from './PropertiesSection'

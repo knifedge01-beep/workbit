@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link, useParams } from 'react-router-dom'
 import { Text } from '@thedatablitz/text'
 import { Table, type ColumnDef } from '@thedatablitz/table'
 import { TextInput } from '@thedatablitz/text-input'
@@ -21,13 +22,11 @@ type SubIssueRow = {
   createdAt: string
 }
 
-const columns: ColumnDef<SubIssueRow>[] = [
-  { accessorKey: 'title', header: 'Title' },
-  { accessorKey: 'status', header: 'Status' },
-  { accessorKey: 'createdAt', header: 'Created' },
-]
-
 export function SubIssues({ parentIssueId }: SubIssuesProps) {
+  const { workspaceId, teamId } = useParams<{
+    workspaceId: string
+    teamId: string
+  }>()
   const [title, setTitle] = useState('')
   const [creating, setCreating] = useState(false)
 
@@ -49,6 +48,34 @@ export function SubIssues({ parentIssueId }: SubIssuesProps) {
     status: subIssue.status,
     createdAt: formatDateTime(subIssue.date),
   }))
+
+  const columns: ColumnDef<SubIssueRow>[] = [
+    {
+      accessorKey: 'title',
+      header: 'Title',
+      cell: ({ row }) => {
+        const href =
+          workspaceId && teamId
+            ? `/workspace/${workspaceId}/team/${teamId}/issue/${row.original.id}`
+            : '#'
+
+        return workspaceId && teamId ? (
+          <Link
+            to={href}
+            target="_blank"
+            rel="noreferrer"
+            className="hover:underline"
+          >
+            {row.original.title}
+          </Link>
+        ) : (
+          row.original.title
+        )
+      },
+    },
+    { accessorKey: 'status', header: 'Status' },
+    { accessorKey: 'createdAt', header: 'Created' },
+  ]
 
   const handleAddSubIssue = async () => {
     const trimmed = title.trim()

@@ -80,6 +80,7 @@ create table if not exists public.project_properties (
   lead_id text,
   start_date text,
   end_date text,
+  member_ids jsonb not null default '[]'::jsonb,
   team_ids jsonb not null default '[]'::jsonb,
   label_ids jsonb not null default '[]'::jsonb
 );

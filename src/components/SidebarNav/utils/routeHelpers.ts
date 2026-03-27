@@ -1,9 +1,12 @@
 import type { Team } from '../../../constants'
 
-export function getActiveProfileTab(search: string): 'profile' | 'api-keys' {
-  return new URLSearchParams(search).get('tab') === 'profile'
-    ? 'profile'
-    : 'api-keys'
+export function getActiveProfileTab(
+  search: string
+): 'profile' | 'api-keys' | 'usage' {
+  const tab = new URLSearchParams(search).get('tab')
+  if (tab === 'profile') return 'profile'
+  if (tab === 'usage') return 'usage'
+  return 'api-keys'
 }
 
 export function isTeamIssues(base: string, teamId: string, pathname: string) {

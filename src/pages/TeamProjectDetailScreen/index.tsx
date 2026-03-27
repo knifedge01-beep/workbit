@@ -69,6 +69,7 @@ import {
   buildProjectIssueTreeData,
 } from './utils/helpers'
 import { Bot, Plus } from 'lucide-react'
+import { useProjectPeopleProperties } from './hooks/useProjectPeopleProperties'
 
 function walkExpandedProjectIssueParents(
   table: TanStackTable<ProjectDetailIssueRow>,
@@ -172,6 +173,11 @@ export function TeamProjectDetailScreen({
   const [issueOverrides, setIssueOverrides] = useState<
     Record<string, { status?: string; priority?: string }>
   >({})
+  const { teamMembers, handleLeadChange, handleMemberIdsChange } =
+    useProjectPeopleProperties({
+      teamId,
+      setProperties,
+    })
 
   const { data: projectIssues, loading: issuesLoading } = useFetch(
     () =>
@@ -1133,10 +1139,24 @@ export function TeamProjectDetailScreen({
           <Box border padding="200">
             <Text variant="heading7">Properties</Text>
             <PropertiesSection
-              key={`${properties?.status}-${properties?.priority}`}
+              key={`${properties?.status}-${properties?.priority}-${properties?.memberIds?.join(',') ?? ''}`}
               contentOnly
               defaultStatus={properties?.status}
               defaultPriority={properties?.priority}
+              defaultLeadId={
+                typeof properties?.leadId === 'string'
+                  ? properties.leadId
+                  : undefined
+              }
+              defaultMemberIds={
+                Array.isArray(properties?.memberIds)
+                  ? properties.memberIds.filter(
+                      (memberId): memberId is string =>
+                        typeof memberId === 'string'
+                    )
+                  : []
+              }
+              teamMembers={teamMembers}
               defaultStartDate={
                 properties?.startDate
                   ? new Date(properties.startDate)
@@ -1147,6 +1167,8 @@ export function TeamProjectDetailScreen({
               }
               onStatusChange={handleStatusChange}
               onPriorityChange={handlePriorityChange}
+              onLeadChange={handleLeadChange}
+              onMemberIdsChange={handleMemberIdsChange}
             />
           </Box>
 

@@ -6,6 +6,7 @@ import * as commentsCtrl from '../controllers/commentsController.js'
 export const teamsRoutes = Router()
 
 teamsRoutes.get('/:teamId', teamsCtrl.getTeam)
+teamsRoutes.get('/:teamId/members', teamsCtrl.getTeamMembers)
 teamsRoutes.get('/:teamId/project', teamsCtrl.getTeamProject)
 teamsRoutes.get('/:teamId/project/issues', teamsCtrl.getTeamProjectIssues)
 teamsRoutes.get(

@@ -1,12 +1,5 @@
 import { useState } from 'react'
-import {
-  ChevronDown,
-  Plus,
-  UserPlus,
-  Users,
-  Building2,
-  Tag,
-} from 'lucide-react'
+import { ChevronDown, Plus, Building2, Tag } from 'lucide-react'
 
 import { Inline } from '@thedatablitz/inline'
 import { Stack } from '@thedatablitz/stack'
@@ -16,6 +9,8 @@ import { DateTimePicker } from '@thedatablitz/date-time-picker'
 import { PrioritySelector } from '../PrioritySelector'
 import { SectionHeader, CollapsibleContent } from '../CollapsibleSection'
 import { StatusSelector } from '../StatusSelector'
+import { LeadSelector } from '../LeadSelector'
+import { MemberSelector } from '../MemberSelector'
 import { Row } from './styles'
 import type { PropertiesSectionProps } from './types'
 import { projectStatusOptions } from './utils/projectStatusOptions'
@@ -28,8 +23,13 @@ export function PropertiesSection({
   defaultPriority = 'high',
   defaultStartDate,
   defaultEndDate,
+  defaultLeadId,
+  defaultMemberIds = [],
+  teamMembers = [],
   onStatusChange,
   onPriorityChange,
+  onLeadChange,
+  onMemberIdsChange,
 }: PropertiesSectionProps) {
   const [open, setOpen] = useState(defaultOpen)
   const [status, setStatus] = useState(defaultStatus)
@@ -73,19 +73,21 @@ export function PropertiesSection({
       <Row>
         <span className="row-label">Lead</span>
         <span className="row-value">
-          <UserPlus size={14} className="row-icon" />
-          <Text variant="body3" color="color.text.subtle">
-            Add lead
-          </Text>
+          <LeadSelector
+            value={defaultLeadId}
+            teamMembers={teamMembers}
+            onChange={onLeadChange}
+          />
         </span>
       </Row>
       <Row>
         <span className="row-label">Members</span>
         <span className="row-value">
-          <Users size={14} className="row-icon" />
-          <Text variant="body3" color="color.text.subtle">
-            Add members
-          </Text>
+          <MemberSelector
+            value={defaultMemberIds}
+            teamMembers={teamMembers}
+            onChange={onMemberIdsChange}
+          />
         </span>
       </Row>
       <Row $alignTop>

@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { useParams } from 'react-router-dom'
-import { Breadcrumbs, BreadcrumbsItem } from '@thedatablitz/breadcrumb'
+import { Link, useParams } from 'react-router-dom'
 import { Button } from '@thedatablitz/button'
 import { Text } from '@thedatablitz/text'
 import { TextEditor } from '@thedatablitz/text-editor'
@@ -31,6 +30,7 @@ import { useIssueDescriptionAutosave } from './hooks/useIssueDescriptionAutosave
 
 export function IssueDetailScreen({
   issueId,
+  teamId: teamIdProp,
   teamName,
   projectName,
 }: IssueDetailScreenProps) {
@@ -38,6 +38,7 @@ export function IssueDetailScreen({
     workspaceId: string
     teamId: string
   }>()
+  const resolvedTeamId = teamId ?? teamIdProp
   const [priority, setPriority] = useState('medium')
   const [generatingSubIssues, setGeneratingSubIssues] = useState(false)
   const { projects: workspaceProjects } = useWorkspace()
@@ -145,31 +146,49 @@ export function IssueDetailScreen({
   }
 
   const teamHref =
-    workspaceId && teamId
-      ? `/workspace/${workspaceId}/team/${teamId}/issues/active`
+    workspaceId && resolvedTeamId
+      ? `/workspace/${workspaceId}/team/${resolvedTeamId}/issues/active`
       : workspaceId
         ? `/workspace/${workspaceId}/workspace/teams`
         : '#'
   const projectHref =
-    workspaceId && teamId
-      ? `/workspace/${workspaceId}/team/${teamId}/projects`
+    workspaceId && resolvedTeamId
+      ? `/workspace/${workspaceId}/team/${resolvedTeamId}/projects`
       : workspaceId
         ? `/workspace/${workspaceId}/workspace/projects`
         : '#'
   const issueHref =
-    workspaceId && teamId
-      ? `/workspace/${workspaceId}/team/${teamId}/issue/${issue.id}`
+    workspaceId && resolvedTeamId
+      ? `/workspace/${workspaceId}/team/${resolvedTeamId}/issue/${issue.id}`
       : '#'
 
   return (
     <Box fullWidth border>
       <Stack fullWidth>
         <Stack fullWidth padding="200" gap="150">
-          <Breadcrumbs ariaLabel="Breadcrumb">
-            <BreadcrumbsItem href={teamHref} text={teamName} />
-            <BreadcrumbsItem href={projectHref} text={issue.project} />
-            <BreadcrumbsItem href={issueHref} text={issue.id} />
-          </Breadcrumbs>
+          <Inline align="center" gap="050" wrap fullWidth>
+            <Link to={teamHref} className="hover:underline">
+              <Text as="span" variant="body3" color="color.text.subtle">
+                {teamName}
+              </Text>
+            </Link>
+            <Text as="span" variant="body3" color="color.text.subtle">
+              /
+            </Text>
+            <Link to={projectHref} className="hover:underline">
+              <Text as="span" variant="body3" color="color.text.subtle">
+                {issue.project}
+              </Text>
+            </Link>
+            <Text as="span" variant="body3" color="color.text.subtle">
+              /
+            </Text>
+            <Link to={issueHref} className="hover:underline">
+              <Text as="span" variant="body3" color="color.text.subtle">
+                {issue.id}
+              </Text>
+            </Link>
+          </Inline>
           <IssueProperties
             status={issue.status}
             onStatusChange={handleStatusChange}

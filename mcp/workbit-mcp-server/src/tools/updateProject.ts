@@ -30,6 +30,10 @@ export function registerUpdateProjectTool(server: McpServer): void {
           .string()
           .optional()
           .describe('Optional end date (e.g. ISO date).'),
+        memberIds: z
+          .array(z.string())
+          .optional()
+          .describe('Optional list of member IDs.'),
         teamIds: z
           .array(z.string())
           .optional()
@@ -47,6 +51,7 @@ export function registerUpdateProjectTool(server: McpServer): void {
       leadId,
       startDate,
       endDate,
+      memberIds,
       teamIds,
       labelIds,
     }) => {
@@ -57,6 +62,7 @@ export function registerUpdateProjectTool(server: McpServer): void {
         if (leadId !== undefined) payload.leadId = leadId
         if (startDate !== undefined) payload.startDate = startDate
         if (endDate !== undefined) payload.endDate = endDate
+        if (memberIds !== undefined) payload.memberIds = memberIds
         if (teamIds !== undefined) payload.teamIds = teamIds
         if (labelIds !== undefined) payload.labelIds = labelIds
 
@@ -65,7 +71,7 @@ export function registerUpdateProjectTool(server: McpServer): void {
             content: [
               {
                 type: 'text',
-                text: 'No fields to update. Provide at least one of: status, priority, leadId, startDate, endDate, teamIds, labelIds.',
+                text: 'No fields to update. Provide at least one of: status, priority, leadId, startDate, endDate, memberIds, teamIds, labelIds.',
               },
             ],
           }

@@ -23,6 +23,21 @@ export async function getTeam(req: Request, res: Response) {
   }
 }
 
+export async function getTeamMembers(req: Request, res: Response) {
+  try {
+    const { teamId } = req.params
+    const members = await teamsModel.getTeamMembersForApi(teamId)
+    if (!members) {
+      res.status(404).json({ error: 'Team not found' })
+      return
+    }
+    res.json(members)
+  } catch (e) {
+    logApiError(e, 'teams.getTeamMembers', { teamId: req.params.teamId })
+    res.status(500).json({ error: (e as Error).message })
+  }
+}
+
 export async function getTeamProject(req: Request, res: Response) {
   try {
     const { teamId } = req.params

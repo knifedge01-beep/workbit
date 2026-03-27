@@ -6,6 +6,7 @@ import type { DbRow } from '../utils/supabaseMappers.js'
 const DEFAULT: ProjectProperties = {
   status: 'planned',
   priority: 'high',
+  memberIds: [],
   teamIds: [],
   labelIds: [],
 }
@@ -34,6 +35,7 @@ export async function upsertProjectProperties(
     lead_id: props.leadId ?? null,
     start_date: props.startDate ?? null,
     end_date: props.endDate ?? null,
+    member_ids: props.memberIds ?? [],
     team_ids: props.teamIds ?? [],
     label_ids: props.labelIds ?? [],
   }

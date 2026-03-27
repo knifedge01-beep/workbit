@@ -7,6 +7,7 @@ import {
   ArrowLeft,
   KeyRound,
   User,
+  BarChart3,
   Users,
   UsersRound,
   Shield,
@@ -262,6 +263,20 @@ export function SidebarNav({
           <KeyRound size={15} className="shrink-0" />
           <span>API keys</span>
         </Link>
+        <Link
+          to={`${base}/profile?tab=usage`}
+          className={cn(
+            navClasses.navItemBase,
+            navClasses.navItemCollapsed,
+            activeProfileTab === 'usage'
+              ? navClasses.navItemActive
+              : navClasses.navItemInactive
+          )}
+          aria-current={activeProfileTab === 'usage' ? 'page' : undefined}
+        >
+          <BarChart3 size={15} className="shrink-0" />
+          <span>Usage</span>
+        </Link>
       </Stack>
     )
   }
@@ -364,6 +379,15 @@ export function SidebarNav({
             <KeyRound size={15} className="shrink-0" />
             <Text as="span" variant="body3" truncate>
               API keys
+            </Text>
+          </NavItem>
+          <NavItem
+            to={`${base}/profile?tab=usage`}
+            active={activeProfileTab === 'usage'}
+          >
+            <BarChart3 size={15} className="shrink-0" />
+            <Text as="span" variant="body3" truncate>
+              Usage
             </Text>
           </NavItem>
         </Stack>

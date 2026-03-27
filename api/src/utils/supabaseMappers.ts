@@ -115,6 +115,7 @@ export function rowToProjectProperties(r: DbRow): ProjectProperties {
     leadId: r.lead_id as string | undefined,
     startDate: r.start_date as string | undefined,
     endDate: r.end_date as string | undefined,
+    memberIds: (r.member_ids as string[]) ?? [],
     teamIds: (r.team_ids as string[]) ?? [],
     labelIds: (r.label_ids as string[]) ?? [],
   }
@@ -324,6 +325,7 @@ function projectPropertiesToRow(
     lead_id: p.leadId ?? null,
     start_date: p.startDate ?? null,
     end_date: p.endDate ?? null,
+    member_ids: p.memberIds ?? [],
     team_ids: p.teamIds ?? [],
     label_ids: p.labelIds ?? [],
   }

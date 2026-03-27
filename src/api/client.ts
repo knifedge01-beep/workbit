@@ -103,8 +103,12 @@ export interface ApiStatusUpdate {
 export interface ApiProjectProperties {
   status?: string
   priority?: string
+  leadId?: string
   startDate?: string
   endDate?: string
+  memberIds?: string[]
+  teamIds?: string[]
+  labelIds?: string[]
   [key: string]: unknown
 }
 
@@ -350,6 +354,19 @@ export async function fetchTeamProject(
   teamId: string
 ): Promise<TeamProjectResponse> {
   return authFetch(`/teams/${teamId}/project`) as Promise<TeamProjectResponse>
+}
+
+export interface ApiTeamMember {
+  id: string
+  name: string
+  username: string
+  avatarSrc?: string
+}
+
+export async function fetchTeamMembers(
+  teamId: string
+): Promise<ApiTeamMember[]> {
+  return authFetch(`/teams/${teamId}/members`) as Promise<ApiTeamMember[]>
 }
 
 export async function postStatusUpdate(

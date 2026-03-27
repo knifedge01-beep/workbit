@@ -48,6 +48,16 @@ export async function getMembers(): Promise<Member[]> {
   return (data ?? []).map((r) => rowToMember(r as DbRow))
 }
 
+export async function getMembersByTeamId(teamId: string): Promise<Member[]> {
+  const { data, error } = await getClient()
+    .from('members')
+    .select('*')
+    .filter('team_ids', 'cs', JSON.stringify([teamId]))
+    .order('id')
+  if (error) throw error
+  return (data ?? []).map((r) => rowToMember(r as DbRow))
+}
+
 export async function insertMember(member: Member): Promise<void> {
   const { error } = await getClient()
     .from('members')

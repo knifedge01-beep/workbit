@@ -1,5 +1,5 @@
-import type { TeamTableRow } from '../../../components'
 import type { ApiTeam } from '../../../api/client'
+import type { TeamTableRow } from '../types'
 
 export function mapTeamsToRows(teams: ApiTeam[]): TeamTableRow[] {
   return teams.map((team) => ({

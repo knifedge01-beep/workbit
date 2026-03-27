@@ -110,6 +110,7 @@ export interface ProjectProperties {
   leadId?: string
   startDate?: string
   endDate?: string
+  memberIds: string[]
   teamIds: string[]
   labelIds: string[]
 }

@@ -1,13 +1,17 @@
+import { useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Plus } from 'lucide-react'
-import { PageHeader, Stack, Text, Flex } from '@design-system'
-import { TeamsTable } from '../../components'
+import { PageHeader } from '@design-system'
 import { fetchWorkspaceTeams } from '../../api/client'
 import { useFetch } from '../../hooks/useFetch'
 import { useWorkspace } from '../../contexts/WorkspaceContext'
-import type { WorkspaceTeamsScreenRouteParams } from './types'
+import type { WorkspaceTeamsScreenRouteParams, TeamTableRow } from './types'
 import { mapTeamsToRows } from './utils'
 import { Button } from '@thedatablitz/button'
+import { Inline } from '@thedatablitz/inline'
+import { Stack } from '@thedatablitz/stack'
+import { Text } from '@thedatablitz/text'
+import { Table, type ColumnDef } from '@thedatablitz/table'
 
 export function WorkspaceTeamsScreen() {
   const { workspaceId } = useParams<WorkspaceTeamsScreenRouteParams>()
@@ -22,17 +26,61 @@ export function WorkspaceTeamsScreen() {
   )
 
   const teams = mapTeamsToRows(data ?? [])
+  const columns = useMemo<ColumnDef<TeamTableRow>[]>(
+    () => [
+      {
+        accessorKey: 'teamName',
+        header: 'Team',
+        cell: ({ row }) =>
+          workspaceId ? (
+            <Button
+              variant="glass"
+              size="small"
+              onClick={() =>
+                navigate(
+                  `/workspace/${workspaceId}/team/${row.original.id}/issues/active`
+                )
+              }
+            >
+              {row.original.teamName}
+            </Button>
+          ) : (
+            row.original.teamName
+          ),
+      },
+      {
+        accessorKey: 'members',
+        header: 'Members',
+        cell: ({ row }) => `${row.original.members} members`,
+      },
+      {
+        accessorKey: 'project',
+        header: 'Project',
+        cell: ({ row }) => row.original.project || '-',
+      },
+    ],
+    [navigate, workspaceId]
+  )
 
   return (
-    <Stack gap={4}>
-      <Flex align="center" justify="space-between">
-        <PageHeader
-          title="Teams"
-          summary="Workspace teams, members and projects."
-        />
-        {workspaceId && (
+    <Stack gap="400" fullWidth>
+      <Inline
+        align="flex-start"
+        justify="space-between"
+        gap="200"
+        fullWidth
+        wrap
+      >
+        <div className="min-w-0 flex-1">
+          <PageHeader
+            title="Teams"
+            summary="Workspace teams, members and projects."
+          />
+        </div>
+        {workspaceId ? (
           <Button
             variant="primary"
+            className="shrink-0"
             onClick={() =>
               navigate(`/workspace/${workspaceId}/workspace/teams/new`)
             }
@@ -40,16 +88,21 @@ export function WorkspaceTeamsScreen() {
             <Plus size={16} />
             New Team
           </Button>
-        )}
-      </Flex>
-      {error && (
-        <Text size="sm" muted>
+        ) : null}
+      </Inline>
+      {error ? (
+        <Text variant="body3" color="color.text.subtle">
           Failed to load teams: {error}
         </Text>
-      )}
-      {!loading && workspaceId && (
-        <TeamsTable workspaceId={workspaceId} teams={teams} />
-      )}
+      ) : null}
+      {!loading && workspaceId ? (
+        <Table<TeamTableRow>
+          data={teams}
+          columns={columns}
+          searchable
+          columnFilterable={false}
+        />
+      ) : null}
     </Stack>
   )
 }

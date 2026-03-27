@@ -230,9 +230,9 @@ export function WorkspacesScreen() {
               {!workspacesLoading &&
                 !workspacesError &&
                 workspaces.length === 0 && (
-                  <Box className="rounded-xl border border-dashed border-border bg-muted/40 px-6 py-10 text-center">
-                    <Building2 className="w-8 h-8 text-muted-foreground mx-auto mb-3 opacity-50" />
-                    <Text className="text-sm text-muted-foreground">
+                  <Box padding="600" border>
+                    <Building2 size={32} className="mx-auto mb-3 opacity-50" />
+                    <Text>
                       No workspaces yet. Create your first one in the form.
                     </Text>
                   </Box>
@@ -242,7 +242,7 @@ export function WorkspacesScreen() {
                 !workspacesError &&
                 workspaces.map((workspace) => (
                   <Card key={workspace.id}>
-                    <CardContent className="p-5">
+                    <CardContent>
                       <Inline align="center" gap="200">
                         <Avatar
                           name={workspaceInitials(workspace.name)}
@@ -250,19 +250,21 @@ export function WorkspacesScreen() {
                           variant="brand"
                         />
 
-                        <Box className="flex-1 min-w-0">
+                        <Box>
                           <Text>{workspace.name}</Text>
                           <Inline align="center">
-                            workbit.app/{workspace.slug}
-                            <Badge variant="success" size="small">
+                            <Text variant="caption2">
+                              workbit.app/{workspace.slug}
+                            </Text>
+                            <Badge variant="info" size="small">
                               {workspace.region.toUpperCase()}
                             </Badge>
                           </Inline>
                         </Box>
 
                         <Button
-                          variant="warning"
-                          size="medium"
+                          variant="glass"
+                          size="small"
                           onClick={() => handleSelectWorkspace(workspace)}
                         >
                           Select

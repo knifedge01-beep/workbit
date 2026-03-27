@@ -13,9 +13,31 @@ import * as dbProjectProperties from '../db/projectProperties.js'
 import * as dbMilestones from '../db/milestones.js'
 import * as dbActivity from '../db/activity.js'
 import * as dbProjects from '../db/projects.js'
+import * as dbMembers from '../db/members.js'
 
 export async function getTeamById(teamId: string): Promise<Team | null> {
   return dbTeams.getTeamById(teamId)
+}
+
+export type TeamMemberListItemApi = {
+  id: string
+  name: string
+  username: string
+  avatarSrc?: string
+}
+
+export async function getTeamMembersForApi(
+  teamId: string
+): Promise<TeamMemberListItemApi[] | null> {
+  const team = await dbTeams.getTeamById(teamId)
+  if (!team) return null
+  const members = await dbMembers.getMembersByTeamId(teamId)
+  return members.map((member) => ({
+    id: member.id,
+    name: member.name,
+    username: member.username,
+    avatarSrc: member.avatarSrc,
+  }))
 }
 
 /** Returns the project if it exists and belongs to the given team. */

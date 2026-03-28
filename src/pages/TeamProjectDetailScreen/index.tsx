@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import type { Row, Table as TanStackTable } from '@tanstack/react-table'
 import { Box } from '@thedatablitz/box'
 import { Badge } from '@thedatablitz/badge'
+import { Alert } from '@thedatablitz/alert'
 import { Banner } from '@thedatablitz/banner'
 import { Breadcrumbs, BreadcrumbsItem } from '@thedatablitz/breadcrumb'
 import { Button } from '@thedatablitz/button'
@@ -839,7 +840,12 @@ export function TeamProjectDetailScreen({
                 </Inline>
 
                 {agentError ? (
-                  <Banner variant="danger" size="small" title={agentError} />
+                  <Alert
+                    variant="error"
+                    placement="inline"
+                    description={agentError}
+                    className="w-full"
+                  />
                 ) : null}
                 {agentOutcome ? (
                   <Card fullWidth variant="default" size="small">
@@ -1087,7 +1093,12 @@ export function TeamProjectDetailScreen({
                 </Inline>
 
                 {docsError ? (
-                  <Banner variant="danger" size="small" title={docsError} />
+                  <Alert
+                    variant="error"
+                    placement="inline"
+                    description={docsError}
+                    className="w-full"
+                  />
                 ) : null}
 
                 {docsLoading ? (

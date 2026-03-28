@@ -1,9 +1,10 @@
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { useRef, useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { X } from 'lucide-react'
 
 import { PageHeader, Stack as View } from '@design-system'
-import { Banner } from '@thedatablitz/banner'
+import { Alert } from '@thedatablitz/alert'
 import { Box } from '@thedatablitz/box'
 import { Button } from '@thedatablitz/button'
 import { Dropdown } from '@thedatablitz/dropdown'
@@ -15,7 +16,7 @@ import { TextInput } from '@thedatablitz/text-input'
 
 import { createIssue, fetchWorkspaceTeams } from '../../api/client'
 import { useWorkspace } from '../../contexts/WorkspaceContext'
-import { useFetch } from '../../hooks/useFetch'
+import { workspaceTeamsPickerQueryKey } from '../../contexts/workspaceQueryKeys'
 import { logError } from '../../utils/errorHandling'
 import { createIssueScreenClasses as classes } from './styles/classes'
 import type { RouteParams } from './types'
@@ -27,6 +28,13 @@ import {
   toTeamOptions,
 } from './utils/helpers'
 
+type CreateIssueMutationVars = {
+  workspaceId: string
+  teamIdOptional: string | undefined
+  title: string
+  description: string | undefined
+}
+
 export function CreateIssueScreen() {
   const { workspaceId, teamId: teamIdFromUrl } = useParams<RouteParams>()
   const navigate = useNavigate()
@@ -34,51 +42,70 @@ export function CreateIssueScreen() {
   const [teamId, setTeamId] = useState(teamIdFromUrl ?? '')
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const formRef = useRef<HTMLFormElement>(null)
 
   const isTeamScoped = Boolean(teamIdFromUrl)
   const effectiveTeamId = teamIdFromUrl ?? teamId
   const teamName = teams.find((team) => team.id === effectiveTeamId)?.name
 
-  const { data: teamsList } = useFetch(
-    () =>
-      currentWorkspace && !isTeamScoped
-        ? fetchWorkspaceTeams(currentWorkspace.id)
-        : Promise.resolve([]),
-    [currentWorkspace?.id, isTeamScoped]
-  )
-
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault()
-    if (!title.trim()) return
-
-    setError(null)
-    setSubmitting(true)
-    try {
-      const teamIdOptional =
-        effectiveTeamId && effectiveTeamId.trim() ? effectiveTeamId : undefined
-
-      const issue = await createIssue(teamIdOptional, {
-        title: title.trim(),
-        description: description.trim() || undefined,
-        status: 'todo',
-      })
-
-      if (workspaceId) {
-        if (teamIdOptional) {
-          navigate(getIssueDetailPath(workspaceId, teamIdOptional, issue.id))
-        } else {
-          navigate(`/workspace/${workspaceId}/inbox`)
-        }
+  const teamsPickerQuery = useQuery({
+    queryKey: workspaceTeamsPickerQueryKey(currentWorkspace?.id ?? ''),
+    queryFn: async ({ queryKey }) => {
+      const wid = queryKey[2]
+      if (typeof wid !== 'string' || !wid) {
+        throw new Error('Missing workspace id.')
       }
-    } catch (err) {
-      logError(err, 'CreateIssue')
-      setError(err instanceof Error ? err.message : 'Failed to create issue')
-    } finally {
-      setSubmitting(false)
-    }
+      return fetchWorkspaceTeams(wid)
+    },
+    enabled: Boolean(workspaceId && currentWorkspace && !isTeamScoped),
+  })
+
+  const teamsList = teamsPickerQuery.data ?? []
+
+  const createIssueMutation = useMutation({
+    mutationFn: (vars: CreateIssueMutationVars) =>
+      createIssue(vars.teamIdOptional, {
+        title: vars.title,
+        description: vars.description,
+        status: 'todo',
+      }),
+    onSuccess: (issue, vars) => {
+      if (vars.teamIdOptional) {
+        navigate(
+          getIssueDetailPath(vars.workspaceId, vars.teamIdOptional, issue.id)
+        )
+      } else {
+        navigate(`/workspace/${vars.workspaceId}/inbox`)
+      }
+    },
+    onError: (e) => {
+      logError(e, 'CreateIssue')
+    },
+  })
+
+  const submitting = createIssueMutation.isPending
+
+  const submitError =
+    createIssueMutation.isError && createIssueMutation.error
+      ? createIssueMutation.error instanceof Error
+        ? createIssueMutation.error.message
+        : 'Failed to create issue'
+      : null
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault()
+    if (!title.trim() || !workspaceId) return
+
+    createIssueMutation.reset()
+    const teamIdOptional =
+      effectiveTeamId && effectiveTeamId.trim() ? effectiveTeamId : undefined
+
+    createIssueMutation.mutate({
+      workspaceId,
+      teamIdOptional,
+      title: title.trim(),
+      description: description.trim() || undefined,
+    })
   }
 
   const handleCancel = () => {
@@ -120,7 +147,7 @@ export function CreateIssueScreen() {
                     onChange={(v) => setTeamId(v)}
                     placeholder="Select a team"
                     size="medium"
-                    disabled={submitting}
+                    disabled={submitting || teamsPickerQuery.isPending}
                   />
                 </div>
                 <Text variant="caption2" color="color.text.subtle">
@@ -170,8 +197,13 @@ export function CreateIssueScreen() {
               />
             </Box>
 
-            {error ? (
-              <Banner variant="danger" size="small" message={error} />
+            {submitError ? (
+              <Alert
+                variant="error"
+                placement="inline"
+                description={submitError}
+                className="w-full"
+              />
             ) : null}
 
             <Inline justify="flex-end" gap="100" fullWidth wrap>

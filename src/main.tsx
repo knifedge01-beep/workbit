@@ -6,6 +6,8 @@ import { BrowserRouter } from 'react-router-dom'
 import { ThemeProvider } from '@design-system'
 import { AuthProvider } from './pages/auth/AuthContext'
 import { WorkspaceProvider } from './contexts/WorkspaceContext'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+
 import App from './App'
 import '@design-system/styles/global.css'
 import '@design-system-v2/styles/globals.css'
@@ -37,15 +39,19 @@ initLogbit({
   }),
 })
 
+const queryClient = new QueryClient()
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider>
       <BrowserRouter>
-        <AuthProvider>
-          <WorkspaceProvider>
-            <App />
-          </WorkspaceProvider>
-        </AuthProvider>
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <WorkspaceProvider>
+              <App />
+            </WorkspaceProvider>
+          </AuthProvider>
+        </QueryClientProvider>
       </BrowserRouter>
     </ThemeProvider>
   </StrictMode>

@@ -8,6 +8,7 @@ import { Modal } from '@thedatablitz/modal'
 import { Stack } from '@thedatablitz/stack'
 import { TextBox } from '@thedatablitz/textbox'
 import { TextInput } from '@thedatablitz/text-input'
+import { Alert } from '@thedatablitz/alert'
 import { createProject } from '../../api/client'
 import { useWorkspace } from '../../contexts/WorkspaceContext'
 import { logError } from '../../utils/errorHandling'
@@ -102,7 +103,14 @@ export function CreateProjectScreen() {
             fullWidth
           />
 
-          {error ? <Box role="alert">{error}</Box> : null}
+          {error ? (
+            <Alert
+              variant="error"
+              placement="inline"
+              description={error}
+              className="w-full"
+            />
+          ) : null}
         </Stack>
       </Box>
     </Modal>

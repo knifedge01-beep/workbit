@@ -4,8 +4,6 @@ export const RESERVED_TEAM_SEGMENTS = new Set([
   'issues',
   'issue',
   'projects',
-  'views',
-  'logs',
   'member',
   'teams',
   'new',

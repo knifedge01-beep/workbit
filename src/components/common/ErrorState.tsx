@@ -1,5 +1,5 @@
 import styled from 'styled-components'
-import { AlertCircle } from 'lucide-react'
+import { Alert } from '@thedatablitz/alert'
 import { Stack } from '@design-system'
 
 const Container = styled.div<{ $fullHeight?: boolean }>`
@@ -15,16 +15,6 @@ const Container = styled.div<{ $fullHeight?: boolean }>`
   `}
 `
 
-const Message = styled.div`
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: ${(p) => p.theme.colors.error || '#ef4444'};
-`
-
-const IconWrapper = styled.div`
-  color: ${(p) => p.theme.colors.error || '#ef4444'};
-`
-
 interface Props {
   message?: string
   error?: string | null
@@ -37,10 +27,12 @@ export function ErrorState({ message, error, fullHeight }: Props) {
   return (
     <Container $fullHeight={fullHeight}>
       <Stack direction="vertical" gap={3}>
-        <IconWrapper>
-          <AlertCircle size={24} />
-        </IconWrapper>
-        <Message>{displayMessage}</Message>
+        <Alert
+          variant="error"
+          placement="inline"
+          description={displayMessage}
+          className="max-w-md text-left"
+        />
       </Stack>
     </Container>
   )

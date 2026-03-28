@@ -4,6 +4,7 @@ import { Input } from '@design-system'
 import styled from 'styled-components'
 import { getSupabase, isAuthConfigured } from './supabaseClient'
 import { useAuth } from './AuthContext'
+import { Alert } from '@thedatablitz/alert'
 import { Button } from '@thedatablitz/button'
 
 const Wrapper = styled.div`
@@ -46,12 +47,6 @@ const Field = styled.div`
     font-weight: 500;
     color: ${(p) => p.theme.colors.text};
   }
-`
-
-const Error = styled.p`
-  margin: 0;
-  font-size: 0.875rem;
-  color: ${(p) => p.theme.colors.error ?? '#dc2626'};
 `
 
 const Message = styled.p`
@@ -142,7 +137,14 @@ export function SignupScreen() {
               placeholder="Your name"
             />
           </Field>
-          {error && <Error>{error}</Error>}
+          {error ? (
+            <Alert
+              variant="error"
+              placement="inline"
+              description={error}
+              className="w-full"
+            />
+          ) : null}
           {message && <Message>{message}</Message>}
           <Button type="submit" disabled={loading}>
             {loading ? 'Creating account…' : 'Sign up'}

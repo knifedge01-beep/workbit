@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
+import { Alert } from '@thedatablitz/alert'
 import {
   Container,
   Stack,
@@ -169,20 +170,22 @@ export function CreateMemberScreen() {
                 </Stack>
               </div>
             )}
-            {error && (
-              <div role="alert">
-                <Text size="sm">{error}</Text>
-              </div>
-            )}
+            {error ? (
+              <Alert
+                variant="error"
+                placement="inline"
+                description={error}
+                className="w-full"
+              />
+            ) : null}
             <Flex gap={2} justify="flex-start">
               <Button
-                type="submit"
                 variant="primary"
                 disabled={!canSubmit(name, username, email, submitting)}
               >
                 {submitting ? 'Creating…' : 'Create member'}
               </Button>
-              <Button type="button" variant="secondary" onClick={handleCancel}>
+              <Button variant="danger" onClick={handleCancel}>
                 Cancel
               </Button>
             </Flex>

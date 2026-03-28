@@ -3,14 +3,8 @@ import { Plus } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import type { Row, Table as TanStackTable } from '@tanstack/react-table'
 
-import {
-  Alert,
-  Avatar,
-  Flex,
-  PageHeader,
-  RichText,
-  Stack,
-} from '@design-system'
+import { Alert } from '@thedatablitz/alert'
+import { Avatar, Flex, PageHeader, RichText, Stack } from '@design-system'
 import { Badge } from '@thedatablitz/badge'
 import { Modal } from '@thedatablitz/modal'
 import { Tabs } from '@thedatablitz/tabs'
@@ -378,7 +372,14 @@ export function TeamIssuesScreen({ teamName }: TeamIssuesScreenProps) {
   console.log({ issueTreeData })
   return (
     <Stack gap={4}>
-      {createError && <Alert variant="error">{createError}</Alert>}
+      {createError ? (
+        <Alert
+          variant="error"
+          placement="inline"
+          description={createError}
+          className="w-full"
+        />
+      ) : null}
       <Flex align="center" justify="space-between">
         <PageHeader title={teamName} />
         <Button

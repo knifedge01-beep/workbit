@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { Check, Copy, Plus, Shield, ShieldAlert, Trash2 } from 'lucide-react'
 
 import { Badge, type BadgeVariant } from '@thedatablitz/badge'
+import { Alert } from '@thedatablitz/alert'
 import { Banner } from '@thedatablitz/banner'
 import { Button } from '@thedatablitz/button'
 import { Inline } from '@thedatablitz/inline'
@@ -280,9 +281,12 @@ export function ApiKeysTab() {
         </Stack>
 
         {(error || mutationError) && (
-          <div style={{ marginBottom: 8 }}>
-            <Banner variant="danger" message={error ?? mutationError} />
-          </div>
+          <Alert
+            variant="error"
+            placement="inline"
+            description={error ?? mutationError ?? ''}
+            className="w-full"
+          />
         )}
 
         {createdKey && (

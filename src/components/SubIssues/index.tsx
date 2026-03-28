@@ -10,6 +10,7 @@ import { formatDateTime, logError } from '../../utils'
 import { Inline } from '@thedatablitz/inline'
 import { Box } from '@thedatablitz/box'
 import { Stack } from '@thedatablitz/stack'
+import { Alert } from '@thedatablitz/alert'
 
 export type SubIssuesProps = {
   parentIssueId: string
@@ -129,11 +130,14 @@ export function SubIssues({ parentIssueId }: SubIssuesProps) {
           </Text>
         )}
 
-        {!loading && error && (
-          <Text as="p" variant="body3">
-            {error}
-          </Text>
-        )}
+        {!loading && error ? (
+          <Alert
+            variant="error"
+            placement="inline"
+            description={error}
+            className="w-full"
+          />
+        ) : null}
 
         {!loading &&
           !error &&

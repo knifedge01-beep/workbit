@@ -1,11 +1,15 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { useCallback, useMemo } from 'react'
 import {
   fetchMembers,
   fetchWorkspaces,
-  type ApiMember,
   type ApiWorkspace,
 } from '../../../api/client'
 import { logError } from '../../../utils/errorHandling'
+import {
+  workspaceMembersQueryKey,
+  workspacesListQueryKeyPrefix,
+} from '../../../contexts/workspaceQueryKeys'
 
 type UseWorkspacesDataParams = {
   userId: string | null
@@ -25,84 +29,85 @@ export function useWorkspacesData({
   userId,
   authLoading,
 }: UseWorkspacesDataParams): UseWorkspacesDataResult {
-  const [memberId, setMemberId] = useState<string | null>(null)
-  const [memberError, setMemberError] = useState<string | null>(null)
-  const [workspaces, setWorkspaces] = useState<ApiWorkspace[]>([])
-  const [workspacesError, setWorkspacesError] = useState<string | null>(null)
-  const [workspacesLoading, setWorkspacesLoading] = useState(true)
+  const membersQuery = useQuery({
+    queryKey: workspaceMembersQueryKey(userId),
+    queryFn: async () => {
+      try {
+        return await fetchMembers()
+      } catch (e) {
+        logError(e, 'WorkspacesScreen.resolveMember')
+        throw e
+      }
+    },
+    enabled: !authLoading && !!userId,
+  })
+
+  const currentMember = useMemo(() => {
+    if (!membersQuery.data || !userId) return undefined
+    return membersQuery.data.find(
+      (member) => member.uid && member.uid === userId
+    )
+  }, [membersQuery.data, userId])
+
+  const memberId = currentMember?.id ?? null
+
+  const memberError = useMemo(() => {
+    if (authLoading || !userId) return null
+    if (membersQuery.isError) {
+      const e = membersQuery.error
+      return e instanceof Error
+        ? e.message
+        : 'Failed to resolve workspace member.'
+    }
+    if (membersQuery.isSuccess && !currentMember) {
+      return 'No workspace member profile found for this account. Ask an admin to add you as a member.'
+    }
+    return null
+  }, [
+    authLoading,
+    userId,
+    membersQuery.isError,
+    membersQuery.error,
+    membersQuery.isSuccess,
+    currentMember,
+  ])
+
+  const workspacesQuery = useQuery({
+    queryKey: [...workspacesListQueryKeyPrefix, memberId],
+    queryFn: async ({ queryKey }) => {
+      const id = queryKey[2]
+      if (typeof id !== 'string') {
+        throw new Error('Missing workspace member id.')
+      }
+      try {
+        return await fetchWorkspaces(id)
+      } catch (e) {
+        logError(e, 'WorkspacesScreen.loadWorkspaces')
+        throw e
+      }
+    },
+    enabled: typeof memberId === 'string' && memberId.length > 0,
+  })
+
+  const workspacesLoading = Boolean(
+    memberId && (workspacesQuery.isPending || workspacesQuery.isFetching)
+  )
+
+  const workspacesError = workspacesQuery.isError
+    ? workspacesQuery.error instanceof Error
+      ? workspacesQuery.error.message
+      : 'Failed to load workspaces.'
+    : null
 
   const reloadWorkspaces = useCallback(async () => {
     if (!memberId) return
-    setWorkspacesLoading(true)
-    setWorkspacesError(null)
-    try {
-      const data = await fetchWorkspaces(memberId)
-      setWorkspaces(data)
-    } catch (e) {
-      logError(e, 'WorkspacesScreen.loadWorkspaces')
-      setWorkspacesError(
-        e instanceof Error ? e.message : 'Failed to load workspaces.'
-      )
-    } finally {
-      setWorkspacesLoading(false)
-    }
-  }, [memberId])
-
-  useEffect(() => {
-    if (authLoading) return
-    if (!userId) {
-      setMemberId(null)
-      setMemberError(null)
-      setWorkspaces([])
-      setWorkspacesLoading(false)
-      setWorkspacesError(null)
-      return
-    }
-
-    let cancelled = false
-    async function resolveMember() {
-      setMemberError(null)
-      try {
-        const members: ApiMember[] = await fetchMembers()
-        const current = members.find(
-          (member) => member.uid && member.uid === userId
-        )
-        if (cancelled) return
-        setMemberId(current?.id ?? null)
-        if (!current) {
-          setMemberError(
-            'No workspace member profile found for this account. Ask an admin to add you as a member.'
-          )
-        }
-      } catch (e) {
-        if (cancelled) return
-        logError(e, 'WorkspacesScreen.resolveMember')
-        setMemberError(
-          e instanceof Error ? e.message : 'Failed to resolve workspace member.'
-        )
-      }
-    }
-
-    void resolveMember()
-    return () => {
-      cancelled = true
-    }
-  }, [authLoading, userId])
-
-  useEffect(() => {
-    if (!memberId) {
-      setWorkspaces([])
-      setWorkspacesLoading(false)
-      setWorkspacesError(null)
-      return
-    }
-    void reloadWorkspaces()
-  }, [memberId, reloadWorkspaces])
+    await workspacesQuery.refetch()
+  }, [memberId, workspacesQuery.refetch])
 
   return {
     memberId,
     memberError,
-    workspaces,
+    workspaces: workspacesQuery.data ?? [],
     workspacesLoading,
     workspacesError,
     reloadWorkspaces,

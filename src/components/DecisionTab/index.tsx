@@ -16,6 +16,7 @@ import { Badge } from '@thedatablitz/badge'
 import { TextInput as Input } from '@thedatablitz/text-input'
 import { TextBox } from '@thedatablitz/textbox'
 import { Box } from '@thedatablitz/box'
+import { Alert } from '@thedatablitz/alert'
 
 import {
   createProjectDecision,
@@ -274,16 +275,12 @@ export function DecisionTab({
             Loading decisions...
           </Text>
         ) : error ? (
-          <div
-            style={{
-              border: '1px solid #fecdd3',
-              background: '#fff1f2',
-              borderRadius: 8,
-              padding: 12,
-            }}
-          >
-            <Text variant="body3">{error}</Text>
-          </div>
+          <Alert
+            variant="error"
+            placement="inline"
+            description={error}
+            className="w-full"
+          />
         ) : items.length === 0 ? (
           <Box>
             <Text variant="body3" color="color.text.subtle">

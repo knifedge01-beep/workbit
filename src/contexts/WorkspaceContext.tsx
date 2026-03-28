@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   fetchMembers,
   fetchWorkspaces,
@@ -17,6 +18,12 @@ import type { ApiWorkspace } from '../api/client'
 import type { Team } from '../constants'
 import { useAuth } from '../pages/auth/AuthContext'
 import { logError } from '../utils/errorHandling'
+import {
+  workspaceMembersQueryKey,
+  workspaceMembersQueryKeyRoot,
+  workspaceTeamsAndProjectsQueryKey,
+  workspacesListQueryKeyPrefix,
+} from './workspaceQueryKeys'
 
 const STORAGE_KEY = 'workbit.currentWorkspaceId'
 
@@ -44,6 +51,7 @@ type WorkspaceContextValue = {
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null)
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient()
   const { state: authState } = useAuth()
   const isAuthLoading = authState.status === 'loading'
   const userId =
@@ -51,13 +59,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   const [currentWorkspace, setCurrentWorkspaceState] =
     useState<ApiWorkspace | null>(null)
-  const [workspaces, setWorkspaces] = useState<ApiWorkspace[]>([])
-  const [workspacesLoading, setWorkspacesLoading] = useState(true)
-  const [workspacesError, setWorkspacesError] = useState<string | null>(null)
-  const [teams, setTeams] = useState<Team[]>([])
-  const [projects, setProjects] = useState<WorkspaceProject[]>([])
-  const [teamsLoading, setTeamsLoading] = useState(false)
-  const [projectsLoading, setProjectsLoading] = useState(false)
 
   const setCurrentWorkspace = useCallback((ws: ApiWorkspace | null) => {
     setCurrentWorkspaceState(ws)
@@ -76,153 +77,131 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const loadWorkspaces = useCallback(async () => {
-    if (isAuthLoading) {
-      setWorkspacesLoading(true)
-      return
-    }
-    if (!userId) {
-      setWorkspaces([])
-      setWorkspacesLoading(false)
-      return
-    }
-    setWorkspacesLoading(true)
-    setWorkspacesError(null)
-    try {
-      const members = await fetchMembers()
-      const member = members.find((m) => m.uid && m.uid === userId)
-      if (!member) {
-        setWorkspaces([])
-        return
-      }
-      const list = await fetchWorkspaces(member.id)
-      setWorkspaces(list)
-      const storedId = localStorage.getItem(STORAGE_KEY)
-      if (storedId) {
-        const found = list.find((w) => w.id === storedId)
-        if (found) setCurrentWorkspaceState(found)
-      }
-    } catch (e) {
-      logError(e, 'WorkspaceContext.loadWorkspaces')
-      setWorkspacesError(
-        e instanceof Error ? e.message : 'Failed to load workspaces'
-      )
-      setWorkspaces([])
-    } finally {
-      setWorkspacesLoading(false)
-    }
-  }, [isAuthLoading, userId])
-
-  useEffect(() => {
-    let cancelled = false
-    if (isAuthLoading) {
-      setWorkspacesLoading(true)
-      return () => {
-        cancelled = true
-      }
-    }
-    if (!userId) {
-      setWorkspaces([])
-      setWorkspacesLoading(false)
-      return
-    }
-    void (async () => {
-      setWorkspacesLoading(true)
-      setWorkspacesError(null)
+  const membersQuery = useQuery({
+    queryKey: workspaceMembersQueryKey(userId),
+    queryFn: async () => {
       try {
-        const members = await fetchMembers()
-        if (cancelled) return
-        const member = members.find((m) => m.uid && m.uid === userId)
-        if (!member) {
-          if (!cancelled) setWorkspaces([])
-          return
-        }
-        const list = await fetchWorkspaces(member.id)
-        if (cancelled) return
-        setWorkspaces(list)
-        const storedId = localStorage.getItem(STORAGE_KEY)
-        if (storedId) {
-          const found = list.find((w) => w.id === storedId)
-          if (found) setCurrentWorkspaceState(found)
-        }
+        return await fetchMembers()
       } catch (e) {
-        if (!cancelled) logError(e, 'WorkspaceContext.loadWorkspaces')
-        if (!cancelled)
-          setWorkspacesError(
-            e instanceof Error ? e.message : 'Failed to load workspaces'
-          )
-        if (!cancelled) setWorkspaces([])
-      } finally {
-        if (!cancelled) setWorkspacesLoading(false)
+        logError(e, 'WorkspaceContext.resolveMember')
+        throw e
       }
-    })()
-    return () => {
-      cancelled = true
-    }
-  }, [isAuthLoading, userId])
+    },
+    enabled: !isAuthLoading && !!userId,
+  })
 
-  const loadTeamsAndProjects = useCallback(async () => {
-    if (!currentWorkspace) return
-    setTeamsLoading(true)
-    setProjectsLoading(true)
-    try {
-      // Load all workspace teams (no memberId filter) for navbar dropdown and sidebar
-      const [teamsRes, projectsRes] = await Promise.all([
-        fetchWorkspaceTeams(currentWorkspace.id),
-        fetchProjects(),
-      ])
-      setTeams(teamsRes.map((t) => ({ id: t.id, name: t.name })))
-      setProjects(projectsRes)
-    } catch {
-      setTeams([])
-      setProjects([])
-    } finally {
-      setTeamsLoading(false)
-      setProjectsLoading(false)
-    }
-  }, [currentWorkspace])
+  const currentMember = useMemo(() => {
+    if (!membersQuery.data || !userId) return undefined
+    return membersQuery.data.find((m) => m.uid && m.uid === userId)
+  }, [membersQuery.data, userId])
 
-  const refreshTeamsAndProjects = useCallback(async () => {
-    await loadTeamsAndProjects()
-  }, [loadTeamsAndProjects])
+  const memberId = currentMember?.id ?? null
+
+  const workspacesQuery = useQuery({
+    queryKey: [...workspacesListQueryKeyPrefix, memberId],
+    queryFn: async ({ queryKey }) => {
+      const id = queryKey[2]
+      if (typeof id !== 'string') {
+        throw new Error('Missing workspace member id.')
+      }
+      try {
+        return await fetchWorkspaces(id)
+      } catch (e) {
+        logError(e, 'WorkspaceContext.loadWorkspaces')
+        throw e
+      }
+    },
+    enabled: typeof memberId === 'string' && memberId.length > 0,
+  })
+
+  const workspaces = useMemo(
+    () => (!userId || !memberId ? [] : (workspacesQuery.data ?? [])),
+    [userId, memberId, workspacesQuery.data]
+  )
+
+  const workspacesLoading =
+    isAuthLoading ||
+    (!!userId &&
+      (membersQuery.isPending ||
+        membersQuery.isFetching ||
+        (!!memberId &&
+          (workspacesQuery.isPending || workspacesQuery.isFetching))))
+
+  const workspacesError = membersQuery.isError
+    ? membersQuery.error instanceof Error
+      ? membersQuery.error.message
+      : 'Failed to load workspaces.'
+    : workspacesQuery.isError
+      ? workspacesQuery.error instanceof Error
+        ? workspacesQuery.error.message
+        : 'Failed to load workspaces.'
+      : null
 
   useEffect(() => {
-    if (!currentWorkspace) {
-      setTeams([])
-      setProjects([])
-      setTeamsLoading(false)
-      setProjectsLoading(false)
-      return
+    const list = workspacesQuery.data
+    if (!list?.length) return
+    try {
+      const storedId = localStorage.getItem(STORAGE_KEY)
+      if (!storedId) return
+      const found = list.find((w) => w.id === storedId)
+      if (found) setCurrentWorkspaceState(found)
+    } catch {
+      // ignore
     }
-    let cancelled = false
-    setTeamsLoading(true)
-    setProjectsLoading(true)
-    void (async () => {
+  }, [workspacesQuery.data])
+
+  const refreshWorkspaces = useCallback(async () => {
+    await queryClient.invalidateQueries({
+      queryKey: workspaceMembersQueryKeyRoot,
+    })
+    await queryClient.invalidateQueries({
+      queryKey: workspacesListQueryKeyPrefix,
+    })
+  }, [queryClient])
+
+  const workspaceId = currentWorkspace?.id
+
+  const teamsProjectsQuery = useQuery({
+    queryKey: workspaceTeamsAndProjectsQueryKey(workspaceId ?? ''),
+    queryFn: async () => {
+      const id = workspaceId!
       try {
-        // Load all workspace teams (no memberId filter) for navbar dropdown and sidebar
         const [teamsRes, projectsRes] = await Promise.all([
-          fetchWorkspaceTeams(currentWorkspace.id),
+          fetchWorkspaceTeams(id),
           fetchProjects(),
         ])
-        if (cancelled) return
-        setTeams(teamsRes.map((t) => ({ id: t.id, name: t.name })))
-        setProjects(projectsRes)
-      } catch {
-        if (!cancelled) {
-          setTeams([])
-          setProjects([])
+        return {
+          teams: teamsRes.map((t) => ({ id: t.id, name: t.name })) as Team[],
+          projects: projectsRes as WorkspaceProject[],
         }
-      } finally {
-        if (!cancelled) {
-          setTeamsLoading(false)
-          setProjectsLoading(false)
-        }
+      } catch (e) {
+        logError(e, 'WorkspaceContext.loadTeamsAndProjects')
+        return { teams: [] as Team[], projects: [] as WorkspaceProject[] }
       }
-    })()
-    return () => {
-      cancelled = true
-    }
-  }, [currentWorkspace])
+    },
+    enabled: typeof workspaceId === 'string' && workspaceId.length > 0,
+  })
+
+  const teams = useMemo(
+    () => teamsProjectsQuery.data?.teams ?? [],
+    [teamsProjectsQuery.data]
+  )
+  const projects = useMemo(
+    () => teamsProjectsQuery.data?.projects ?? [],
+    [teamsProjectsQuery.data]
+  )
+  const teamsLoading = Boolean(
+    workspaceId &&
+    (teamsProjectsQuery.isPending || teamsProjectsQuery.isFetching)
+  )
+  const projectsLoading = teamsLoading
+
+  const refreshTeamsAndProjects = useCallback(async () => {
+    if (!workspaceId) return
+    await queryClient.invalidateQueries({
+      queryKey: workspaceTeamsAndProjectsQueryKey(workspaceId),
+    })
+  }, [queryClient, workspaceId])
 
   const value = useMemo<WorkspaceContextValue>(
     () => ({
@@ -231,7 +210,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       workspaces,
       workspacesLoading,
       workspacesError,
-      refreshWorkspaces: loadWorkspaces,
+      refreshWorkspaces,
       teams,
       projects,
       teamsLoading,
@@ -244,7 +223,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       workspaces,
       workspacesLoading,
       workspacesError,
-      loadWorkspaces,
+      refreshWorkspaces,
       teams,
       projects,
       teamsLoading,

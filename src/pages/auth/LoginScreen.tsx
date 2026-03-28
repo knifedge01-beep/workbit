@@ -7,6 +7,7 @@ import { Text } from '@thedatablitz/text'
 import { TextInput } from '@thedatablitz/text-input'
 import { getSupabase, isAuthConfigured } from './supabaseClient'
 import { useAuth } from './AuthContext'
+import { Alert } from '@thedatablitz/alert'
 import { Button } from '@thedatablitz/button'
 
 export function LoginScreen() {
@@ -109,9 +110,12 @@ export function LoginScreen() {
                 />
               </Stack>
               {error ? (
-                <Text as="p" variant="body3" color="color.icon.danger">
-                  {error}
-                </Text>
+                <Alert
+                  variant="error"
+                  placement="inline"
+                  description={error}
+                  className="w-full"
+                />
               ) : null}
               <Button
                 variant="primary"

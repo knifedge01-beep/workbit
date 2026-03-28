@@ -1,11 +1,10 @@
 import { useNavigate, useParams } from 'react-router-dom'
 import { Plus } from 'lucide-react'
 
+import { Alert } from '@thedatablitz/alert'
 import { PageHeader, Stack as View } from '@design-system'
 import { Button } from '@thedatablitz/button'
 import { Inline } from '@thedatablitz/inline'
-import { Text } from '@thedatablitz/text'
-
 import { ProjectsTable } from '../../components'
 import { fetchProjects } from '../../api/client'
 import { useFetch } from '../../hooks/useFetch'
@@ -59,9 +58,12 @@ export function WorkspaceProjectsScreen() {
         ) : null}
       </Inline>
       {error ? (
-        <Text variant="body3" color="color.text.subtle">
-          Failed to load projects: {error}
-        </Text>
+        <Alert
+          variant="error"
+          placement="inline"
+          description={`Failed to load projects: ${error}`}
+          className="w-full"
+        />
       ) : null}
       {!loading ? (
         <ProjectsTable projects={projects} onRowClick={handleRowClick} />

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
+import { Alert } from '@thedatablitz/alert'
 import { Container, Stack, PageHeader, Flex } from '@design-system'
 import { TextInput } from '@thedatablitz/text-input'
 import { Text } from '@thedatablitz/text'
@@ -78,13 +79,14 @@ export function CreateTeamScreen() {
                 autoFocus
               />
             </div>
-            {error && (
-              <div role="alert">
-                <Text variant="body3" color="color.icon.danger">
-                  {error}
-                </Text>
-              </div>
-            )}
+            {error ? (
+              <Alert
+                variant="error"
+                placement="inline"
+                description={error}
+                className="w-full"
+              />
+            ) : null}
             <Flex gap={2} justify="flex-start">
               <Button
                 variant="primary"

@@ -7,7 +7,7 @@ import { Text } from '@thedatablitz/text'
 import { TextInput as Input } from '@thedatablitz/text-input'
 import { TextEditor } from '@thedatablitz/text-editor'
 import { Button } from '@thedatablitz/button'
-import { Banner } from '@thedatablitz/banner'
+import { Alert } from '@thedatablitz/alert'
 
 import {
   createProjectDocument,
@@ -186,7 +186,12 @@ export function ProjectDocumentEditorScreen({
             </Inline>
 
             {error ? (
-              <Banner variant="danger" size="small" title={error} />
+              <Alert
+                variant="error"
+                placement="inline"
+                description={error}
+                className="w-full"
+              />
             ) : null}
 
             {loading ? (

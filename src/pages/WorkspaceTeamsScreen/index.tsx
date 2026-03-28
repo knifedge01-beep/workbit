@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Plus } from 'lucide-react'
+import { Alert } from '@thedatablitz/alert'
 import { PageHeader } from '@design-system'
 import { fetchWorkspaceTeams } from '../../api/client'
 import { useFetch } from '../../hooks/useFetch'
@@ -10,7 +11,6 @@ import { mapTeamsToRows } from './utils'
 import { Button } from '@thedatablitz/button'
 import { Inline } from '@thedatablitz/inline'
 import { Stack } from '@thedatablitz/stack'
-import { Text } from '@thedatablitz/text'
 import { Table, type ColumnDef } from '@thedatablitz/table'
 
 export function WorkspaceTeamsScreen() {
@@ -91,9 +91,12 @@ export function WorkspaceTeamsScreen() {
         ) : null}
       </Inline>
       {error ? (
-        <Text variant="body3" color="color.text.subtle">
-          Failed to load teams: {error}
-        </Text>
+        <Alert
+          variant="error"
+          placement="inline"
+          description={`Failed to load teams: ${error}`}
+          className="w-full"
+        />
       ) : null}
       {!loading && workspaceId ? (
         <Table<TeamTableRow>

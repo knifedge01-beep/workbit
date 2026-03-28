@@ -8,7 +8,6 @@ export default defineConfig({
   resolve: {
     alias: {
       '@design-system': path.resolve(__dirname, './src/design-system'),
-      '@design-system-v2': path.resolve(__dirname, './src/design-system-v2'),
     },
   },
 })

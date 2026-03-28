@@ -20,7 +20,7 @@ import { Inline } from '@thedatablitz/inline'
 import { Stack } from '@thedatablitz/stack'
 import { Text } from '@thedatablitz/text'
 import { Tree, type TreeNode } from '@thedatablitz/tree'
-import { cn } from '@design-system-v2/lib/utils'
+import { cn } from '../../utils/cn'
 
 import { navClasses } from './styles/classes'
 import type { NavItemProps, SidebarNavProps } from './types'

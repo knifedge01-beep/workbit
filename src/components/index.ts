@@ -34,10 +34,3 @@ export { IssueActivity, type IssueActivityProps } from './IssueActivity'
 export { IssueProperties, type IssuePropertiesProps } from './IssueProperties'
 export { SubIssues, type SubIssuesProps } from './SubIssues'
 export { DecisionTab } from './DecisionTab'
-export { TaskListTable, type TaskListItem } from './TaskListTable'
-export {
-  mapIssueToTaskListItem,
-  mapPriorityForTaskList,
-  mapPriorityFromStatus,
-  mapStatusForTaskList,
-} from './taskListMappings'

@@ -10,7 +10,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 import App from './App'
 import '@design-system/styles/global.css'
-import '@design-system-v2/styles/globals.css'
 
 /** Required by @thedatablitz/text-editor injected theme (`var(--ds-…)`). */
 const TOKENS_STYLE_ID = 'db-design-bit-tokens'

@@ -199,20 +199,6 @@ export async function createMember(body: {
   }) as Promise<ApiMember>
 }
 
-/** Current user's member record (by auth token). Returns null if not found. */
-export async function fetchMeMember(): Promise<ApiMember | null> {
-  try {
-    return (await authFetch('/me/member')) as ApiMember
-  } catch (e) {
-    logbit.warn('fetchMeMember failed (may be unauthenticated)', {
-      projectId: LOGBIT_PROJECT_ID,
-      title: 'fetchMeMember failed',
-      error: e instanceof Error ? e.message : String(e),
-    })
-    return null
-  }
-}
-
 export async function fetchProjects(): Promise<
   {
     id: string
@@ -306,16 +292,6 @@ export async function fetchRoles(): Promise<
   return authFetch('/workspace/roles') as Promise<
     { id: string; role: string; memberCount: number; description: string }[]
   >
-}
-
-export async function inviteMember(
-  email: string,
-  roleId?: string
-): Promise<unknown> {
-  return authFetch('/workspace/members/invite', {
-    method: 'POST',
-    body: JSON.stringify({ email, roleId }),
-  })
 }
 
 // --- Teams ---
@@ -641,15 +617,6 @@ export async function fetchProject(
   ) as Promise<ApiProjectSummary>
 }
 
-export async function fetchProjectStatusUpdates(
-  projectId: string
-): Promise<ApiStatusUpdate[]> {
-  const res = (await authFetch(
-    `/projects/${encodeURIComponent(projectId)}/status-updates`
-  )) as { nodes: ApiStatusUpdate[] }
-  return res.nodes
-}
-
 export async function fetchProjectDecisions(
   projectId: string,
   options?: {
@@ -795,34 +762,6 @@ export async function createIssue(
     method: 'POST',
     body: JSON.stringify(payload),
   }) as Promise<ApiIssueDetail>
-}
-
-// --- Me ---
-
-export async function fetchNotifications(): Promise<
-  {
-    id: string
-    type: string
-    title: string
-    body: string
-    read: boolean
-    createdAt: string
-    actor: { id: string; name: string }
-    targetUrl?: string
-  }[]
-> {
-  return authFetch('/me/notifications') as Promise<
-    {
-      id: string
-      type: string
-      title: string
-      body: string
-      read: boolean
-      createdAt: string
-      actor: { id: string; name: string }
-      targetUrl?: string
-    }[]
-  >
 }
 
 // --- Issues ---

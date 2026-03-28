@@ -28,10 +28,6 @@ export function getSummary(
   return `Create an issue in ${workspaceName}. Choose a team that has a project.`
 }
 
-export function getTeamBadge(teamName: string | undefined): string {
-  return teamName?.slice(0, 3).toUpperCase() ?? 'ISS'
-}
-
 export function getIssueDetailPath(
   workspaceId: string,
   teamId: string,

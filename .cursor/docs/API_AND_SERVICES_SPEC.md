@@ -410,7 +410,6 @@ Components that need data from APIs (or that trigger writes) are listed below. T
 
 | Component | Data / action | Source (GraphQL query / REST) |
 |-----------|----------------|-------------------------------|
-| **ProjectsTable** | List projects | `WorkspaceProjects` query |
 | **TeamsTable** | List teams | `WorkspaceTeams` query |
 | **MembersTable** | List members; Invite | `WorkspaceMembers` query; `POST .../invite` |
 | **ViewsTable** | List views | `WorkspaceViews` or `TeamViews` query |

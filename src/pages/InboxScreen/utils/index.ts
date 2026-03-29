@@ -1,1 +1,0 @@
-// InboxScreen utilities

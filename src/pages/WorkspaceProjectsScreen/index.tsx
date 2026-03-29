@@ -5,17 +5,15 @@ import { Alert } from '@thedatablitz/alert'
 import { PageHeader, Stack as View } from '@design-system'
 import { Button } from '@thedatablitz/button'
 import { Inline } from '@thedatablitz/inline'
-import { ProjectsTable } from '../../components'
 import { fetchProjects } from '../../api/client'
 import { useFetch } from '../../hooks/useFetch'
-import { workspaceProjectsText } from './styles'
+import { Stack } from '@thedatablitz/stack'
+import { Text } from '@thedatablitz/text'
+import { Badge } from '@thedatablitz/badge'
+import { Table } from '@thedatablitz/table'
 import type { ApiProjectSummary, WorkspaceProjectsParams } from './types'
-import {
-  getNewProjectPath,
-  getProjectDetailPath,
-  resolveTeamId,
-  toProjectRows,
-} from './utils/helpers'
+import { getNewProjectPath, toProjectRows } from './utils/helpers'
+import { createProjectColumn } from './utils/createProjectColumn'
 
 export function WorkspaceProjectsScreen() {
   const navigate = useNavigate()
@@ -25,38 +23,30 @@ export function WorkspaceProjectsScreen() {
   const projectData = (data ?? []) as ApiProjectSummary[]
   const projects = toProjectRows(projectData)
 
-  const handleRowClick = (row: (typeof projects)[number]) => {
-    if (!workspaceId) return
-    const teamId = resolveTeamId(projectData, row.id, row.team)
-    navigate(getProjectDetailPath(workspaceId, teamId, row.id))
-  }
+  // const handleRowClick = (row: (typeof projects)[number]) => {
+  //   if (!workspaceId) return
+  //   const teamId = resolveTeamId(projectData, row.id, row.team)
+  //   navigate(getProjectDetailPath(workspaceId, teamId, row.id))
+  // }
 
   return (
     <View gap={4} className="flex w-full flex-col">
-      <Inline
-        align="flex-start"
-        justify="space-between"
-        gap="200"
-        fullWidth
-        wrap
-      >
-        <div className="min-w-0 flex-1">
-          <PageHeader
-            title={workspaceProjectsText.title}
-            summary={workspaceProjectsText.summary}
-          />
-        </div>
-        {workspaceId ? (
-          <Button
-            variant="glass"
-            className="shrink-0"
-            onClick={() => navigate(getNewProjectPath(workspaceId))}
-          >
-            <Plus size={16} />
-            {workspaceProjectsText.newProject}
-          </Button>
-        ) : null}
-      </Inline>
+      <PageHeader
+        title={'Workspace projects'}
+        summary={'All projects in your workspace.'}
+      />
+
+      {workspaceId ? (
+        <Button
+          variant="glass"
+          className="shrink-0"
+          icon={<Plus size={16} />}
+          onClick={() => navigate(getNewProjectPath(workspaceId))}
+        >
+          New Project
+        </Button>
+      ) : null}
+
       {error ? (
         <Alert
           variant="error"
@@ -66,7 +56,20 @@ export function WorkspaceProjectsScreen() {
         />
       ) : null}
       {!loading ? (
-        <ProjectsTable projects={projects} onRowClick={handleRowClick} />
+        <Stack gap="100">
+          <Inline gap="050">
+            <Text variant="heading6">Projects</Text>
+            <Badge variant="warning" size="small">
+              {projects.length}
+            </Badge>
+          </Inline>
+          <Table
+            columns={createProjectColumn()}
+            searchable={false}
+            columnFilterable={false}
+            data={projects}
+          />
+        </Stack>
       ) : null}
     </View>
   )

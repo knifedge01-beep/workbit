@@ -3,10 +3,14 @@ import { Badge } from '@thedatablitz/badge'
 import { Text } from '@thedatablitz/text'
 import type { ColumnDef } from '@design-system'
 
-import { ProjectNameCell } from '../styles'
-import type { ProjectTableRow } from '../types'
+export type ProjectTableRow = {
+  id: string
+  name: string
+  team: string
+  status: string
+}
 
-export function createColumns(): ColumnDef<ProjectTableRow, unknown>[] {
+export function createProjectColumn(): ColumnDef<ProjectTableRow, unknown>[] {
   return [
     {
       id: 'name',
@@ -15,12 +19,12 @@ export function createColumns(): ColumnDef<ProjectTableRow, unknown>[] {
       enableSorting: true,
       meta: { flex: 1.5 },
       cell: ({ row }) => (
-        <ProjectNameCell>
+        <>
           <Folder size={14} className="proj-icon" />
           <Text variant="body2" as="span">
             {row.original.name}
           </Text>
-        </ProjectNameCell>
+        </>
       ),
     },
     {

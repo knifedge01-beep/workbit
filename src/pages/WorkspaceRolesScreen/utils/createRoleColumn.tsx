@@ -1,9 +1,14 @@
 import { Text } from '@design-system'
 import type { ColumnDef } from '@design-system'
 
-import type { RoleTableRow } from '../types'
+export type RoleTableRow = {
+  id: string
+  role: string
+  members: string
+  description: string
+}
 
-export function createColumns(): ColumnDef<RoleTableRow, unknown>[] {
+export function createRoleColumn(): ColumnDef<RoleTableRow, unknown>[] {
   return [
     {
       id: 'role',

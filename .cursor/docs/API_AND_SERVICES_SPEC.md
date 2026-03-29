@@ -413,7 +413,6 @@ Components that need data from APIs (or that trigger writes) are listed below. T
 | **TeamsTable** | List teams | `WorkspaceTeams` query |
 | **MembersTable** | List members; Invite | `WorkspaceMembers` query; `POST .../invite` |
 | **ViewsTable** | List views | `WorkspaceViews` or `TeamViews` query |
-| **RolesTable** | List roles | `WorkspaceRoles` query |
 | **StatusUpdateCard** | Single update + comments | From `TeamProjectPage` + `StatusUpdateComments`; send comment via REST |
 | **StatusUpdateComposer** | — | Post via REST `POST .../project/updates` |
 | **ProjectStatusPanel** | Properties, milestones, activity | From `TeamProjectPage` (project subtree) |

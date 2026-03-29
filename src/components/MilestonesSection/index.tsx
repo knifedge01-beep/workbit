@@ -1,14 +1,11 @@
-import { useMemo } from 'react'
 import { Plus } from 'lucide-react'
 
 import { Box } from '@thedatablitz/box'
-import { Dropdown } from '@thedatablitz/dropdown'
 import { Inline } from '@thedatablitz/inline'
 import { Stack } from '@thedatablitz/stack'
 import { Text } from '@thedatablitz/text'
 import { Accordion } from '@thedatablitz/accordion'
 
-import { MILESTONE_MENU_ITEMS } from '../milestoneMenuItems'
 import type { MilestonesSectionProps } from './types'
 import { DEFAULT_MILESTONES } from './utils/defaultMilestones'
 import { getMilestonePercent } from './utils/getMilestonePercent'
@@ -22,29 +19,6 @@ export function MilestonesSection({
   contentOnly = false,
   onAdd,
 }: MilestonesSectionProps) {
-  const milestoneActionOptions = useMemo(
-    () =>
-      MILESTONE_MENU_ITEMS.filter((item) => 'id' in item).map((item) => ({
-        value: item.id,
-        label: item.label,
-        icon: item.icon,
-      })),
-    []
-  )
-
-  const handleMilestoneAction = (value: string) => {
-    const menuItem = MILESTONE_MENU_ITEMS.find(
-      (item) => 'id' in item && item.id === value
-    )
-    if (
-      menuItem &&
-      'onClick' in menuItem &&
-      typeof menuItem.onClick === 'function'
-    ) {
-      menuItem.onClick()
-    }
-  }
-
   const content = (
     <Stack gap="0" fullWidth>
       {milestones.map((milestone) => {
@@ -92,13 +66,6 @@ export function MilestonesSection({
               >
                 {milestone.targetDate}
               </Text>
-
-              <Dropdown
-                size="small"
-                placeholder="Actions"
-                options={milestoneActionOptions}
-                onChange={handleMilestoneAction}
-              />
             </Inline>
           </Box>
         )

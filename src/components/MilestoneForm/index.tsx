@@ -1,8 +1,7 @@
 import { useState } from 'react'
-import { Card, Text, Input, DatePicker, IconButton, Menu } from '@design-system'
+import { Card, Text, Input, DatePicker, IconButton } from '@design-system'
 import {
   Diamond,
-  MoreHorizontal,
   GripVertical,
   ChevronRight,
   ChevronDown,
@@ -11,7 +10,6 @@ import {
 } from 'lucide-react'
 
 import { ResourceSelector } from '../ResourceSelector'
-import { MILESTONE_MENU_ITEMS } from '../milestoneMenuItems'
 import {
   DatePickerGroup,
   Divider,
@@ -103,14 +101,6 @@ export function MilestoneForm({
               {progress}%
             </Text>
           )}
-          <Menu
-            trigger={
-              <IconButton aria-label="More options">
-                <MoreHorizontal size={18} />
-              </IconButton>
-            }
-            items={MILESTONE_MENU_ITEMS}
-          />
         </DataGroup>
       </HeaderRow>
       {expanded && (
